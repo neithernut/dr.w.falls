@@ -12,7 +12,10 @@ occupied by a single virus or element at a given time.
 At the beginning of a round, a number of viruses are distributed randomly on
 the field. The distribution and colour of the individual viruses will be
 identical for all players. Viruses will only be distributed among the 12 lower
-rows of the field. A field will also be prepared for paused players.
+rows of the field. Furthermore, viruses are never placed in configurations of
+four or more viruses in a horizontal or vertical row.
+
+A field will also be prepared for paused players.
 
 
 ## Falling capsule

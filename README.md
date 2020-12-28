@@ -7,7 +7,7 @@ similar to [Dr. Mario](https://en.wikipedia.org/wiki/Dr._Mario) using a strict
 waterfall method and recording any issue I encounter. Development will be done
 in the following phases:
 
- * [ ] Software requirements: we define the game mechanics and user interface,
+ * [X] Software requirements: we define the game mechanics and user interface,
        as detailed as feasible.
  * [ ] Analysis/Design: we define the modules and their scope.
  * [ ] Implementation: we implement each module. Compiling will be allowed, but

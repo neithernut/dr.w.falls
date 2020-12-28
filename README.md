@@ -38,3 +38,20 @@ When started, connecting players will enter a lobby first. The game must be
 initiated by the game master or admin either via the game master console or by
 sending SIGUSR1 to the process.
 
+
+### Players
+
+Players connect to the game via TCP, from an ANSI-capable terminal. As the game
+relies on timely input, users will need to disable line buffering. In addition,
+users are encouraged to turn off local echoing.
+
+For example, using `nc`, players may connect using the following commands (note
+that players may want to reset the TTY settings afterwards):
+
+    stty -icanon -iecho
+    nc <host> <port>
+
+Using `socat`, players can let `socat` itself handle the TTY settings:
+
+    socat TCP:<host>:<port> STDIO,icanon=0,echo=0
+

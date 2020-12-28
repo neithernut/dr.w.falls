@@ -40,6 +40,9 @@ would not conflict with pre-existing viruses or elements. In particular, the
 capsule's movement downwards is halted if at least one of its elements would
 then occupy the same tile as another capsule element or a virus.
 
+Input driven movement of a capsule is decoupled from the tick-driven constant
+movement downwards.
+
 ### Rotation
 
 A rotation must not allow a player to move a capsule upwards nor accelerate the

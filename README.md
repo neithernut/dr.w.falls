@@ -2,8 +2,8 @@
 
 I'm a proponent of strong type systems and I fancy myself somewhat skilled in
 dodging (run-time) program defects using constructive measurements. So I decided
-to test the power of Rust's type system, and my skills, by writing a clone of
-the NES game [Dr. Mario](https://en.wikipedia.org/wiki/Dr._Mario) using a strict
+to test the power of Rust's type system, and my skills, by writing a game
+similar to [Dr. Mario](https://en.wikipedia.org/wiki/Dr._Mario) using a strict
 waterfall method and recording any issue I encounter. Development will be done
 in the following phases:
 

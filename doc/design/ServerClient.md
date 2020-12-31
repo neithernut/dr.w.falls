@@ -143,7 +143,8 @@ i.e. they are outside the scope of this function.
 The item type for the game state update channel will thus be
 
     (list of (player name, overall score, readyness), countdown value) |
-    (sender+receiver for the next phase, prepared field, tick duration, PRNG seed) |
+    (sender+receiver for the next phase, prepared field, tick duration,
+        PRNG seed) |
     end of game
 
 with "readiness" also indicating whether a player is still connected.
@@ -177,8 +178,10 @@ instance. The `Receiver`s will be distributed via the score board.
 
 The item type for the game state update channel will thus be
 
-    list of (player name, round score, overall score, player state, capsule reciever) |
-    (sender+receiver for the waiting phase, list of (player name, round score, overall score), tag of winner) |
+    list of (player name, round score, overall score, player state,
+        capsule reciever) |
+    (sender+receiver for the waiting phase, list of (player name, round score,
+        overall score), tag of winner) |
     end of game
 
 with "player state" indicating whether a player is still present and a capsule

@@ -51,14 +51,19 @@ for communicating with connection tasks as well as the game control channel.
 
 Each phase control function will receive updates from connection tasks via
 channels and broadcast general game-state information. The `tokio::sync::watch`
-channel will come in handy for the latter. `Sender`s for sending updates from
-connection tasks as well as `Reciever`s for game state updates for the next
-phase will be included in each transition message, which will be the last
-message sent via that channel. Since that message must be received by all
-connection tasks, we cannot drop the previous `Sender` before all those tasks
-had a chance to observe the state change. Hence, we'll close the the `Sender`,
-possibly using the blocking `closed` function. This implies that we need to drop
-old `Receiver`s in the connection task after observing a transition message.
+channel will come in handy for the latter. In addition to game state updates,
+each broadcast channel, used for sending messages from the control task to the
+connection tasks, will support a special transmission message type as well as a
+variant indicating end of game.
+
+The transition message, which will be the last message sent via that channel in
+most cases, will include `Sender`s for sending updates from connection tasks as
+well as `Reciever`s for game state updates for the next phase. Since the message
+must be received by all connection tasks, we cannot drop the previous `Sender`
+before all those tasks had a chance to observe the state change. Hence, we'll
+close the the `Sender`, possibly using the blocking `closed` function. This
+implies that we need to drop old `Receiver`s in the connection task after
+observing a transition message.
 
 Since we don't want to couple the phases too closely, we'll use a generic
 type for those senders and receivers, allowing us to inject the channel item
@@ -101,7 +106,7 @@ success or failure of the registration. In the case of a successful registration
 we include a handle to use for tagging updates in later phases. Thus, the item
 type for the game state update channel is
 
-    list of player names | sender+receiver for the next phase
+    list of player names | sender+receiver for the next phase | end of game
 
 while the item type for the registration channel is
 
@@ -138,7 +143,8 @@ i.e. they are outside the scope of this function.
 The item type for the game state update channel will thus be
 
     (list of (player name, overall score, readyness), countdown value) |
-    (sender+receiver for the next phase, prepared field, tick duration, PRNG seed)
+    (sender+receiver for the next phase, prepared field, tick duration, PRNG seed) |
+    end of game
 
 with "readiness" also indicating whether a player is still connected.
 
@@ -172,7 +178,8 @@ instance. The `Receiver`s will be distributed via the score board.
 The item type for the game state update channel will thus be
 
     list of (player name, round score, overall score, player state, capsule reciever) |
-    (sender+receiver for the waiting phase, list of (player name, round score, overall score), tag of winner)
+    (sender+receiver for the waiting phase, list of (player name, round score, overall score), tag of winner) |
+    end of game
 
 with "player state" indicating whether a player is still present and a capsule
 receiver's item type of `capsule element unit`. The winner will be sent by the
@@ -199,10 +206,10 @@ duplicate the transition logic from the game control task. And centralizing that
 logic in one objective of the game control task. However, we'll split the logic
 into phase-specific functions just as we split the logic among phase-specific
 control functions in the central task. Each of those functions will take as
-input the contents of a transition message initiating the phase and return the
-contents of the contents of the transition message for the next phase. We'll
-decouple the phase-specific functions the same way we do for the game control
-task.
+input the contents of a transition message initiating the phase and return
+either the contents of the contents of the transition message for the next phase
+or an end of game indication. We'll decouple the phase-specific functions the
+same way we do for the game control task.
 
 The main task will be responsible for consuming (or rather discarding) all input
 from the client not consumed by a phase function when transitioning from one
@@ -270,7 +277,8 @@ specific functions, we'll use an abstraction on top of the connection, which
 will close the connection on behalf of the client.
 
 The connection will also be closed if the waiting phase ended without successful
-player registration. In the case of a closed connection, the task will end.
+player registration or if a phase function returns an end of game indication. In
+the case of a closed connection, the task will terminate.
 
 ## Game master console task
 

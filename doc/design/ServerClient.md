@@ -144,7 +144,7 @@ The item type for the game state update channel will thus be
 
     (list of (player name, overall score, readyness), countdown value) |
     (sender+receiver for the next phase, prepared field, tick duration,
-        PRNG seed) |
+        seeded PRNG) |
     end of game
 
 with "readiness" also indicating whether a player is still connected.

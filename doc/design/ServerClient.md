@@ -135,10 +135,11 @@ As described in the [gameplay specification](Gameplay.md), the order of capsule
 element colours should be random but identical for all players. One elegant
 possibility to achieve this would be using deterministic PRNGs which are seeded
 with the same value. That seed also needs to be generated. We decided to use the
-[rand](https://crates.io/crates/rand) library, which provides both PRNGs as well
-as utilities for retrieving entropy from the OS. Retrieving the entropy and
-preparing the field will be re responsibility of the main game control task,
-i.e. they are outside the scope of this function.
+[rand_pcg](https://crates.io/crates/rand_pcg) library, which provides PRNG
+implementation as well as utilities for retrieving entropy from the OS via its
+`rand_core` dependency. Retrieving the entropy and preparing the field will be
+the responsibility of the main game control task, i.e. they are outside the
+scope of this function.
 
 The item type for the game state update channel will thus be
 

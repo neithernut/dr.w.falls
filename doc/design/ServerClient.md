@@ -1,9 +1,10 @@
 # Server-client architecture
 
 Formally, we do pursue a client-server architecture. However, as described in
-the [Interface.md](interface specification), the clients are rather simple. In
-fact, we will not provide the clients as part of this project but reuse existing
-networking tools common for unixoid systems, namely `nc` and alternatives.
+the [interface specification](../Interface.md), the clients are rather simple.
+In fact, we will not provide the clients as part of this project but reuse
+existing networking tools common for unixoid systems, namely `nc` and
+alternatives.
 
 The server will need to handle a small number of connections. We could easily
 spawn a thread for each of those connections under the assumption that we'll not
@@ -24,8 +25,8 @@ Granting each connection a single task may seem natural, but may actually not be
 the best choice. However, we'll use this division as a working model and deviate
 from it where appropriate.
 
-The [Interface.md](interface specification) describes screens, which effectively
-correspond to phases of the game:
+The [interface specification](../Interface.md) describes screens, which
+effectively correspond to phases of the game:
 
  * Lobby
  * Waiting for round
@@ -131,14 +132,14 @@ During the waiting phase, we need to handle a timer for the countdown and
 collect readiness indications from players. We'll broadcast the roaster with the
 current overall scores and an indication of the player's readiness.
 
-As described in the [gameplay specification](Gameplay.md), the order of capsule
-element colours should be random but identical for all players. One elegant
-possibility to achieve this would be using deterministic PRNGs which are seeded
-with the same value. That seed also needs to be generated. We decided to use the
-[rand_pcg](https://crates.io/crates/rand_pcg) library, which provides PRNG
-implementation as well as utilities for retrieving entropy from the OS via its
-`rand_core` dependency. Retrieving the entropy and preparing the field will be
-the responsibility of the main game control task, i.e. they are outside the
+As described in the [gameplay specification](../Gameplay.md), the order of
+capsule element colours should be random but identical for all players. One
+elegant possibility to achieve this would be using deterministic PRNGs which are
+seeded with the same value. That seed also needs to be generated. We decided to
+use the [rand_pcg](https://crates.io/crates/rand_pcg) library, which provides
+PRNG implementation as well as utilities for retrieving entropy from the OS via
+its `rand_core` dependency. Retrieving the entropy and preparing the field will
+be the responsibility of the main game control task, i.e. they are outside the
 scope of this function.
 
 The item type for the game state update channel will thus be

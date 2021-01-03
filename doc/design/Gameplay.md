@@ -168,12 +168,13 @@ set with the position of the freed tiles.
 
 ## Player controlled capsule
 
-We need to spawn a player controlled capsule after the last moving element has
-settled, i.e. as soon as the field of moving elements only contains free tiles.
-We could integrate such a check in the settling and elimination logic described
-above, but this would complicate things unnecessarily without any real benefit
-regarding the run-time. Instead, we choose to implement this check as a member
-function of the moving field.
+We need to spawn either a player controlled capsule or capsule elements received
+from another player after the last moving element has settled, i.e. as soon as
+the field of moving elements only contains free tiles. We could integrate such a
+check in the settling and elimination logic described above, but this would
+complicate things unnecessarily without any real benefit regarding the run-time.
+Instead, we choose to implement this check as a member function of the moving
+field.
 
 If a player controlled capsule is present, it will be the only two elements
 present on the field of moving elements. Thus, we could implement the player

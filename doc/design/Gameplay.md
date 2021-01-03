@@ -255,7 +255,8 @@ Furthermore, we will use a type encapsulating the position within the displayed
 field and colour, or its absence in the case of a freed tile, for updates. Each
 event will result in the construction of an `IntoIterator` with those updates,
 which will be passed to the display code for the generation and sending of
-content.
+content. In particular, each of the movement functions will return such a list
+of update items.
 
 
 ## Field preparation

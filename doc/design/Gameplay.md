@@ -166,6 +166,18 @@ set holding positions. In the event of a row elimination, we can initialize that
 set with the position of the freed tiles.
 
 
+## Pre-tick functions
+
+The settling, elimination, and discovery of unsupported capsule elements are
+interdependent and operate only on the two fields. Hence, we should encapsulate
+that logic into a single function. Since the settling process will detect the
+defeat condition, the function will indicate defeat via its return type.
+
+As any elimination event may also eliminate one or more viruses, we'll have to
+determine the new virus count. For this purpose, we'll define a member function
+of the field of settled elements returning the current number of viruses.
+
+
 ## Player controlled capsule
 
 We need to spawn either a player controlled capsule or capsule elements received

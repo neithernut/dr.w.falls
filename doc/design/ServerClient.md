@@ -259,9 +259,8 @@ the player handle. It will return the transition message's content.
 This is undoubtedly the most complex of the phase functions. It receives roaster
 updates as well as unbound capsule elements from the game control task as well
 as control input from the client. It renders the scoreboard and implements the
-actual game logic concerning the field.
-
-TODO: refer to more detailed description
+actual game logic concerning the field using the utilities defined in the
+[gameplay implementation design](Gameplay.md).
 
 ### Round end display function
 

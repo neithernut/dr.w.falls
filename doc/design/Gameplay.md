@@ -110,8 +110,8 @@ it past the lowest row or place it on an occupied tile. Hence, we'll perform the
 detection of elements that need recategorization just before altering the row
 offset for the field of moving elements. Firstly, the detection of elements in
 the lowest row is trivial. For all other elements, we'll need to check whether
-the tile in the field of settled elements just below element's mapped position
-is occupied. If it is occupied, the element in question and any element bound to
+the tile in the field of settled elements just below a given element's mapped
+position is occupied. If it is, the element in question and any element bound to
 it settles.
 
 The settling of an element may also cause the settling of any element directly

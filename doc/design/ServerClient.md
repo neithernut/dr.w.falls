@@ -117,7 +117,7 @@ and the item type for the response channel is
 
     success(player handle) | failure
 
-Upon registration, the player name and connection handle will be added to a
+Upon registration, the player name and connection task handle will be added to a
 global list. This list will be used for some of the functions provided by the
 game master console. The item type of the game control channel deviates from the
 item type of the other phase control functions:

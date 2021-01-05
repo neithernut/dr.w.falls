@@ -285,6 +285,7 @@ The connection will also be closed if the waiting phase ended without successful
 player registration or if a phase function returns an end of game indication. In
 the case of a closed connection, the task will terminate.
 
+
 ## Game master console task
 
 A single game master console task is created for all consoles. It will receive

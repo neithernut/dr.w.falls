@@ -146,24 +146,22 @@ reference to field and returning the set of tiles affected.
 
 Since a capsule element's support will only vanish due to either elimination or
 the recategorization of the supporting capsule as unsupported, we only have to
-perform the (recursing) discovery and recategorization of unsupported elements
-after an elimination. Naturally, a given capsule element or virus will support
-only the element occupying the tile directly above.
+perform the discovery and recategorization of unsupported elements after an
+elimination. Naturally, a given capsule element or virus will support only the
+element occupying the tile directly above.
 
-Thus, if a tile becomes free, we check whether the tile above holds a capsule
-element. It it is the case, we check whether it is bound to a capsule element.
-If it is bound to the capsule element above, we recategorize both elements as
-unsupported. If it is bound to a capsule element to either the left or right, we
-check whether the tile below that element is occupied by a settled element. If
-not, we recategorize both as unsupported. The element will never be bound to a
-capsule below, since that element was just eliminated. This, however, implies
-that the discovery is done after breaking up these bonds.
+We could recursively detect and unsettle all relevant elements from a given
+hint.  However, given the limited size of the field, we can also iterate from
+the row affected by the elimination upwards, detecting capsules and unbound
+elements in the field of settled elements which are not supported by elements
+below them (any more) and moving them to the field of moving elements (thus
+leaving capsule elements above it as unsupported).
 
-As the recategorized elements are removed from the field of settled elements,
-we'll recursively apply the same to the remaining elements above the moved ones.
-However, we'll not use actual recursion but a loop in conjunction of a working
-set holding positions. In the event of a row elimination, we can initialize that
-set with the position of the freed tiles.
+Although this approach may appear be inefficient at first. However, it does
+integrate well with the settling recategorization described above, which already
+requires an iteration from the bottom to the top row. In order to simplify the
+integration, we'll abstract the discovery of unsupported elements only on the
+level of a single row (and relevant bound elements).
 
 
 ## Pre-tick functions
@@ -172,6 +170,15 @@ The settling, elimination, and discovery of unsupported capsule elements are
 interdependent and operate only on the two fields. Hence, we should encapsulate
 that logic into a single function. Since the settling process will detect the
 defeat condition, the function will indicate defeat via its return type.
+
+As described above, the function will settle any elements in the bottom row
+first. Then it will perform a single pass over the rows, from the second row
+from the bottom to the top. For each row, it will first perform the settling
+required for that row and perform the elimination, followed by the discovery and
+recategorization of any unsupported elements in that row. Since the latter will
+only be required after an elimination, we'll gate this via a flag which will be
+set upon elimination and cleared if no unsupported elements were discovered for
+that row.
 
 As any elimination event may also eliminate one or more viruses, we'll have to
 determine the new virus count. For this purpose, we'll define a member function

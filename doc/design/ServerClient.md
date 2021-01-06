@@ -79,7 +79,7 @@ single module anyway.
 In addition, the task will broadcast the transition via a phase update channel
 with the following item type:
 
-    lobby | waiting | round(number)
+    lobby | waiting | round(number) | end of game
 
 Using a direct channel for each connection would allow identifying the sender
 simply via the identity of the `Receiver`, and make detection of connection
@@ -296,4 +296,7 @@ control task.
 
 This task is also responsible for accepting connections from UNIX domain
 sockets.
+
+If this task receives an "end of game" indictation via the phase update channel,
+or if the channel's writing end closes, this task will terminate.
 

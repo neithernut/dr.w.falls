@@ -76,8 +76,8 @@ message or item data types used for the waiting and round phases. However, this
 should not be problematic since we'll declare all those specializations in a
 single module anyway.
 
-In addition, the task will broadcast the transition via a phase update channel
-with the following item type:
+In addition, the task will broadcast a notification about the transition via a
+phase update channel with the following item type:
 
     lobby | waiting | round(number) | end of game
 

@@ -97,7 +97,7 @@ player to move them around, until they are halted. After a capsule element is
 halted, the capsule element elimination process described above will occur.
 
 
-## Victory Defeat
+## Victory and Defeat
 
 A player wins a round as soon as all viruses are eliminated from the field. A
 player is defeated if any tile in the top row is occupied by a capsule element

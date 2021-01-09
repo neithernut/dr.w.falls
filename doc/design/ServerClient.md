@@ -12,9 +12,9 @@ encounter misuse. However, we choose to take the more modern approach and work
 with asynchronous interfaces. Rather than designing such interfaces, we'll make
 use of [tokio](https://tokio.rs/), which implies the use of asynchronous tasks
 or coroutines, as they'd be called in languages other than rust. In the past, I
-generally avoided in favour for explicit segmentation of work, but the risk of
-working with a concept I don't have much practical experience with should be
-manageable.
+generally avoided coroutines in favour for explicit segmentation of work, but
+the risk of working with a concept I don't have much practical experience with
+should be manageable.
 
 
 # Tasks

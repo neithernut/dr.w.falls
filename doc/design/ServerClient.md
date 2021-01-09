@@ -40,9 +40,9 @@ necessary synchronization points. Also, all screens involve the display of
 registered players, in most cases with their scores. This implies that the
 player roaster, including the scores, is also shared and that updates must be
 broadcast in some way. Furthermore, roaster and score updates are related to
-the phase transitions. On the other hand, the logic for each phase and details
-regarding what information is included in the score board differ greatly between
-the different phases.
+some of the phase transitions. On the other hand, the logic for each phase and
+details regarding what information is included in the score board differ greatly
+between the different phases.
 
 Therefore, we'll pursue a design with a single control task constructed from few
 phase-specific functions, which will implement the logic for a given phase and

@@ -133,17 +133,9 @@ During the waiting phase, we need to handle a timer for the countdown and
 collect readiness indications from players. We'll broadcast the roaster with the
 current overall scores and an indication of the player's readiness.
 
-As described in the [gameplay specification](../Gameplay.md), the order of
-capsule element colours should be random but identical for all players. One
-elegant possibility to achieve this would be using deterministic PRNGs which are
-seeded with the same value. That seed also needs to be generated. We decided to
-use the [rand_pcg](https://crates.io/crates/rand_pcg) library, which provides
-PRNG implementation as well as utilities for retrieving entropy from the OS via
-its `rand_core` dependency. Retrieving the entropy and preparing the field will
-be the responsibility of the main game control task, i.e. they are outside the
-scope of this function.
-
-The item type for the game state update channel will thus be
+The round phase will require a bit of additional data which is described in the
+following section in more detail, resulting in the following item type for the
+game state update channel:
 
     (list of (player name, overall score, readyness), countdown value) |
     (sender+receiver for the next phase, prepared field, tick duration,
@@ -159,7 +151,17 @@ The readiness channel's item type will simply be
 The waiting control task will start the round control task, passing it the
 required `Sender` and `Receiver` as well as roaster with the overall score.
 
-### Field preparation sub-task
+### Round preparation
+
+As described in the [gameplay specification](../Gameplay.md), the order of
+capsule element colours should be random but identical for all players. One
+elegant possibility to achieve this would be using deterministic PRNGs which are
+seeded with the same value. That seed also needs to be generated. We decided to
+use the [rand_pcg](https://crates.io/crates/rand_pcg) library, which provides
+PRNG implementation as well as utilities for retrieving entropy from the OS via
+its `rand_core` dependency. Retrieving the entropy and preparing the field will
+be the responsibility of the main game control task, i.e. they are outside the
+scope of this function.
 
 A new round will require a bit of preparation, namely the preparation of a new
 field with viruses, which should be delegated to a sub-task for better

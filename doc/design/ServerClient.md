@@ -299,6 +299,6 @@ settings as well as the roaster initialized by the lobby control task.
 This task is also responsible for accepting connections from UNIX domain
 sockets.
 
-If this task receives an "end of game" indictation via the phase update channel,
+If this task receives an "end of game" indication via the phase update channel,
 or if the channel's writing end closes, this task will terminate.
 

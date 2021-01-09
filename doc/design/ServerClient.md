@@ -119,10 +119,9 @@ and the item type for the response channel is
 
     success(player handle) | failure
 
-Upon registration, the player name and connection task handle will be added to a
-global list. This list will be used for some of the functions provided by the
-game master console. The item type of the game control channel deviates from the
-item type of the other phase control functions:
+Upon registration, the player name and connection task handle will be added to
+the roaster. The item type of the game control channel deviates from the item
+type of the other phase control functions:
 
     registration acceptance |
     maximum number of players |
@@ -293,8 +292,7 @@ A single game master console task is created for all consoles. It will receive
 parsed lines from the various consoles, process them and send replies. It will
 receive the `Sender` for the initial game control channel passed to the lobby
 and the `Receiver` for phase updates. Furthermore it will access the global game
-settings as well as the global connection roaster initialized by the lobby
-control task.
+settings as well as the roaster initialized by the lobby control task.
 
 This task is also responsible for accepting connections from UNIX domain
 sockets.

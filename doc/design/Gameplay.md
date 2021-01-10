@@ -139,7 +139,8 @@ greater than four, we'll eliminate those tiles. If both happen to be greater
 than four, the horizontal will have precedence.
 
 The detection of those tiles will be encapsulated into a function taking a
-reference to field and returning the set of tiles affected.
+reference to field and returning the set of tiles affected as well as the
+row's colour.
 
 
 ## Discovery of unsupported capsule elements
@@ -182,7 +183,9 @@ that row.
 
 As any elimination event may also eliminate one or more viruses, we'll have to
 determine the new virus count. For this purpose, we'll define a member function
-of the field of settled elements returning the current number of viruses.
+of the field of settled elements returning the current number of viruses. As
+we'll also need to determine whether to send unbound capsules, we'll also need
+to aggregate colour items corresponding to the removed rows.
 
 
 ## Player controlled capsule

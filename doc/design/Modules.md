@@ -36,8 +36,10 @@ This module will implement all of the types and functions defined in the
 draw commands, which will allow keeping those commands private to the module,
 the described functions and utility types for rendering the various elements as
 well as some utility functions for displaying general text and clearing the
-screen. It will depend on at least the colour enum defined in the gameplay
-module.
+screen. In particular, it will expose the trait used for scoreboard entries,
+which will be implemented by various types of the game module described below.
+
+It will depend on at least the colour enum defined in the gameplay module.
 
 
 ## Game module

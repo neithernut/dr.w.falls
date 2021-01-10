@@ -211,7 +211,7 @@ replacing the old ones (i.e. those will be dropped).
 
 As phase transitions are driven by those transition messages, we won't need to
 duplicate the transition logic from the game control task. And centralizing that
-logic in one objective of the game control task. However, we'll split the logic
+logic is one objective of the game control task. However, we'll split the logic
 into phase-specific functions just as we split the logic among phase-specific
 control functions in the central task. Each of those functions will take as
 input the contents of a transition message initiating the phase and return

@@ -18,7 +18,7 @@ From the [gameplay specification](../Gameplay.md), we can derive the following
    when spawning a capsule or capsule element in the top row.
  * The downward movement of any capsule element is halted if it reaches the
    bottom of the field.
- * A capsule element or virus never changes colours.
+ * A capsule element or virus never changes colour.
  * A capsule element or virus is never duplicated, but only created, moved and
    eliminated.
  * Viruses never move (from one tile to another). Only capsules and capsule

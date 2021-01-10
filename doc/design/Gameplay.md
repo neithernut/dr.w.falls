@@ -78,8 +78,8 @@ offset defining the mapping, allowing the index operation to implement the
 mapping transparently. Management of the offset will be abstracted behind a
 member function.
 
-During a round, the top row will never contain settled elements since this
-indicates defeat. This allows us to use an array of only 15 rows rather than 16
+During a round, the top row will never contain settled elements since this would
+indicate defeat. This allows us to use an array of only 15 rows rather than 16
 for the field of settled elements. In order to keep transfers between the fields
 simple, the row indices should be kept identical. In addition, we'd like to have
 the top row indexed as row 0, making a downward movement an increment operation

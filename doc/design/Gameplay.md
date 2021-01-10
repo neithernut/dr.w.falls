@@ -241,7 +241,7 @@ settles.
 Ideally, we don't re-render the entire field with each change but only transmit
 changes. Apart from the initial display of the initial field with viruses in
 place, the only items that need to be updated within the field are moving and
-eliminated items. The former is trivial, as we only have to erase elements from
+eliminated items. The latter is trivial, as we only have to erase elements from
 the display as they are eliminated. For moving elements, we need to erase the
 tile at a given capsule element's old position and draw the element at the new
 position. We'll use this for player controlled horizontal movement and rotation.

@@ -152,7 +152,7 @@ elimination. Naturally, a given capsule element or virus will support only the
 element occupying the tile directly above.
 
 We could recursively detect and unsettle all relevant elements from a given
-hint.  However, given the limited size of the field, we can also iterate from
+hint. However, given the limited size of the field, we can also iterate from
 the row affected by the elimination upwards, detecting capsules and unbound
 elements in the field of settled elements which are not supported by elements
 below them (any more) and moving them to the field of moving elements (thus

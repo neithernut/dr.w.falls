@@ -158,9 +158,9 @@ elements in the field of settled elements which are not supported by elements
 below them (any more) and moving them to the field of moving elements (thus
 leaving capsule elements above it as unsupported).
 
-Although this approach may appear be inefficient at first. However, it does
-integrate well with the settling recategorization described above, which already
-requires an iteration from the bottom to the top row. In order to simplify the
+This approach may appear be inefficient at first. However, it does integrate
+well with the settling recategorization described above, which already requires
+an iteration from the bottom to the top row. In order to simplify the
 integration, we'll abstract the discovery of unsupported elements only on the
 level of a single row (and relevant bound elements).
 

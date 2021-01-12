@@ -1,5 +1,8 @@
 //! Gameplay related types, functions and utilities
 
+const FIELD_WIDTH: usize = 8;
+const FIELD_HEIGHT: usize = 16;
+
 
 /// Representation of a capsule
 ///

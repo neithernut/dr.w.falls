@@ -1,0 +1,2 @@
+//! Score board entity
+

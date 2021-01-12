@@ -1,0 +1,2 @@
+//! Static text entity
+

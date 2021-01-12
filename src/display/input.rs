@@ -1,0 +1,2 @@
+//! Line input entity
+

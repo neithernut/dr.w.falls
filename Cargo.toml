@@ -1,0 +1,12 @@
+[package]
+name = "dr-w-falls"
+version = "0.2.0"
+authors = ["Julian Ganz <neither@nut.email>"]
+edition = "2018"
+
+[dependencies]
+clap = "2.33"
+rand_pcg = "0.3"
+rand_core = { version = "0.6", features = ["getrandom"] }
+tokio = { version = "1.0", features = ["full"] }
+

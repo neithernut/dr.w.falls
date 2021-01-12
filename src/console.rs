@@ -1,0 +1,2 @@
+//! Game master console
+

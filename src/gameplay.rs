@@ -51,6 +51,125 @@ impl Default for Tile {
 }
 
 
+/// Representation of a field of unsettled/moving elements
+///
+/// The game field has 16 rows and 8 columns. The top-level index refers to a
+/// row, with `0` referring to the top row. The second-level index refers to the
+/// column, with `0` referring to the left-most column.
+///
+/// The rows of this field can be cycled down via the `cycle` function.
+///
+#[derive(Default)]
+pub struct MovingField {
+    rows: [[Option<CapsuleElement>; FIELD_WIDTH]; FIELD_HEIGHT],
+    offset: usize,
+}
+
+impl MovingField {
+    /// Cycle the rows
+    ///
+    /// All rows are "moved" down one index, and the bottom row becomes the new
+    /// top row.
+    ///
+    pub fn cycle(&mut self) {
+        self.offset = self.offset.checked_sub(1).unwrap_or(self.rows.len() - 1);
+    }
+
+    /// Generate a handle for accessing one moving row
+    ///
+    /// This function creates a handle for accessing one moving row. Initially,
+    /// accessing the row through the handle will be equivalent to accessing the
+    /// row via the index directly. However, the handle will refer to the same
+    /// row as it moves down the field with each call to `cycle`.
+    ///
+    pub fn row_handle(&self, index: usize) -> MovingRowHandle {
+        MovingRowHandle {index: self.translate(index)}
+    }
+
+    /// Translate an unmapped index to a mapped index
+    ///
+    fn translate(&self, index: usize) -> usize {
+        (index + self.offset) % self.rows.len()
+    }
+}
+
+impl ops::IndexMut<usize> for MovingField {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.rows[self.translate(index)]
+    }
+}
+
+impl ops::Index<usize> for MovingField {
+    type Output = [Option<CapsuleElement>; FIELD_WIDTH];
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.rows[self.translate(index)]
+    }
+}
+
+impl ops::IndexMut<MovingRowHandle> for MovingField {
+    fn index_mut(&mut self, index: MovingRowHandle) -> &mut Self::Output {
+        &mut self.rows[index.index]
+    }
+}
+
+impl ops::Index<MovingRowHandle> for MovingField {
+    type Output = [Option<CapsuleElement>; FIELD_WIDTH];
+
+    fn index(&self, index: MovingRowHandle) -> &Self::Output {
+        &self.rows[index.index]
+    }
+}
+
+
+/// Handle for one moving row within a MovingField
+///
+/// An instance of this type will refer to one row in the moving field. The
+/// handle tracks the row as it moves downwards.
+///
+#[derive(Copy, Clone, PartialEq)]
+pub struct MovingRowHandle {
+    index: usize
+}
+
+impl ops::Add<usize> for MovingRowHandle {
+    type Output = MovingRowHandle;
+
+    fn add(mut self, rhs: usize) -> Self::Output {
+        self.index = self.index + rhs;
+        self
+    }
+}
+
+impl ops::Add<usize> for &MovingRowHandle {
+    type Output = MovingRowHandle;
+
+    fn add(self, rhs: usize) -> Self::Output {
+        (*self).add(rhs)
+    }
+}
+
+impl ops::Sub<usize> for MovingRowHandle {
+    type Output = MovingRowHandle;
+
+    fn sub(mut self, rhs: usize) -> Self::Output {
+        if rhs > self.index {
+            self.index += FIELD_HEIGHT;
+        }
+        self.index = self.index - rhs;
+        self
+    }
+}
+
+impl ops::Sub<usize> for &MovingRowHandle {
+    type Output = MovingRowHandle;
+
+    fn sub(self, rhs: usize) -> Self::Output {
+        (*self).sub(rhs)
+    }
+}
+
+
 /// Representation of a capsule
 ///
 pub struct CapsuleElement {

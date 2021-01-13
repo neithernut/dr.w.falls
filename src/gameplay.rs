@@ -35,6 +35,18 @@ impl ops::Index<usize> for StaticField {
     }
 }
 
+impl Field for StaticField {
+    type Tile = Tile;
+
+    fn tile(&self, row: usize, col: usize) -> &Self::Tile {
+        &self[row][col]
+    }
+
+    fn tile_mut(&mut self, row: usize, col: usize) -> &mut Self::Tile {
+        &mut self[row][col]
+    }
+}
+
 
 /// Representation of a tile
 ///
@@ -121,6 +133,18 @@ impl ops::Index<MovingRowHandle> for MovingField {
     }
 }
 
+impl Field for MovingField {
+    type Tile = Option<CapsuleElement>;
+
+    fn tile(&self, row: usize, col: usize) -> &Self::Tile {
+        &self[row][col]
+    }
+
+    fn tile_mut(&mut self, row: usize, col: usize) -> &mut Self::Tile {
+        &mut self[row][col]
+    }
+}
+
 
 /// Handle for one moving row within a MovingField
 ///
@@ -188,6 +212,35 @@ impl CapsuleElement {
     ///
     pub fn colour(&self) -> Colour {
         self.colour
+    }
+}
+
+
+/// Trait abstracting a field
+///
+pub trait Field {
+    /// Type of a single tile
+    ///
+    type Tile;
+
+    /// Access a tile by reference
+    ///
+    fn tile(&self, row: usize, col: usize) -> &Self::Tile;
+
+    /// Access a tile by reference, mutable
+    ///
+    fn tile_mut(&mut self, row: usize, col: usize) -> &mut Self::Tile;
+
+    /// Retrieve the width of a field
+    ///
+    fn width(&self) -> usize {
+        FIELD_WIDTH
+    }
+
+    /// Retrieve the height of a field
+    ///
+    fn height(&self) -> usize {
+        FIELD_HEIGHT
     }
 }
 

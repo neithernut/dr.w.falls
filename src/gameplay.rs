@@ -5,6 +5,7 @@ use std::ops;
 
 const FIELD_WIDTH: usize = 8;
 const FIELD_HEIGHT: usize = 16;
+const ELIMINATION_LENGTH: usize = 4;
 
 
 /// Representation of a field of settled/non-moving elements
@@ -32,6 +33,16 @@ impl ops::Index<usize> for StaticField {
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.rows[index + 1]
+    }
+}
+
+impl ColourField for StaticField {
+    fn colour(&self, row: usize, col: usize) -> Option<Colour> {
+        match &self[row][col] {
+            Tile::None => None,
+            Tile::CapsuleElement(e) => Some(e.colour()),
+            Tile::Virus(v) => Some(v.colour()),
+        }
     }
 }
 
@@ -212,6 +223,50 @@ impl CapsuleElement {
     ///
     pub fn colour(&self) -> Colour {
         self.colour
+    }
+}
+
+
+/// View a field as a field of abstract coloured tiles
+///
+pub trait ColourField: Field {
+    /// Retrieve the colour of a tile
+    ///
+    fn colour(&self, row: usize, col: usize) -> Option<Colour>;
+
+    /// Detect rows of four
+    ///
+    /// This function detects horizontal and vertical configurations of four or
+    /// more tiles of the same colour starting from the given position. If such
+    /// a row exists, this function returns its colour and the positions of its
+    /// elements.
+    ///
+    fn row_of_four(&self, hint_row: usize, hint_col: usize) -> Option<(Colour, Vec<(usize, usize)>)> {
+        let colour = self.colour(hint_row, hint_col)?;
+
+        let of_colour = |(r, c): &(usize, usize)| self.colour(*r, *c) == Some(colour);
+
+        // Detect horizontal configurations
+        let res: Vec<_> = (hint_row..self.width())
+            .map(|r| (r, hint_col))
+            .take_while(of_colour)
+            .chain((0..hint_row).rev().map(|r| (r, hint_col)).take_while(of_colour))
+            .collect();
+        if res.len() >= ELIMINATION_LENGTH {
+            return Some((colour, res))
+        }
+
+        // Detect vertical configurations
+        let res: Vec<_> = (hint_col..self.height())
+            .map(|c| (hint_row, c))
+            .take_while(of_colour)
+            .chain((0..hint_col).rev().map(|c| (hint_row, c)).take_while(of_colour))
+            .collect();
+        if res.len() >= ELIMINATION_LENGTH {
+            return Some((colour, res))
+        }
+
+        None
     }
 }
 

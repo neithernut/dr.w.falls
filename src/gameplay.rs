@@ -109,6 +109,15 @@ impl MovingField {
         MovingRowHandle {index: self.translate(index)}
     }
 
+    /// Determine the index for a given row handle
+    ///
+    /// This funtion determines the current index of a moving row identified by
+    /// a `MovingRowHandle`.
+    ///
+    pub fn index_from_row_handle(&self, handle: &MovingRowHandle) -> usize {
+        (handle.index + self.rows.len() - self.offset) % self.rows.len()
+    }
+
     /// Translate an unmapped index to a mapped index
     ///
     fn translate(&self, index: usize) -> usize {

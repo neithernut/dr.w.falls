@@ -67,6 +67,70 @@ pub enum Tile {
     Virus(Virus),
 }
 
+impl Tile {
+    /// Determine whther the Tile is free
+    ///
+    pub fn is_free(&self) -> bool {
+        match self {
+            Self::None => true,
+            _ => false,
+        }
+    }
+
+    /// Retriefe the inner capsule element, if any
+    ///
+    pub fn as_element(&self) -> Option<&CapsuleElement> {
+        match self {
+            Self::CapsuleElement(e) => Some(e),
+            _ => None,
+        }
+    }
+
+    /// Retriefe the inner capsule element, if any
+    ///
+    pub fn as_element_mut(&mut self) -> Option<&mut CapsuleElement> {
+        match self {
+            Self::CapsuleElement(e) => Some(e),
+            _ => None,
+        }
+    }
+
+    /// Unwrap inner capsule element, if any
+    ///
+    pub fn into_element(self) -> Option<CapsuleElement> {
+        match self {
+            Self::CapsuleElement(e) => Some(e),
+            _ => None,
+        }
+    }
+
+    /// Retriefe the inner virus, if any
+    ///
+    pub fn as_virus(&self) -> Option<&Virus> {
+        match self {
+            Self::Virus(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    /// Unwrap inner virus, if any
+    ///
+    pub fn into_virus(self) -> Option<Virus> {
+        match self {
+            Self::Virus(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    /// Take the Tile's contents
+    ///
+    /// This operation leaves the `Tile` unoccupied, i.e. free.
+    ///
+    pub fn take(&mut self) -> Self {
+        std::mem::take(self)
+    }
+}
+
 impl Default for Tile {
     fn default() -> Self {
         Self::None

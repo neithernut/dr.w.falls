@@ -297,6 +297,18 @@ impl CapsuleElement {
     pub fn colour(&self) -> Colour {
         self.colour
     }
+
+    /// Determine the position of any element bound to this one
+    ///
+    pub fn bound_pos(&self, row: usize, col: usize) -> Option<(usize, usize)> {
+        match self.binding {
+            Binding::None   => None,
+            Binding::Left   => Some((row - 1, col)),
+            Binding::Right  => Some((row + 1, col)),
+            Binding::Above  => Some((row, col - 1)),
+            Binding::Below  => Some((row, col + 1)),
+        }
+    }
 }
 
 

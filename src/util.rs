@@ -238,3 +238,26 @@ pub enum Colour {
     Blue,
 }
 
+
+/// Trait for potentially coloured tile contents
+///
+pub trait PotentiallyColoured {
+    /// Retrieve the colour of this item
+    ///
+    fn colour(&self) -> Option<Colour>;
+
+    /// Convert the item into its potential colour
+    ///
+    fn into_colour(self) -> Option<Colour>
+        where Self: Sized
+    {
+        self.colour()
+    }
+}
+
+impl PotentiallyColoured for Option<Colour> {
+    fn colour(&self) -> Option<Colour> {
+        *self
+    }
+}
+

@@ -179,7 +179,9 @@ with each entry of that list will correspond to one eliminated configuration.
 
 We can determine whether or not to declare defeat by simply scanning the top row
 in the field of settled elements. For this purpose, we'll define a function
-taking as a parameter the elimination function's return value by reference.
+taking as a parameter a reference to the field of settled elements. We could
+enforce correct ordering by making it also take as parameter a reference of the
+elimination function's return type, but there'd be little benefit.
 
 ### Virus count update
 

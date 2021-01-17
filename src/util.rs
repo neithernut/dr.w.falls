@@ -24,6 +24,14 @@ impl std::ops::Add<Direction> for Position {
     }
 }
 
+impl std::ops::Add<Direction> for Option<Position> {
+    type Output = Option<Position>;
+
+    fn add(self, rhs: Direction) -> Self::Output {
+        self.and_then(|p| p + rhs)
+    }
+}
+
 /// Description of a direction
 ///
 #[derive(Copy, Clone, PartialEq, Eq)]

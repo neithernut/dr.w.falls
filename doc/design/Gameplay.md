@@ -70,13 +70,28 @@ capsule elements will become settled as soon as they reach the bottom row, we
 can also use an array with 16 rows and simply use a modulo operation in the
 mapping.
 
+Both fields will internally be represented by lists of rows of 8 elements. We'll
+define a generic type encapsulating one row as well as a column index type which
+will only allow safe values. That index type will allow checked increment and
+decrement. It appears natural to implement `std::iter::Step` for such a type, as
+it would allow the use of ranges. However, that trait is marked as experimental
+at the time of writing and thus we'll refrain from this for now. Instead, we'll
+define a `DoubleEndedIterator` ourselves, although this will possibly based on
+an `std::ops::Range`. Similarly, we'll define a dedicated row index type and
+associated iterator.
+
+The use of dedicated types for row and column indices without the possibility of
+direct conversion will reduce the risk of accidentally confusing those indices.
 In order to keep the implementation of operations on fields intuitive, both the
 field of settled elements and the field for moving elements will be implemented
-as an `IndexMut` with an `Output` type representing a row of 8 tiles. In the
-case of the field of moving elements, the trait implementation will contain the
-offset defining the mapping, allowing the index operation to implement the
-mapping transparently. Management of the offset will be abstracted behind a
-member function.
+as an `IndexMut` allowing indexing based on a tuple of row and column indices,
+with an `Output` type representing a tile. For more convenience, we'll also
+define step functions on top of those tuples, which will allow stepping in the
+four directions more conveniently.
+
+The field of moving elements will contain the offset defining the mapping,
+allowing the indexing to implement the mapping transparently. Management of the
+offset will be abstracted behind a member function.
 
 During a round, the top row will never contain settled elements since this would
 indicate defeat. This would allows us to use an array of only 15 rows rather
@@ -84,9 +99,6 @@ than 16 for the field of settled elements. However, we want to allow the top row
 to be occupied transiently: a capsule should be allowed to settle in the top row,
 a player will be defeated only if that capsule is not eliminated directly
 afterwards.
-
-In order to keep transfers between the fields simple, the row indices should be
-kept identical. In addition, we'd like to have the top row indexed as row 0.
 
 
 ## Tiles
@@ -324,8 +336,8 @@ the detection of four elements in a row we use for the elimination in order to
 prevent configurations with four or more viruses of the same colour forming a
 vertical or horizontal row.
 
-This problem we can solve by introducing a trait requiring a function mapping
-a position to a colour, and defining the detection function based on that trait.
-The trait can then be implemented for both the field and the map used for
-generating the distribution.
+This problem we can solve by implementing `IndexMut` with out row and column
+index types for the preparation field, and defining a trait which allows
+querying the colour of a tile. The detection function can then be implemented
+based on those two traits.
 

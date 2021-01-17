@@ -228,3 +228,13 @@ impl<I> Iterator for RangeInclusive<I>
     }
 }
 
+
+/// Colour of viruses and capsule elements
+///
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum Colour {
+    Red,
+    Yellow,
+    Blue,
+}
+

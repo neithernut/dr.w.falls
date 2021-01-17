@@ -194,7 +194,8 @@ directly is far less complex and still far more efficient than a scan of the
 entire field.
 
 Still, we will only count viruses if an elimination event occurred. Detecting
-this condition is trivial.
+this condition is trivial. Naturally, we'll define a function taking a reference
+to the field of settled elements as well as the initial virus distribution.
 
 ### Discovery of unsupported capsule elements
 

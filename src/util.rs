@@ -116,3 +116,79 @@ impl<I> Step for I
     }
 }
 
+
+/// Inclusive range of rows or columns
+///
+/// This is somewhat of a reimplementation of `std::ops::RangeInclusive`, which
+/// implements `DoubleEndedIterator` for all indices implementing our custom
+/// `Step` trait.
+///
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
+pub struct RangeInclusive<I> {
+    data: Option<(I, I)>,
+}
+
+impl<I> RangeInclusive<I> {
+    /// Crate a new inclusive range
+    ///
+    pub const fn new(first: I, last: I) -> Self {
+        Self {data: Some((first, last))}
+    }
+}
+
+impl<I> From<std::ops::RangeInclusive<I>> for RangeInclusive<I> {
+    fn from(range: std::ops::RangeInclusive<I>) -> Self {
+        Self {data: Some(range.into_inner())}
+    }
+}
+
+impl<I> std::iter::FusedIterator for RangeInclusive<I>
+    where I: Step + PartialOrd + Clone
+{
+}
+
+impl<I> ExactSizeIterator for RangeInclusive<I>
+    where I: Step + PartialOrd + Clone
+{
+}
+
+impl<I> DoubleEndedIterator for RangeInclusive<I>
+    where I: Step + PartialOrd + Clone
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.data.take().map(|(first, last)| {
+            let res = first.clone();
+            if first < last {
+                self.data = last.backward_checked(1).map(|last| (first, last))
+            }
+            res
+        })
+    }
+}
+
+impl<I> Iterator for RangeInclusive<I>
+    where I: Step + PartialOrd + Clone
+{
+    type Item = I;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.data.take().map(|(first, last)| {
+            let res = first.clone();
+            if first < last {
+                self.data = first.forward_checked(1).map(|first| (first, last))
+            }
+            res
+        })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self
+            .data
+            .as_ref()
+            .and_then(|(first, last)| Step::steps_between(first, last))
+            .map(|len| len.saturating_add(1)) // Should never saturate
+            .unwrap_or(0);
+        (len, Some(len))
+    }
+}
+

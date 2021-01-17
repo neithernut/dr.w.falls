@@ -69,6 +69,11 @@ impl TryFrom<usize> for RowIndex {
 }
 
 
+/// Range including all rows
+///
+pub const ROWS: RangeInclusive<RowIndex> = RangeInclusive::new(RowIndex::TOP_ROW, RowIndex::BOTTOM_ROW);
+
+
 /// Column index type
 ///
 /// Instances of this type serve as an index for a column in a field. It
@@ -102,6 +107,14 @@ impl TryFrom<usize> for ColumnIndex {
         value.try_into().ok().filter(|i| *i < FIELD_WIDTH).map(|data| Self {data}).ok_or(value)
     }
 }
+
+
+/// Range including all columns
+///
+pub const COLUMNS: RangeInclusive<ColumnIndex> = RangeInclusive::new(
+    ColumnIndex::LEFTMOST_COLUMN,
+    ColumnIndex::RIGHTMOST_COLUMN
+);
 
 
 /// Project-specific partial predefinition of `std::iter::Step`
@@ -151,7 +164,7 @@ pub struct RangeInclusive<I> {
 impl<I> RangeInclusive<I> {
     /// Crate a new inclusive range
     ///
-    pub fn new(first: I, last: I) -> Self {
+    pub const fn new(first: I, last: I) -> Self {
         Self {data: Some((first, last))}
     }
 }

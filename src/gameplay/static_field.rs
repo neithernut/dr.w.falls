@@ -37,6 +37,63 @@ pub enum TileContents {
 }
 
 impl TileContents {
+    /// Check whether the tile is occupied
+    ///
+    pub fn is_occupied(&self) -> bool {
+        match self {
+            Self::None => false,
+            _ => true,
+        }
+    }
+
+    /// Retrieve a reference to any capsule elemnt held by the tile
+    ///
+    /// If the tile holds a capsule element, this function will return a
+    /// reference to that element. Otherwise, this function returns `None`.
+    ///
+    pub fn as_element(&self) -> Option<&CapsuleElement> {
+        match self {
+            Self::CapsuleElement(e) => Some(e),
+            _ => None
+        }
+    }
+
+    /// Retrieve a mutable reference to any capsule elemnt held by the tile
+    ///
+    /// If the tile holds a capsule element, this function will return a mutable
+    /// reference to that element. Otherwise, this function returns `None`.
+    ///
+    pub fn as_element_mut(&mut self) -> Option<&mut CapsuleElement> {
+        match self {
+            Self::CapsuleElement(e) => Some(e),
+            _ => None
+        }
+    }
+
+    /// Retrieve the capsule elemnt held by the tile, if any
+    ///
+    /// If the tile holds a capsule element, this function will return that
+    /// element. Otherwise, this function returns `None`.
+    ///
+    pub fn into_element(self) -> Option<CapsuleElement> {
+        match self {
+            Self::CapsuleElement(e) => Some(e),
+            _ => None
+        }
+    }
+
+    /// Retrieve a reference to any virus held by the tile
+    ///
+    /// If the tile holds a virus, this function will return a reference to that
+    /// virus. Otherwise, this function returns `None`.
+    ///
+    pub fn as_virus(&self) -> Option<&Virus> {
+        match self {
+            Self::Virus(e) => Some(e),
+            _ => None
+        }
+    }
+
     /// Take the tile's contents, leaving it unoccupied
     ///
     pub fn take(&mut self) -> Self {

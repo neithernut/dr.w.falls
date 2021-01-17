@@ -107,6 +107,18 @@ impl Default for TileContents {
     }
 }
 
+impl From<CapsuleElement> for TileContents {
+    fn from(e: CapsuleElement) -> Self {
+        Self::CapsuleElement(e)
+    }
+}
+
+impl From<Virus> for TileContents {
+    fn from(v: Virus) -> Self {
+        Self::Virus(v)
+    }
+}
+
 impl util::PotentiallyColoured for TileContents {
     fn colour(&self) -> Option<util::Colour> {
         match self {

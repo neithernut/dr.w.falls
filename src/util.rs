@@ -108,3 +108,63 @@ impl<I> Step for I
     }
 }
 
+
+/// Inclusive range of rows or columns
+///
+/// This is somewhat of a reimplementation of `std::ops::RangeInclusive`, which
+/// implements `DoubleEndedIterator` for all indices implementing our custom
+/// `Step` trait.
+///
+struct RangeInclusive<I> {
+    data: Option<(I, I)>,
+}
+
+impl<I> RangeInclusive<I> {
+    /// Crate a new inclusive range
+    ///
+    pub fn new(first: I, last: I) -> Self {
+        Self {data: Some((first, last))}
+    }
+}
+
+impl<I> From<std::ops::RangeInclusive<I>> for RangeInclusive<I> {
+    fn from(range: std::ops::RangeInclusive<I>) -> Self {
+        Self {data: Some(range.into_inner())}
+    }
+}
+
+impl<I> std::iter::FusedIterator for RangeInclusive<I>
+    where I: Step + PartialEq + Clone
+{
+}
+
+impl<I> DoubleEndedIterator for RangeInclusive<I>
+    where I: Step + PartialEq + Clone
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.data.take().map(|(first, last)| {
+            let res = first.clone();
+            if first != last {
+                self.data = last.backward_checked(1).map(|last| (first, last))
+            }
+            res
+        })
+    }
+}
+
+impl<I> Iterator for RangeInclusive<I>
+    where I: Step + PartialEq + Clone
+{
+    type Item = I;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.data.take().map(|(first, last)| {
+            let res = first.clone();
+            if first != last {
+                self.data = first.forward_checked(1).map(|first| (first, last))
+            }
+            res
+        })
+    }
+}
+

@@ -7,6 +7,34 @@ pub const FIELD_WIDTH: u8 = 8;
 pub const FIELD_HEIGHT: u8 = 16;
 
 
+/// Convenience type for positions
+///
+pub type Position = (RowIndex, ColumnIndex);
+
+impl std::ops::Add<Direction> for Position {
+    type Output = Option<Self>;
+
+    fn add(self, rhs: Direction) -> Self::Output {
+        match rhs {
+            Direction::Left  => self.1.backward_checked(1).map(|c| (self.0, c)),
+            Direction::Right => self.1.forward_checked(1).map(|c| (self.0, c)),
+            Direction::Above => self.0.backward_checked(1).map(|r| (r, self.1)),
+            Direction::Below => self.0.forward_checked(1).map(|r| (r, self.1)),
+        }
+    }
+}
+
+/// Description of a direction
+///
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum Direction {
+    Left,
+    Right,
+    Above,
+    Below,
+}
+
+
 /// Row index type
 ///
 /// Instances of this type serve as an index for a row in a field. It represents

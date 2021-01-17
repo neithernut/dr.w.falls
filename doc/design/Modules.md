@@ -21,12 +21,30 @@ well as the public roaster, safeguarded by a lock allowing concurrent access by
 the game control and game console tasks.
 
 
+## Util module
+
+Both the colour type and trait as well as the various index types defined in the
+[gameplay implementation design](Gameplay.md) will likely be used in various
+modules. Rather than having them all depend on the somewhat big gameplay module
+described below, we'd rather have them in a separate module. Since none of them
+really won't warrant a top-level module of their own, we throw them together.
+
+
 ## Gameplay module
 
-This module will implement all of the types and functions defined in the
-[gameplay implementation design](Gameplay.md). It will expose the types
-representing the two fields and their items as well as the functions for
-movements, pre-tick and a utility for generating virus distributions.
+This module will implement the remaining types and functions defined in the
+[gameplay implementation design](Gameplay.md). The definition of the types and
+functions themselves will be placed in submodules while the gameplay module
+itself will only contain those module definitions and re-exports. We'll define:
+
+ * an `items` submodule defining virus and capsule element types,
+ * a private `row` submodule defining the internal row type,
+ * a `static_field` submodule defining the field of settled elements as well as
+   its tile type,
+ * a `moving_field` submodule defining the field of moving elements,
+ * a `tick` submodule defining the pre-tick functions and transfer types,
+ * a `movement` submodule defining the movement function and input types and
+ * a `preparation` submodule defining the preparation of a field.
 
 
 ## Display module

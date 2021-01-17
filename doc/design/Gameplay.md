@@ -165,7 +165,11 @@ elements to the field of settled elements. This data allows us to narrow down
 the search for such rows considerably.
 
 We'll encapsule the process of settling elements in a function which returns a
-type encapsulating the positions of settled elements.
+type encapsulating the positions of settled elements. In addition, the function
+will take the row at which the settling process should be started, i.e. the
+lowest row for which the process is performed, and return the first row in which
+we did not settle all elements. This information should help reduce the amount
+of computation we have to perform during this stage.
 
 ### Capsule elimination
 

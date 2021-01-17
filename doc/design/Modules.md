@@ -57,8 +57,6 @@ well as some utility functions for displaying general text and clearing the
 screen. In particular, it will expose the trait used for scoreboard entries,
 which will be implemented by various types of the game module described below.
 
-It will depend on at least the colour enum defined in the gameplay module.
-
 
 ## Game module
 

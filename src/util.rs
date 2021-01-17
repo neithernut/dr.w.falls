@@ -200,7 +200,7 @@ impl<I> Iterator for RangeInclusive<I>
 /// Colour of viruses and capsule elements
 ///
 #[derive(Copy, Clone, PartialEq, Eq)]
-enum Colour {
+pub enum Colour {
     Red,
     Yellow,
     Blue,
@@ -209,7 +209,7 @@ enum Colour {
 
 /// Trait for potentially coloured tile contents
 ///
-trait PotentiallyColoured {
+pub trait PotentiallyColoured {
     /// Retrieve the colour of this item
     ///
     fn colour(&self) -> Option<Colour>;

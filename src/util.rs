@@ -143,6 +143,7 @@ impl<I> Step for I
 /// implements `DoubleEndedIterator` for all indices implementing our custom
 /// `Step` trait.
 ///
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
 pub struct RangeInclusive<I> {
     data: Option<(I, I)>,
 }

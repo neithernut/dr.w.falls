@@ -105,35 +105,60 @@ free. For the field of moving elements, a tile will be an `Option` which may
 hold a capsule.
 
 
-## Detecting settling of capsule elements
+## Pre-tick functions
+
+The settling, elimination, and discovery of unsupported capsule elements need to
+be done just before altering the row offset for the field of moving elements.
+Those operations are somewhat interdependent and operate only on the two fields.
+It seems tempting to encapsulate that logic into a single function. However,
+each of those stages will contribute differently to the overall gameplay logic.
+Combining those different aspects within a single return value would make its
+type rather complex, resulting in more boiler-plate at the call site.
+
+In addition, we need to process the entire field(s) in each stage. Initially, we
+assumed that we could perform the elimination as soon as an element settled.
+However, elements which are not settled yet but would settle during the process
+may also be part of the (extended) horizontal or vertical configuration to be
+eliminated. If we eliminate rows-of-four prematurely, could miss elements of the
+same colour in the same row or column.
+
+Still, coupling those operations in some way does have some merit. Not only does
+a data-dependency between the different stages exist, their order is also fixed
+by the intended overall behaviour. We thus decide to model these constraints
+through a cascade of different types. Each operation will be a function, which
+will return a type containing the data for the next stage and may allow querying
+some properties.
+
+### Detecting settling of capsule elements
 
 A capsule element will halt or settle if the downward movement would either move
 it past the lowest row or place it on an occupied tile. Hence, we'll perform the
 detection of elements that need recategorization just before altering the row
-offset for the field of moving elements. Firstly, the detection of elements in
-the lowest row is trivial. For all other elements, we'll need to check whether
-the tile in the field of settled elements just below a given element's mapped
-position is occupied. If it is, the element in question and any element bound to
-it settles.
+offset for the field of moving elements.
+
+The detection of elements in the lowest row is trivial. For all other elements,
+we'll need to check whether the tile in the field of settled elements just below
+a given element's mapped position is occupied. If it is, the element in question
+and any element bound to it settles.
 
 The settling of an element may also cause the settling of any element directly
 above. However, if we apply the detection described above sequentially from the
-bottom row upwards, we'll automatically catch all of those. If we reach the top
-row with elements to be settled, we have to declare defeat. We'll have to do so
-before transferring elements since that row does not exist for the field of
-settled elements.
+bottom row upwards, we'll automatically catch all of those.
 
-After each settling, we'll perform the search and elimination of four or more
-elements of the same colour, using the information that, if such a row exists,
-at least one of the recently settled elements must be part of that row. Thus,
-elements in the row above may not end up settling but progress downwards with
-the next tick and settled elements may be recategorized as moving elements.
+Which elements settled is also relevant for elimination: any row-of-four in the
+field resulting from the settling must have been introduced by the settling.
+Hence, such a row must contain at least one recently settled element. Thus, we
+collect the positions of all elements we transfer from the field of moving
+elements to the field of settled elements. This data allows us to narrow down
+the search for such rows considerably.
 
+We'll encapsule the process of settling elements in a function which returns a
+type encapsulating the positions of settled elements.
 
-## Capsule elimination
+### Capsule elimination
 
 The elimination process is performed on the field of settled elements only, on
-basis of the hint described above. From the hinted position, we'll reach out in
+basis of the hint described above. From any hinted position, we'll reach out in
 each of the four directions, recording the number of tiles of the same colour,
 stopping if we hit a free tile or a tile of another colour. If the sum of the
 recorded tiles in either the vertical or horizontal directions is equal or
@@ -142,10 +167,34 @@ than four, the horizontal will have precedence.
 
 The detection of those tiles will be encapsulated into a function taking a
 reference to field and returning the set of tiles affected as well as the
-row's colour.
+row's colour. However, the entire elimination process will also be encapsulated
+in a function. The function will return a type carrying information about the
+eliminated rows. That information may be queried via a function returning:
 
+    list of (colour, list of positions)
 
-## Discovery of unsupported capsule elements
+with each entry of that list will correspond to one eliminated configuration.
+
+### Detection of defeat
+
+We can determine whether or not to declare defeat by simply scanning the top row
+in the field of settled elements. For this purpose, we'll define a function
+taking as a parameter the elimination function's return value by reference.
+
+### Virus count update
+
+As any elimination event may also eliminate one or more viruses, we'll have to
+determine the new virus count. Assuming the existence of a record of the initial
+virus distribution and given the list of erased tiles from the elimination
+process, we could determine the current virus count via some book-keeping.
+However, given a record of the initial distribution, querying those positions
+directly is far less complex and still far more efficient than a scan of the
+entire field.
+
+Still, we will only count viruses if an elimination event occurred. Detecting
+this condition is trivial.
+
+### Discovery of unsupported capsule elements
 
 Since a capsule element's support will only vanish due to either elimination or
 the recategorization of the supporting capsule as unsupported, we only have to
@@ -153,41 +202,20 @@ perform the discovery and recategorization of unsupported elements after an
 elimination. Naturally, a given capsule element or virus will support only the
 element occupying the tile directly above.
 
-We could recursively detect and unsettle all relevant elements from a given
-hint. However, given the limited size of the field, we can also iterate from
-the row affected by the elimination upwards, detecting capsules and unbound
-elements in the field of settled elements which are not supported by elements
-below them (any more) and moving them to the field of moving elements (thus
-leaving capsule elements above it as unsupported).
+The elimination function's return type already provides the positions of all
+elements which were recently eliminated. From that we compute a set or list
+holding positions of possibly unsupported elements by choosing the position
+above. For each of the positions of that set, we determine whether an element
+exists at that position and whether it still be supported via any element bound
+to it. In this case, we must not consider any bound element above, since that
+would otherwise naturally be supported by the element we initially considered.
+Furthermore, we don't need to consider any element below since such an element
+can't exist.
 
-This approach may appear be inefficient at first. However, it does integrate
-well with the settling recategorization described above, which already requires
-an iteration from the bottom to the top row. In order to simplify the
-integration, we'll abstract the discovery of unsupported elements only on the
-level of a single row (and relevant bound elements).
-
-
-## Pre-tick functions
-
-The settling, elimination, and discovery of unsupported capsule elements are
-interdependent and operate only on the two fields. Hence, we should encapsulate
-that logic into a single function. Since the settling process will detect the
-defeat condition, the function will indicate defeat via its return type.
-
-As described above, the function will settle any elements in the bottom row
-first. Then it will perform a single pass over the rows, from the second row
-from the bottom to the top. For each row, it will first perform the settling
-required for that row and perform the elimination, followed by the discovery and
-recategorization of any unsupported elements in that row. Since the latter will
-only be required after an elimination, we'll gate this via a flag which will be
-set upon elimination and cleared if no unsupported elements were discovered for
-that row.
-
-As any elimination event may also eliminate one or more viruses, we'll have to
-determine the new virus count. For this purpose, we'll define a member function
-of the field of settled elements returning the current number of viruses. As
-we'll also need to determine whether to send unbound capsules, we'll also need
-to aggregate colour items corresponding to the removed rows.
+If the element is indeed unsupported, we move the element and any element bound
+to it (including any bound element above) to the list of moving fields. In
+addition, we record the positions above the moved elements in the list of
+possibly unsupported elements.
 
 
 ## Player controlled capsule

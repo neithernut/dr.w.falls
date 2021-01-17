@@ -106,7 +106,7 @@ impl TryFrom<usize> for ColumnIndex {
 
 /// Project-specific partial predefinition of `std::iter::Step`
 ///
-trait Step: Sized {
+pub trait Step: Sized {
     /// Checked integer addition
     ///
     /// This function returns an index for the `count`'th next row or column. If
@@ -143,7 +143,7 @@ impl<I> Step for I
 /// implements `DoubleEndedIterator` for all indices implementing our custom
 /// `Step` trait.
 ///
-struct RangeInclusive<I> {
+pub struct RangeInclusive<I> {
     data: Option<(I, I)>,
 }
 

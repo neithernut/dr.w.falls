@@ -79,12 +79,14 @@ mapping transparently. Management of the offset will be abstracted behind a
 member function.
 
 During a round, the top row will never contain settled elements since this would
-indicate defeat. This allows us to use an array of only 15 rows rather than 16
-for the field of settled elements. In order to keep transfers between the fields
-simple, the row indices should be kept identical. In addition, we'd like to have
-the top row indexed as row 0, making a downward movement an increment operation
-on the offset, and avoid negative numbers. Hence, we'll place the responsibility
-of the mapping on the field of settled elements.
+indicate defeat. This would allows us to use an array of only 15 rows rather
+than 16 for the field of settled elements. However, we want to allow the top row
+to be occupied transiently: a capsule should be allowed to settle in the top row,
+a player will be defeated only if that capsule is not eliminated directly
+afterwards.
+
+In order to keep transfers between the fields simple, the row indices should be
+kept identical. In addition, we'd like to have the top row indexed as row 0.
 
 
 ## Tiles

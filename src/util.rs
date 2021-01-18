@@ -219,6 +219,13 @@ impl<I> Iterator for RangeInclusive<I>
 }
 
 
+/// Create an iterator over all positions in the given row
+///
+pub fn complete_row(row: RowIndex) -> impl Iterator<Item = Position> {
+    COLUMNS.map(move |c| (row, c))
+}
+
+
 /// Colour of viruses and capsule elements
 ///
 #[derive(Copy, Clone, PartialEq, Eq)]

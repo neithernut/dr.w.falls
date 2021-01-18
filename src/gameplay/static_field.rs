@@ -129,3 +129,49 @@ impl util::PotentiallyColoured for TileContents {
     }
 }
 
+
+/// Find rows of four or more tiles of the same colour
+///
+/// This function finds horizontal and vertical configurations of at least four
+/// tiles with the same colour. Only configurations which include the given
+/// position will be considered. If such a configuration is found, it is
+/// returned alongside the colour of that row.
+///
+/// The list of positions is not sorted in any particular order. Furthermore,
+/// its order may depend on the hint.
+///
+pub fn row_of_four(
+    field: &StaticField,
+    hint: util::Position
+) -> Option<(util::Colour, Vec<util::Position>)> {
+    use util::Direction as Dir;
+    use util::PotentiallyColoured;
+
+    const ROW_OF_FOUR_LEN: usize = 4;
+
+    field[hint]
+        .colour()
+        .and_then(|col| {
+            let positions_towards = |dir| std::iter::successors(hint + dir, move |p| *p + dir)
+                .take_while(|p| field[*p].colour() == Some(col));
+
+            let positions: Vec<_> = std::iter::once(hint)
+                .chain(positions_towards(Dir::Left))
+                .chain(positions_towards(Dir::Right))
+                .collect();
+            if positions.len() >= ROW_OF_FOUR_LEN {
+                return Some((col, positions))
+            }
+
+            let positions: Vec<_> = std::iter::once(hint)
+                .chain(positions_towards(Dir::Above))
+                .chain(positions_towards(Dir::Below))
+                .collect();
+            if positions.len() >= ROW_OF_FOUR_LEN {
+                Some((col, positions))
+            } else {
+                None
+            }
+        })
+}
+

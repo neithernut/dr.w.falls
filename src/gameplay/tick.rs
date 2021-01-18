@@ -1,5 +1,7 @@
 //! Pre-tick functions and transfer types
 
+use std::collections::HashSet;
+
 use crate::util;
 
 use super::moving_field::MovingField;
@@ -77,6 +79,65 @@ impl IntoIterator for Settled {
 
     fn into_iter(self) -> Self::IntoIter {
         self.elements.into_iter()
+    }
+}
+
+
+/// Eliminate elements
+///
+/// This function eliminates rows of four from the field of settled elements.
+/// These rows of four are detected based on hints provided in the form of
+/// settled elements. The function will return a type encapsulating the
+/// individual rows.
+///
+pub fn eliminate_elements(
+    field: &mut StaticField,
+    settled: Settled
+) -> Eliminated {
+    use super::static_field;
+
+    let rows: HashSet<_> = settled
+        .into_iter()
+        .filter_map(|p| static_field::row_of_four(field, p))
+        .map(|(col, mut pos)| { pos.sort(); (col, pos)})
+        .collect();
+    let retval = Eliminated {rows};
+    retval
+        .positions()
+        .for_each(|p| field[p]
+            .take()
+            .into_element()
+            .and_then(|e| e.partner)
+            .and_then(|d| p + d)
+            .and_then(|p| field[p].as_element_mut())
+            .map(|e| e.partner = None)
+            .unwrap_or_default()
+        );
+    retval
+}
+
+
+pub struct Eliminated {
+    rows: HashSet<(util::Colour, Vec<util::Position>)>,
+}
+
+impl Eliminated {
+    /// Retrieve the colour and position of eliminated rows
+    ///
+    pub fn rows_of_four(&self) -> impl Iterator<Item = &(util::Colour, Vec<util::Position>)> {
+        self.rows.iter()
+    }
+
+    /// Retrieve the number of rows eliminated
+    ///
+    pub fn row_count(&self) -> usize {
+        self.rows.len()
+    }
+
+    /// Retrieve the positions of eliminated elements
+    ///
+    pub fn positions(&self) -> impl Iterator<Item = util::Position> + '_ {
+        self.rows_of_four().flat_map(|(_, p)| p.iter()).cloned()
     }
 }
 

@@ -137,13 +137,10 @@ impl util::PotentiallyColoured for TileContents {
 /// position will be considered. If such a configuration is found, it is
 /// returned alongside the colour of that row.
 ///
-/// The list of positions is not sorted in any particular order. Furthermore,
-/// its order may depend on the hint.
-///
 pub fn row_of_four(
     field: &StaticField,
     hint: util::Position
-) -> Option<(util::Colour, Vec<util::Position>)> {
+) -> Option<(util::Colour, RowOfFour)> {
     use util::Direction as Dir;
     use util::PotentiallyColoured;
 
@@ -152,26 +149,57 @@ pub fn row_of_four(
     field[hint]
         .colour()
         .and_then(|col| {
-            let positions_towards = |dir| std::iter::successors(hint + dir, move |p| *p + dir)
-                .take_while(|p| field[*p].colour() == Some(col));
+            let positions_towards = |dir| std::iter::successors(Some(hint), move |p| *p + dir)
+                .take_while(|p| field[*p].colour() == Some(col))
+                .last()
+                .expect("Position of tile with hint's colour");
 
-            let positions: Vec<_> = std::iter::once(hint)
-                .chain(positions_towards(Dir::Left))
-                .chain(positions_towards(Dir::Right))
-                .collect();
-            if positions.len() >= ROW_OF_FOUR_LEN {
-                return Some((col, positions))
+            let columns = util::RangeInclusive::new(
+                positions_towards(Dir::Left).1,
+                positions_towards(Dir::Right).1
+            );
+            if columns.len() >= ROW_OF_FOUR_LEN {
+                return Some((col, RowOfFour::Horizontal(hint.0, columns)))
             }
 
-            let positions: Vec<_> = std::iter::once(hint)
-                .chain(positions_towards(Dir::Above))
-                .chain(positions_towards(Dir::Below))
-                .collect();
-            if positions.len() >= ROW_OF_FOUR_LEN {
-                Some((col, positions))
+            let rows = util::RangeInclusive::new(
+                positions_towards(Dir::Above).0,
+                positions_towards(Dir::Below).0
+            );
+            if rows.len() >= ROW_OF_FOUR_LEN {
+                Some((col, RowOfFour::Vertical(rows, hint.1)))
             } else {
                 None
             }
         })
+}
+
+
+/// Representation of a vertical or horizontal configuration of elements
+///
+/// This type is intended as an output type for the `row_of_four` function.
+///
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+pub enum RowOfFour {
+    Horizontal(util::RowIndex, util::RangeInclusive<util::ColumnIndex>),
+    Vertical(util::RangeInclusive<util::RowIndex>, util::ColumnIndex),
+}
+
+impl Iterator for RowOfFour {
+    type Item = util::Position;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Self::Horizontal(row, columns)  => columns.next().map(|c| (*row, c)),
+            Self::Vertical(rows, column)    => rows.next().map(|r| (r, *column)),
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        match self {
+            Self::Horizontal(_, range)  => range.size_hint(),
+            Self::Vertical(range, _)    => range.size_hint(),
+        }
+    }
 }
 

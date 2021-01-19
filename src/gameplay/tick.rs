@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use crate::util;
 
 use super::moving_field::MovingField;
-use super::static_field::StaticField;
+use super::static_field::{StaticField, RowOfFour};
 
 
 /// Settle elements
@@ -94,37 +94,30 @@ pub fn eliminate_elements(
     field: &mut StaticField,
     settled: Settled
 ) -> Eliminated {
-    use super::static_field;
+    use super::static_field::row_of_four;
 
-    let rows: HashSet<_> = settled
-        .into_iter()
-        .filter_map(|p| static_field::row_of_four(field, p))
-        .map(|(col, mut pos)| { pos.sort(); (col, pos)})
-        .collect();
-    let retval = Eliminated {rows};
-    retval
-        .positions()
-        .for_each(|p| field[p]
-            .take()
-            .into_element()
-            .and_then(|e| e.partner)
-            .and_then(|d| p + d)
-            .and_then(|p| field[p].as_element_mut())
-            .map(|e| e.partner = None)
-            .unwrap_or_default()
-        );
-    retval
+    let rows = Eliminated {rows: settled.into_iter().filter_map(|p| row_of_four(field, p)).collect()};
+    rows.positions().for_each(|p| field[p]
+        .take()
+        .into_element()
+        .and_then(|e| e.partner)
+        .and_then(|d| p + d)
+        .and_then(|p| field[p].as_element_mut())
+        .map(|e| e.partner = None)
+        .unwrap_or_default()
+    );
+    rows
 }
 
 
 pub struct Eliminated {
-    rows: HashSet<(util::Colour, Vec<util::Position>)>,
+    rows: HashSet<(util::Colour, RowOfFour)>,
 }
 
 impl Eliminated {
     /// Retrieve the colour and position of eliminated rows
     ///
-    pub fn rows_of_four(&self) -> impl Iterator<Item = &(util::Colour, Vec<util::Position>)> {
+    pub fn rows_of_four(&self) -> impl Iterator<Item = &(util::Colour, RowOfFour)> {
         self.rows.iter()
     }
 
@@ -137,7 +130,7 @@ impl Eliminated {
     /// Retrieve the positions of eliminated elements
     ///
     pub fn positions(&self) -> impl Iterator<Item = util::Position> + '_ {
-        self.rows_of_four().flat_map(|(_, p)| p.iter()).cloned()
+        self.rows_of_four().flat_map(|(_, p)| p.clone())
     }
 }
 

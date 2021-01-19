@@ -138,3 +138,47 @@ impl Eliminated {
     }
 }
 
+
+/// Unsettle elements
+///
+/// This function unsettled all elements which are no longer supported by
+/// another capsule element or virus. Unsettled elements are determined through
+/// the list of eliminated elements as well as unsettling of elements during
+/// processing.
+///
+/// This function returns the index of the lowest row in which an element was
+/// unsettled. If no element was unsettled, it will return `None`.
+///
+pub fn unsettle_elements(
+    moving_field: &mut MovingField,
+    static_field: &mut StaticField,
+    eliminated: &Eliminated
+) -> Option<util::RowIndex> {
+    use util::Direction as Dir;
+
+    let mut lowest_unsettled = None;
+
+    let mut worklist: Vec<_> = eliminated.positions().filter_map(|p| p + Dir::Above).collect();
+    while let Some(pos) = worklist.pop() {
+        if let Some(element) = static_field[pos].as_element() {
+            let partner = element.partner.and_then(|d| pos + d);
+            let partner_supported = partner
+                .and_then(|p| p + Dir::Below)
+                .filter(|p| *p != pos)
+                .map(|p| static_field[p].is_occupied())
+                .unwrap_or(false);
+            if !partner_supported {
+                let to_move = std::iter::once(pos)
+                    .chain(partner)
+                    .inspect(|p| moving_field[*p] = static_field[*p].take().into_element())
+                    .inspect(|p| if lowest_unsettled.map(|r| r > p.0).unwrap_or(true) {
+                        lowest_unsettled = Some(p.0)
+                    });
+                worklist.extend(to_move.filter_map(|p| p + Dir::Above));
+            }
+        }
+    }
+
+    lowest_unsettled
+}
+

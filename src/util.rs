@@ -196,6 +196,11 @@ impl<I> std::iter::FusedIterator for RangeInclusive<I>
 {
 }
 
+impl<I> ExactSizeIterator for RangeInclusive<I>
+    where I: Step + PartialOrd + Clone
+{
+}
+
 impl<I> DoubleEndedIterator for RangeInclusive<I>
     where I: Step + PartialOrd + Clone
 {
@@ -223,6 +228,16 @@ impl<I> Iterator for RangeInclusive<I>
             }
             res
         })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self
+            .data
+            .as_ref()
+            .and_then(|(first, last)| Step::steps_between(first, last))
+            .map(|len| len.saturating_add(1)) // Should never saturate
+            .unwrap_or(0);
+        (len, Some(len))
     }
 }
 

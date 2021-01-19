@@ -110,7 +110,10 @@ pub fn eliminate_elements(
 }
 
 
+/// Eliminated rows
+///
 pub struct Eliminated {
+    // We use a hashset in order to prevent registering the same row twice.
     rows: HashSet<(util::Colour, RowOfFour)>,
 }
 

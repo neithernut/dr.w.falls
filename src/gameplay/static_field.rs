@@ -203,3 +203,12 @@ impl Iterator for RowOfFour {
     }
 }
 
+
+/// Check whether the player with the given field is defeated
+///
+/// This function returns true if any tile in the top row is occupied.
+///
+pub fn defeated(field: &StaticField) -> bool {
+    util::COLUMNS.map(|c| (util::RowIndex::TOP_ROW, c)).any(|p| field[p].is_occupied())
+}
+

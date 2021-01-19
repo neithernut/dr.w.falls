@@ -128,6 +128,10 @@ pub const COLUMNS: RangeInclusive<ColumnIndex> = RangeInclusive::new(
 /// Project-specific partial predefinition of `std::iter::Step`
 ///
 pub trait Step: Sized {
+    /// Number of successor steps from start to end
+    ///
+    fn steps_between(start: &Self, end: &Self) -> Option<usize>;
+
     /// Checked integer addition
     ///
     /// This function returns an index for the `count`'th next row or column. If
@@ -146,8 +150,12 @@ pub trait Step: Sized {
 }
 
 impl<I> Step for I
-    where I: TryFrom<usize> + Into<usize>
+    where I: TryFrom<usize> + Into<usize> + Clone
 {
+    fn steps_between(start: &Self, end: &Self) -> Option<usize> {
+        end.clone().into().checked_sub(start.clone().into())
+    }
+
     fn forward_checked(self, count: usize) -> Option<Self> {
         self.into().checked_add(count).and_then(|i| i.try_into().ok())
     }

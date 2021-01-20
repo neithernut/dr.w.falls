@@ -1,6 +1,7 @@
 //! Types representing items occupying individual tiles
 
-use crate::util::{Colour, Direction};
+use crate::util;
+use util::{Colour, Direction};
 
 
 /// Representation of a virus
@@ -52,6 +53,12 @@ impl CapsuleElement {
     ///
     pub fn colour(&self) -> Colour {
         self.colour
+    }
+}
+
+impl util::PotentiallyColoured for Option<CapsuleElement> {
+    fn colour(&self) -> Option<Colour> {
+        self.as_ref().map(|e| e.colour())
     }
 }
 

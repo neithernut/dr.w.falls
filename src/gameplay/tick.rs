@@ -4,8 +4,9 @@ use std::collections::HashSet;
 
 use crate::util;
 
+use super::items::RowOfFour;
 use super::moving_field::MovingField;
-use super::static_field::{StaticField, RowOfFour};
+use super::static_field::StaticField;
 
 
 /// Settle elements
@@ -94,7 +95,7 @@ pub fn eliminate_elements(
     field: &mut StaticField,
     settled: Settled
 ) -> Eliminated {
-    use super::static_field::row_of_four;
+    use super::items::row_of_four;
 
     let rows = Eliminated {rows: settled.into_iter().filter_map(|p| row_of_four(field, p)).collect()};
     rows.positions().for_each(|p| field[p]

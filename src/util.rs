@@ -42,6 +42,30 @@ pub enum Direction {
     Below,
 }
 
+impl Direction {
+    /// Rotate the direction clockwise
+    ///
+    pub const fn rotated_cw(self) -> Self {
+        match self {
+            Self::Left  => Self::Above,
+            Self::Above => Self::Right,
+            Self::Right => Self::Below,
+            Self::Below => Self::Left,
+        }
+    }
+
+    /// Rotate the direction counter clockwise
+    ///
+    pub const fn rotated_ccw(self) -> Self {
+        match self {
+            Self::Left  => Self::Below,
+            Self::Below => Self::Right,
+            Self::Right => Self::Above,
+            Self::Above => Self::Left,
+        }
+    }
+}
+
 
 /// Row index type
 ///

@@ -62,3 +62,12 @@ impl util::PotentiallyColoured for Option<CapsuleElement> {
     }
 }
 
+
+/// Representation of a field update
+///
+/// A tuple of this kind may be used to convey updates in the play field. If it
+/// contains a `Colour`, it represents a capsule elements emerging at the given
+/// position. A `None` will represent the tile to become free.
+///
+pub type Update = (util::Position, Option<Colour>);
+

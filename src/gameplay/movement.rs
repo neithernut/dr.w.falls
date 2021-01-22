@@ -47,7 +47,8 @@ impl ControlledCapsule {
     /// Apply a movement to the capsule
     ///
     /// The function returns a list of `Update`s which have to be applied in
-    /// order.
+    /// order. If the movement could not be performed (e.g. because a target
+    /// tile is occupied), the function returns `None`.
     ///
     pub fn apply_move(
         &mut self,
@@ -66,7 +67,8 @@ impl ControlledCapsule {
     /// Move the capsule to the left
     ///
     /// The function returns a list of `Update`s which have to be applied in
-    /// order.
+    /// order. If the movement could not be performed (e.g. because a target
+    /// tile is occupied), the function returns `None`.
     ///
     pub fn move_left(
         &mut self,
@@ -86,7 +88,8 @@ impl ControlledCapsule {
     /// Move the capsule to the right
     ///
     /// The function returns a list of `Update`s which have to be applied in
-    /// order.
+    /// order. If the movement could not be performed (e.g. because a target
+    /// tile is occupied), the function returns `None`.
     ///
     pub fn move_right(
         &mut self,
@@ -106,7 +109,8 @@ impl ControlledCapsule {
     /// Rotate the capsule clockwise
     ///
     /// The function returns a list of `Update`s which have to be applied in
-    /// order.
+    /// order. If the movement could not be performed (e.g. because a target
+    /// tile is occupied), the function returns `None`.
     ///
     pub fn rotate_cw(
         &mut self,
@@ -131,7 +135,8 @@ impl ControlledCapsule {
     /// Rotate the capsule counterclockwise
     ///
     /// The function returns a list of `Update`s which have to be applied in
-    /// order.
+    /// order. If the movement could not be performed (e.g. because a target
+    /// tile is occupied), the function returns `None`.
     ///
     pub fn rotate_ccw(
         &mut self,
@@ -161,7 +166,8 @@ impl ControlledCapsule {
     /// are subjected to the transformation given via `transform_element`.
     ///
     /// The function returns a list of `Update`s which have to be applied in
-    /// order.
+    /// order. If the movement could not be performed (e.g. because a target
+    /// tile is occupied), the function returns `None`.
     ///
     fn move_elements(
         &mut self,

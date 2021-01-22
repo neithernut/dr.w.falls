@@ -13,7 +13,7 @@ use super::static_field::StaticField;
 /// elements occupy tiles in the field of moving elements, this type provides
 /// means to control the capsule's movements.
 ///
-struct ControlledCapsule{
+pub struct ControlledCapsule {
     row: MovingRowIndex,
     column: util::ColumnIndex,
 }

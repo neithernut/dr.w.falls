@@ -27,6 +27,22 @@ impl std::ops::Index<util::Position> for StaticField {
     }
 }
 
+/// Initialize a field from an iterator
+///
+/// For each item in the source iterator, a virus with the given colour will be
+/// placed in the tile on the given position.
+///
+impl std::iter::FromIterator<(util::Position, util::Colour)> for StaticField {
+    fn from_iter<T>(iter: T) -> Self
+        where T: IntoIterator<Item = (util::Position, util::Colour)>
+    {
+        iter.into_iter().fold(Default::default(), |mut field, (pos, colour)| {
+            field[pos] = TileContents::Virus(Virus::new(colour));
+            field
+        })
+    }
+}
+
 
 /// Representation of a single tile's contents
 ///

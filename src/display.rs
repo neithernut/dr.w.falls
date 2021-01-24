@@ -1,5 +1,53 @@
 //! Display rendering utilities
 
+use tokio_util::codec;
+
+
+/// Encoder for sequences of `DrawCommand`s
+///
+/// This encoder will encode `DrawCommand`s as ANSI escape sequenes. Each
+/// `DrawCommand` sequence will be enclosed in sequences for hiding the
+/// cursor during issuing those draw commands. In addition, after each
+/// sequence, the cursor will be moved to a designated resting position
+/// and the default formatting will be restored.
+///
+struct ANSIEncoder {
+    resting_row: u16,
+    resting_col: u16,
+}
+
+impl ANSIEncoder {
+    /// Create a new encoder
+    ///
+    /// This function creates a new encoder with the resting position provided
+    /// via `resting_row` and `resting_col`.
+    ///
+    pub fn new(resting_row: u16, resting_col: u16) -> Self {
+        Self {resting_row, resting_col}
+    }
+}
+
+impl<'c, I> codec::Encoder<I> for ANSIEncoder
+    where I: IntoIterator<Item = DrawCommand<'c>>
+{
+    type Error = std::io::Error;
+
+    fn encode(
+        &mut self,
+        items: I,
+        dst: &mut bytes::BytesMut
+    ) -> Result<(), Self::Error> {
+        use bytes::BufMut;
+
+        dst.put_slice(b"\x1b[?25l");
+        items.into_iter().for_each(|i| i.write_as_ansi(dst));
+        DrawCommand::Format(SGR::Reset).write_as_ansi(dst);
+        DrawCommand::SetPos(self.resting_row, self.resting_col).write_as_ansi(dst);
+        dst.put_slice(b"\x1b[?25h");
+        Ok(())
+    }
+}
+
 
 /// Representation of a draw command
 ///

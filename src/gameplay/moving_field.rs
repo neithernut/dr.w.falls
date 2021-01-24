@@ -2,7 +2,7 @@
 
 use crate::util;
 
-use super::items::CapsuleElement;
+use super::items;
 use super::row::Row;
 
 
@@ -10,15 +10,31 @@ use super::row::Row;
 ///
 #[derive(Default)]
 pub struct MovingField {
-    data: [Row<Option<CapsuleElement>>; util::FIELD_HEIGHT as usize],
+    data: [Row<Option<items::CapsuleElement>>; util::FIELD_HEIGHT as usize],
     offset: usize,
 }
 
 impl MovingField {
     /// Move all elements down one position
     ///
-    pub fn tick(&mut self) {
-        self.offset = self.offset.checked_sub(1).unwrap_or(self.data.len() - 1)
+    /// The function returns a list of `Update`s which have to be applied in
+    /// order.
+    ///
+    pub fn tick(&mut self) -> impl Iterator<Item = items::Update> + '_ {
+        use util::PotentiallyColoured;
+
+        self.offset = self.offset.checked_sub(1).unwrap_or(self.data.len() - 1);
+
+        util::ROWS
+            .rev()
+            .flat_map(util::complete_row)
+            .filter_map(move |pos| if let Some(c) = self[pos].colour() {
+                Some((pos, Some(c)))
+            } else if (pos + util::Direction::Below).map(|p| self[p].is_some()).unwrap_or(false) {
+                Some((pos, None))
+            } else {
+                None
+            })
     }
 
     /// Crate a MovingRowIndex for a given mapped row
@@ -51,7 +67,7 @@ impl std::ops::IndexMut<util::Position> for MovingField {
 }
 
 impl std::ops::Index<util::Position> for MovingField {
-    type Output = Option<CapsuleElement>;
+    type Output = Option<items::CapsuleElement>;
 
     fn index(&self, index: util::Position) -> &Self::Output {
         &self.data[self.transform(index.0)][index.1]

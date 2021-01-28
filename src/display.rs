@@ -57,7 +57,8 @@ enum DrawCommand<'s> {
     ClearScreen,
     /// Set the cursor's position
     ///
-    /// The first component denotes the row, the second one the column.
+    /// The first component denotes the row, the second one the column. Both are
+    /// zero-based, meaning that `0` refers to the first row or column.
     ///
     SetPos(u16, u16),
     /// Select Graphic Rendition
@@ -72,7 +73,7 @@ impl DrawCommand<'_> {
     fn write_as_ansi(&self, out: &mut impl bytes::BufMut) {
         match self {
             DrawCommand::ClearScreen    => out.put_slice(b"\x1b[2J"),
-            DrawCommand::SetPos(r, c)   => out.put_slice(format!("\x1b[{};{}H", r, c).as_bytes()),
+            DrawCommand::SetPos(r, c)   => out.put_slice(format!("\x1b[{};{}H", r + 1, c + 1).as_bytes()),
             DrawCommand::Format(param)  => out.put_slice(format!("\x1b[{}m", param.code()).as_bytes()),
             DrawCommand::Text(s)        => out.put_slice(s.as_bytes()),
         }

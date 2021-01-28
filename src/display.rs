@@ -1,8 +1,58 @@
 //! Display rendering utilities
 
+use std::future::Future;
+
+use tokio::io;
 use tokio_util::codec;
 
 use crate::util;
+
+
+/// Display handle
+///
+/// An instance of this type wraps a writer conntected to the player's ANSII
+/// terminal. It is used for displaying various game states.
+///
+pub struct Display<W> {
+    writer: codec::FramedWrite<W, ANSIEncoder>,
+    width: u16,
+    height: u16,
+}
+
+impl<W> Display<W>
+    where W: io::AsyncWrite + Unpin
+{
+    /// Create a new Display
+    ///
+    /// Create a new display with the specified `width` and `height` from the
+    /// given `writer`
+    ///
+    pub fn new(
+        writer: W,
+        width: u16,
+        height: u16,
+    ) -> Self {
+        Self {
+            writer: codec::FramedWrite::new(writer, ANSIEncoder::new(height - 1, 0)),
+            width,
+            height,
+        }
+    }
+
+    /// Send a sequence of DrawCommands
+    ///
+    /// The function returns a Future which will complete once all the commands
+    /// are sent.
+    ///
+    fn send<'a>(
+        &'a mut self,
+        cmds: impl IntoIterator<Item = DrawCommand<'a>> + 'a
+    ) -> impl Future<Output = io::Result<()>> + 'a {
+        use futures::sink::SinkExt;
+
+        self.writer.send(cmds)
+    }
+}
 
 
 /// Encoder for sequences of `DrawCommand`s

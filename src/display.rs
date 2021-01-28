@@ -2,6 +2,8 @@
 
 use tokio_util::codec;
 
+use crate::util;
+
 
 /// Encoder for sequences of `DrawCommand`s
 ///
@@ -176,6 +178,28 @@ impl Colour {
     }
 }
 
+impl From<util::Colour> for Colour {
+    fn from(colour: util::Colour) -> Self {
+        match colour {
+            util::Colour::Red    => Self::Red,
+            util::Colour::Yellow => Self::Yellow,
+            util::Colour::Blue   => Self::Blue,
+        }
+    }
+}
+
+impl From<util::Colour> for (Colour, Brightness) {
+    fn from(colour: util::Colour) -> Self {
+        (colour.into(), Default::default())
+    }
+}
+
+impl From<util::Colour> for Option<(Colour, Brightness)> {
+    fn from(colour: util::Colour) -> Self {
+        Some(colour.into())
+    }
+}
+
 
 /// Representation of brightness
 ///
@@ -193,6 +217,12 @@ impl Brightness {
             Self::Dark  =>  0,
             Self::Light => 60,
         }
+    }
+}
+
+impl Default for Brightness {
+    fn default() -> Self {
+        Self::Dark
     }
 }
 

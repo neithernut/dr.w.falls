@@ -39,6 +39,11 @@ impl<W> Display<W>
         }
     }
 
+    /// Retrieve the area
+    pub fn area(&self) -> Area {
+        Area::new(self.width, self.height - 2)
+    }
+
     /// Send a sequence of DrawCommands
     ///
     /// The function returns a Future which will complete once all the commands
@@ -52,6 +57,146 @@ impl<W> Display<W>
 
         self.writer.send(cmds)
     }
+}
+
+
+/// Representation of an area on the display
+///
+#[derive(Clone)]
+struct Area {
+    base_row: u16,
+    base_col: u16,
+    width: u16,
+    height: u16,
+}
+
+impl Area {
+    /// Create a new area
+    ///
+    fn new(width: u16, height: u16) -> Self {
+        Self {base_row: 0, base_col: 0, width, height}
+    }
+
+    /// Split the area vertically at the given column
+    ///
+    /// The function will return the left and right sub areas. The right area
+    /// will include the column at which the original one was split.
+    ///
+    pub fn split_vertically(mut self, col: u16) -> (Self, Self) {
+        let mut right = self.clone();
+        self.width = col;
+        right.base_col += col;
+        right.width -= col;
+        (self, right)
+    }
+
+    /// Split the area horizontally at the given row
+    ///
+    /// The function will return the top and bottom sub areas. The bottom area
+    /// will include the row at which the original one was split.
+    ///
+    pub fn split_horizontally(mut self, row: u16) -> (Self, Self) {
+        let mut bottom = self.clone();
+        self.height = row;
+        bottom.base_row += row;
+        bottom.height -= row;
+        (self, bottom)
+    }
+
+    /// Add padding at the top
+    ///
+    /// This function removes rows from the top of the area.
+    ///
+    pub fn top_padded(mut self, padding: u16) -> Self {
+        self.base_row += padding;
+        self.height -= padding;
+        self
+    }
+
+    /// Add padding at the bottom
+    ///
+    /// This function removes rows from the bottom of the area.
+    ///
+    pub fn bottom_padded(mut self, padding: u16) -> Self {
+        self.height -= padding;
+        self
+    }
+
+    /// Add padding at the left
+    ///
+    /// This function removes rows from the left of the area.
+    ///
+    pub fn left_padded(mut self, padding: u16) -> Self {
+        self.base_col += padding;
+        self.width -= padding;
+        self
+    }
+
+    /// Add padding at the right
+    ///
+    /// This function removes rows from the right of the area.
+    ///
+    pub fn right_padded(mut self, padding: u16) -> Self {
+        self.width -= padding;
+        self
+    }
+
+    /// Place an Element at the top left of the area
+    ///
+    /// The resulting `Element` will be returned.
+    ///
+    pub fn topleft_in<E: Element>(self) -> E {
+        E::new(self.base_row, self.base_col)
+    }
+
+    /// Place an Element at the left of the area
+    ///
+    /// The `Element` will be centered vertically. Both the element and the
+    /// remaining area to the right will be returned.
+    ///
+    pub fn left_in<E: Element>(self) -> (E, Self) {
+        let (l, r) = self.split_vertically(E::width());
+        (E::new(l.base_row + (l.height - E::height()) / 2, l.base_col), r)
+    }
+
+    /// Place an Element at the top of the area
+    ///
+    /// The `Element` will be centered horizontally. Both the element and the
+    /// remaining area below will be returned.
+    ///
+    pub fn top_in<E: Element>(self) -> (E, Self) {
+        let (t, b) = self.split_horizontally(E::height());
+        (E::new(t.base_row, t.base_col + (t.width - E::width()) / 2), b)
+    }
+
+    /// Retrieve the area's width
+    ///
+    pub fn width(&self) -> u16 {
+        self.width
+    }
+
+    /// Retrieve the area's height
+    ///
+    pub fn height(&self) -> u16 {
+        self.height
+    }
+}
+
+
+/// Display element
+///
+trait Element {
+    /// Create a new display element at the given position
+    ///
+    fn new(row: u16, col: u16) -> Self;
+
+    /// Retrieve the width of a display element
+    ///
+    fn width() -> u16;
+
+    /// Retrieve the height of a display element
+    ///
+    fn height() -> u16;
 }
 
 

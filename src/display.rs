@@ -5,6 +5,7 @@ use std::future::Future;
 use tokio::io;
 use tokio_util::codec;
 
+use crate::gameplay::Update;
 use crate::util;
 
 
@@ -56,6 +57,164 @@ impl<W> Display<W>
         use futures::sink::SinkExt;
 
         self.writer.send(cmds)
+    }
+}
+
+
+/// Representation of a play field
+///
+pub struct PlayField {
+    base_row: u16,
+    base_col: u16,
+}
+
+impl PlayField {
+    /// Draw the outlines of the field
+    ///
+    pub fn draw_outlines<'a>(
+        &self,
+        display: &'a mut Display<impl io::AsyncWrite + Unpin>,
+    ) -> impl Future<Output = std::io::Result<()>> + 'a {
+        use std::iter::once;
+
+        use DrawCommand as DC;
+
+        let inlet = "/    \\";
+        let inlet_col = util::FIELD_WIDTH as u16 - (inlet.len() as u16 / 2);
+
+        let left_wall = self.base_col;
+        let right_wall = self.base_col + 1 + 2*(util::FIELD_WIDTH as u16);
+
+        let element_base_row = self.base_row + 2;
+
+        let cmds = std::iter::empty()
+            // Upper part of inlet
+            .chain(once(DC::SetPos(self.base_row, self.base_col + 1 + inlet_col)))
+            .chain(once(DC::Text("\\    /")))
+            // Bottle's ceiling with inlet
+            .chain(once(DC::SetPos(self.base_row + 1, self.base_col + 1)))
+            .chain((0..inlet_col).map(|_| DC::Text("_")))
+            .chain(once(DC::Text(inlet)))
+            .chain(((inlet_col + inlet.len() as u16)..(2 * util::FIELD_WIDTH as u16)).map(|_| DC::Text("_")))
+            // Left and right walls
+            .chain(once(DC::SetPos(element_base_row, self.base_col)))
+            .chain(once(DC::Text("/")))
+            .chain(once(DC::SetPos(element_base_row, right_wall)))
+            .chain(once(DC::Text("\\")))
+            .chain((1..util::FIELD_HEIGHT.into())
+                .map(move |row| row + element_base_row)
+                .flat_map(move |row| once(DC::SetPos(row, left_wall))
+                    .chain(once(DC::Text("|")))
+                    .chain(once(DC::SetPos(row, right_wall)))
+                    .chain(once(DC::Text("|")))
+                )
+            )
+            // Bottle floor
+            .chain(once(DC::SetPos(self.base_row + 2 + util::FIELD_HEIGHT as u16, self.base_col)))
+            .chain(once(DC::Text("\\")))
+            .chain((0..util::FIELD_WIDTH).map(|_| DC::Text("__")))
+            .chain(once(DC::Text("/")));
+        display.send(cmds)
+    }
+
+    /// Place viruses in the field
+    ///
+    /// For each of the items in `viruses`, one virus will be placed in the
+    /// field, at the given position and with the given colour.
+    ///
+    pub fn place_viruses<'a>(
+        &self,
+        display: &'a mut Display<impl io::AsyncWrite + Unpin>,
+        viruses: impl IntoIterator<Item=(util::Position, util::Colour)> + 'a,
+    ) -> impl Future<Output = std::io::Result<()>> + 'a {
+        use std::iter::once;
+
+        let trans = self.transformer();
+        let viruses = viruses
+            .into_iter()
+            .flat_map(move |(pos, col)| once(trans(pos))
+                .chain(once(DrawCommand::Format(SGR::FGColour(col.into()))))
+                .chain(once(DrawCommand::Text("><")))
+            );
+        display.send(viruses)
+    }
+
+    /// Place the next capsule elements in the appropriate position
+    ///
+    pub fn place_next_elements<'a>(
+        &self,
+        display: &'a mut Display<impl io::AsyncWrite + Unpin>,
+        left_element: util::Colour,
+        right_element: util::Colour,
+    ) -> impl Future<Output = std::io::Result<()>> + 'a {
+        let row = self.base_row + 1;
+        let col = self.base_col + 1 + util::FIELD_WIDTH as u16 - 2;
+
+        let cmds = vec![
+            DrawCommand::SetPos(row, col),
+            DrawCommand::Format(SGR::FGColour(left_element.into())),
+            DrawCommand::Text("()"),
+            DrawCommand::Format(SGR::FGColour(right_element.into())),
+            DrawCommand::Text("()"),
+        ];
+        display.send(cmds)
+    }
+
+    /// Process field updates
+    ///
+    /// Each item in `updates` will be processed in order: if the update carries
+    /// a colour, a capsule element of the given colour will be placed at the
+    /// given position. Otherwise, any element at the given position will be
+    /// erased.
+    ///
+    pub fn update<'a>(
+        &self,
+        display: &'a mut Display<impl io::AsyncWrite + Unpin>,
+        updates: impl IntoIterator<Item=Update> + 'a,
+    ) -> impl Future<Output = std::io::Result<()>> + 'a {
+        use std::iter::once;
+
+        let trans = self.transformer();
+        let updates = updates
+            .into_iter()
+            .flat_map(move |(pos, col)| {
+                let sym = if col.is_some() {
+                    "()"
+                } else {
+                    "  "
+                };
+                once(trans(pos))
+                    .chain(col.map(|c| DrawCommand::Format(SGR::FGColour(c.into()))))
+                    .chain(once(DrawCommand::Text(sym)))
+            });
+
+        display.send(updates)
+    }
+
+    /// Return a function transforming field positions to display positions
+    ///
+    fn transformer<'t>(&self) -> impl Fn(util::Position) -> DrawCommand<'static> {
+        let base_row = self.base_row + 2;
+        let base_col = self.base_col + 1;
+
+        move |(row, col)| DrawCommand::SetPos(
+            base_row + usize::from(row) as u16,
+            base_col + 2 * usize::from(col) as u16
+        )
+    }
+}
+
+impl Element for PlayField {
+    fn new(row: u16, col: u16) -> Self {
+        Self {base_row: row, base_col: col}
+    }
+
+    fn width() -> u16 {
+        2 * util::FIELD_WIDTH as u16 + 2
+    }
+
+    fn height() -> u16 {
+        util::FIELD_HEIGHT as u16 + 3
     }
 }
 

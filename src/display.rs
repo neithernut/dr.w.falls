@@ -90,30 +90,30 @@ impl PlayField {
         let cmds = std::iter::empty()
             // Upper part of inlet
             .chain(once(DC::SetPos(self.base_row, self.base_col + 1 + inlet_col)))
-            .chain(once(DC::Text("\\    /")))
+            .chain(once("\\    /".into()))
             // Bottle's ceiling with inlet
             .chain(once(DC::SetPos(self.base_row + 1, self.base_col + 1)))
-            .chain((0..inlet_col).map(|_| DC::Text("_")))
-            .chain(once(DC::Text(inlet)))
-            .chain(((inlet_col + inlet.len() as u16)..(2 * util::FIELD_WIDTH as u16)).map(|_| DC::Text("_")))
+            .chain((0..inlet_col).map(|_| "_".into()))
+            .chain(once(inlet.into()))
+            .chain(((inlet_col + inlet.len() as u16)..(2 * util::FIELD_WIDTH as u16)).map(|_| "_".into()))
             // Left and right walls
             .chain(once(DC::SetPos(element_base_row, self.base_col)))
-            .chain(once(DC::Text("/")))
+            .chain(once("/".into()))
             .chain(once(DC::SetPos(element_base_row, right_wall)))
-            .chain(once(DC::Text("\\")))
+            .chain(once("\\".into()))
             .chain((1..util::FIELD_HEIGHT.into())
                 .map(move |row| row + element_base_row)
                 .flat_map(move |row| once(DC::SetPos(row, left_wall))
-                    .chain(once(DC::Text("|")))
+                    .chain(once("|".into()))
                     .chain(once(DC::SetPos(row, right_wall)))
-                    .chain(once(DC::Text("|")))
+                    .chain(once("|".into()))
                 )
             )
             // Bottle floor
             .chain(once(DC::SetPos(self.base_row + 2 + util::FIELD_HEIGHT as u16, self.base_col)))
-            .chain(once(DC::Text("\\")))
-            .chain((0..util::FIELD_WIDTH).map(|_| DC::Text("__")))
-            .chain(once(DC::Text("/")));
+            .chain(once("\\".into()))
+            .chain((0..util::FIELD_WIDTH).map(|_| "__".into()))
+            .chain(once("/".into()));
         display.send(cmds)
     }
 
@@ -134,7 +134,7 @@ impl PlayField {
             .into_iter()
             .flat_map(move |(pos, col)| once(trans(pos))
                 .chain(once(DrawCommand::Format(SGR::FGColour(col.into()))))
-                .chain(once(DrawCommand::Text("><")))
+                .chain(once("><".into()))
             );
         display.send(viruses)
     }
@@ -153,9 +153,9 @@ impl PlayField {
         let cmds = vec![
             DrawCommand::SetPos(row, col),
             DrawCommand::Format(SGR::FGColour(left_element.into())),
-            DrawCommand::Text("()"),
+            "()".into(),
             DrawCommand::Format(SGR::FGColour(right_element.into())),
-            DrawCommand::Text("()"),
+            "()".into(),
         ];
         display.send(cmds)
     }
@@ -185,7 +185,7 @@ impl PlayField {
                 };
                 once(trans(pos))
                     .chain(col.map(|c| DrawCommand::Format(SGR::FGColour(c.into()))))
-                    .chain(once(DrawCommand::Text(sym)))
+                    .chain(once(sym.into()))
             });
 
         display.send(updates)
@@ -433,6 +433,12 @@ impl DrawCommand<'_> {
             DrawCommand::Format(param)  => out.put_slice(format!("\x1b[{}m", param.code()).as_bytes()),
             DrawCommand::Text(s)        => out.put_slice(s.as_bytes()),
         }
+    }
+}
+
+impl<'s> From<&'s str> for DrawCommand<'s> {
+    fn from(text: &'s str) -> Self {
+        Self::Text(text)
     }
 }
 

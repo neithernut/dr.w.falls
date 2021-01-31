@@ -407,7 +407,7 @@ impl<'c, I> codec::Encoder<I> for ANSIEncoder
 
 /// Representation of a draw command
 ///
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 enum DrawCommand<'s> {
     /// Clear the entire screen
     ClearScreen,
@@ -420,7 +420,7 @@ enum DrawCommand<'s> {
     /// Select Graphic Rendition
     Format(SGR),
     /// Put text on the screen at the current cursor position
-    Text(&'s str),
+    Text(std::borrow::Cow<'s, str>),
 }
 
 impl DrawCommand<'_> {
@@ -438,7 +438,13 @@ impl DrawCommand<'_> {
 
 impl<'s> From<&'s str> for DrawCommand<'s> {
     fn from(text: &'s str) -> Self {
-        Self::Text(text)
+        Self::Text(text.into())
+    }
+}
+
+impl From<String> for DrawCommand<'_> {
+    fn from(text: String) -> Self {
+        Self::Text(text.into())
     }
 }
 

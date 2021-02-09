@@ -1,6 +1,8 @@
 //! Display rendering utilities
 
+use std::fmt;
 use std::future::Future;
+use std::sync::Arc;
 
 use tokio::io;
 use tokio_util::codec;
@@ -216,6 +218,139 @@ impl Element for PlayField {
     fn height() -> u16 {
         util::FIELD_HEIGHT as u16 + 3
     }
+}
+
+
+/// Representation of a score board
+///
+pub struct ScoreBoard<E> {
+    old: Arc<Vec<E>>,
+    base_row: u16,
+    base_col: u16,
+}
+
+impl<E> ScoreBoard<E> {
+    /// Render the headings of a score board
+    ///
+    pub fn render_heading<'a>(
+        &self,
+        display: &'a mut Display<impl io::AsyncWrite + Unpin>,
+        extra_heading: &'a str
+    ) -> impl Future<Output = std::io::Result<()>> + 'a {
+        let cmds = vec![
+            DrawCommand::SetPos(self.base_row, self.base_col + Self::NAME_COL),
+            "Player".into(),
+            DrawCommand::SetPos(self.base_row, self.base_col + Self::SCORE_COL),
+            "Total".into(),
+            DrawCommand::SetPos(self.base_row, self.base_col + Self::EXTRA_COL),
+            extra_heading.into(),
+        ];
+        display.send(cmds)
+    }
+
+    const ENUM_COL: u16 = 4;
+    const NAME_COL: u16 = 4;
+    const SCORE_COL: u16 = 24;
+    const EXTRA_COL: u16 = 32;
+    const WIDTH: u16 = 40;
+    const ROW_LIMIT: u16 = 20;
+}
+
+impl<E> ScoreBoard<E>
+    where E: ScoreBoardEntry + PartialEq
+{
+    /// Update the score board
+    ///
+    pub fn update<'a>(
+        &mut self,
+        display: &'a mut Display<impl io::AsyncWrite + Unpin>,
+        new: Arc<Vec<E>>,
+        highlight: impl AsRef<E::Tag>,
+    ) -> impl Future<Output = std::io::Result<()>> + 'a {
+        use DrawCommand as DC;
+
+        let mut cmds: Vec<_> = new
+            .iter()
+            .zip(self.old.iter().map(Some).chain(std::iter::repeat(None)))
+            .enumerate()
+            .filter(|(_, (n, o))| Some(*n) == *o)
+            .map(|(r, (n, _))| (r as u16 + 1, n))
+            .flat_map(|(r, d)| vec![
+                DC::Format(SGR::Intensity(if d.tag() == *(highlight.as_ref()) {
+                    Some(Intensity::Bold)
+                } else if !d.active() {
+                    Some(Intensity::Faint)
+                }else {
+                    None
+                })),
+                DC::Format(SGR::Strike(!d.active())),
+                DC::SetPos(self.base_row + r, self.base_col + Self::ENUM_COL),
+                format!("{:2}", r).into(),
+                DC::SetPos(self.base_row + r, self.base_col + Self::NAME_COL),
+                format!("{:1$}", d.name(), (Self::SCORE_COL - Self::NAME_COL) as usize).into(),
+                DC::SetPos(self.base_row + r, self.base_col + Self::SCORE_COL),
+                format!("{:>1$}", d.score(), (Self::EXTRA_COL - Self::SCORE_COL) as usize).into(),
+                DC::SetPos(self.base_row + r, self.base_col + Self::EXTRA_COL),
+                format!("{:>1$}", d.extra(), (Self::WIDTH - Self::EXTRA_COL) as usize).into(),
+            ])
+            .collect();
+
+        // Remove any superfluous lines
+        let remainder = (new.len()..=self.old.len())
+            .flat_map(|r| std::iter::once(DC::SetPos(self.base_row + r as u16, self.base_col + Self::ENUM_COL))
+                .chain((0..Self::WIDTH).map(|_| " ".into())));
+        cmds.extend(remainder);
+
+        self.old = new;
+        display.send(cmds)
+    }
+}
+
+impl<E> Element for ScoreBoard<E> {
+    fn new(row: u16, col: u16) -> Self {
+        Self {old: Default::default(), base_row: row, base_col: col}
+    }
+
+    fn width() -> u16 {
+        Self::WIDTH
+    }
+
+    fn height() -> u16 {
+        Self::ROW_LIMIT + 1
+    }
+}
+
+
+/// Scoreboard entry
+///
+pub trait ScoreBoardEntry {
+    /// Player tag type
+    ///
+    type Tag: PartialEq;
+
+    /// Type of the extra column data
+    ///
+    type Extra: fmt::Display;
+
+    /// Name of the player
+    ///
+    fn name(&self) -> &str;
+
+    /// Player tag
+    ///
+    fn tag(&self) -> Self::Tag;
+
+    /// The player's global score
+    ///
+    fn score(&self) -> u32;
+
+    /// Extra data associated with the player
+    ///
+    fn extra(&self) -> Self::Extra;
+
+    /// Indication of the player's status
+    ///
+    fn active(&self) -> bool;
 }
 
 

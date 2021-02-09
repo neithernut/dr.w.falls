@@ -357,7 +357,7 @@ pub trait ScoreBoardEntry {
 /// Representation of an area on the display
 ///
 #[derive(Clone)]
-struct Area {
+pub struct Area {
     base_row: u16,
     base_col: u16,
     width: u16,
@@ -479,7 +479,7 @@ impl Area {
 
 /// Display element
 ///
-trait Element {
+pub trait Element {
     /// Create a new display element at the given position
     ///
     fn new(row: u16, col: u16) -> Self;

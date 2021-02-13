@@ -372,6 +372,74 @@ pub trait ScoreBoardEntry {
 }
 
 
+/// Representation of a text element
+///
+pub struct TextElement<'s> {
+    text: &'s str,
+    base_row: u16,
+    base_col: u16,
+}
+
+impl TextElement<'_> {
+    /// Draw the text element
+    ///
+    pub fn draw<'a>(
+        &'a mut self,
+        display: &'a mut Display<impl io::AsyncWrite + Unpin>,
+    ) -> impl Future<Output = std::io::Result<()>> + 'a {
+        use std::iter::once;
+
+        let base_row = self.base_row;
+        let base_col = self.base_col;
+
+        let cmds = self
+            .text
+            .lines()
+            .enumerate()
+            .flat_map(move |(r, l)| once(DrawCommand::SetPos(base_row + r as u16, base_col))
+                .chain(once((*l).into())));
+        display.send(cmds)
+    }
+
+    /// Erase the text element
+    ///
+    pub fn erase<'a>(
+        &'a mut self,
+        display: &'a mut Display<impl io::AsyncWrite + Unpin>,
+    ) -> impl Future<Output = std::io::Result<()>> + 'a {
+        use std::iter::once;
+
+        let base_row = self.base_row;
+        let base_col = self.base_col;
+
+        let cmds = self
+            .text
+            .lines()
+            .enumerate()
+            .flat_map(move |(r, l)| once(DrawCommand::SetPos(base_row + r as u16, base_col))
+                .chain((0..l.len()).map(|_| " ".into())));
+        display.send(cmds)
+    }
+}
+
+
+impl<'s> ElementFactory for &'s str {
+    type Element = TextElement<'s>;
+
+    fn create_element(self, row: u16, col: u16) -> Self::Element {
+        Self::Element {text: self, base_row: row, base_col: col}
+    }
+
+    fn width(&self) -> u16 {
+        self.lines().map(|s| s.chars().count()).max().unwrap_or(0) as u16
+    }
+
+    fn height(&self) -> u16 {
+        self.lines().count() as u16
+    }
+}
+
+
 /// Representation of an area on the display
 ///
 #[derive(Clone)]

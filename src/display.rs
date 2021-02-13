@@ -206,16 +206,24 @@ impl PlayField {
     }
 }
 
-impl Element for PlayField {
-    fn new(row: u16, col: u16) -> Self {
-        Self {base_row: row, base_col: col}
+
+/// Factory for `PlayField`s
+///
+#[derive(Default)]
+struct PlayFieldFactory {}
+
+impl ElementFactory for PlayFieldFactory {
+    type Element = PlayField;
+
+    fn create_element(self, row: u16, col: u16) -> Self::Element {
+        Self::Element {base_row: row, base_col: col}
     }
 
-    fn width() -> u16 {
+    fn width(&self) -> u16 {
         2 * util::FIELD_WIDTH as u16 + 2
     }
 
-    fn height() -> u16 {
+    fn height(&self) -> u16 {
         util::FIELD_HEIGHT as u16 + 3
     }
 }
@@ -306,17 +314,27 @@ impl<E> ScoreBoard<E>
     }
 }
 
-impl<E> Element for ScoreBoard<E> {
-    fn new(row: u16, col: u16) -> Self {
-        Self {old: Default::default(), base_row: row, base_col: col}
+
+/// Factory for `ScoreBoard`s
+///
+#[derive(Default)]
+struct ScoreBoardFactory<E> {
+    phantom: std::marker::PhantomData<E>,
+}
+
+impl<E> ElementFactory for ScoreBoardFactory<E> {
+    type Element = ScoreBoard<E>;
+
+    fn create_element(self, row: u16, col: u16) -> Self::Element {
+        Self::Element {old: Default::default(), base_row: row, base_col: col}
     }
 
-    fn width() -> u16 {
-        Self::WIDTH
+    fn width(&self) -> u16 {
+        Self::Element::WIDTH
     }
 
-    fn height() -> u16 {
-        Self::ROW_LIMIT + 1
+    fn height(&self) -> u16 {
+        Self::Element::ROW_LIMIT + 1
     }
 }
 
@@ -439,8 +457,8 @@ impl Area {
     ///
     /// The resulting `Element` will be returned.
     ///
-    pub fn topleft_in<E: Element>(self) -> E {
-        E::new(self.base_row, self.base_col)
+    pub fn topleft_in<F: ElementFactory>(self, element_factory: F) -> F::Element {
+        element_factory.create_element(self.base_row, self.base_col)
     }
 
     /// Place an Element at the left of the area
@@ -448,9 +466,10 @@ impl Area {
     /// The `Element` will be centered vertically. Both the element and the
     /// remaining area to the right will be returned.
     ///
-    pub fn left_in<E: Element>(self) -> (E, Self) {
-        let (l, r) = self.split_vertically(E::width());
-        (E::new(l.base_row + (l.height - E::height()) / 2, l.base_col), r)
+    pub fn left_in<F: ElementFactory>(self, element_factory: F) -> (F::Element, Self) {
+        let (l, r) = self.split_vertically(element_factory.width());
+        let base_row = l.base_row + (l.height - element_factory.height()) / 2;
+        (element_factory.create_element(base_row, l.base_col), r)
     }
 
     /// Place an Element at the top of the area
@@ -458,9 +477,10 @@ impl Area {
     /// The `Element` will be centered horizontally. Both the element and the
     /// remaining area below will be returned.
     ///
-    pub fn top_in<E: Element>(self) -> (E, Self) {
-        let (t, b) = self.split_horizontally(E::height());
-        (E::new(t.base_row, t.base_col + (t.width - E::width()) / 2), b)
+    pub fn top_in<F: ElementFactory>(self, element_factory: F) -> (F::Element, Self) {
+        let (t, b) = self.split_horizontally(element_factory.height());
+        let base_col = t.base_col + (t.width - element_factory.width()) / 2;
+        (element_factory.create_element(t.base_row, base_col), b)
     }
 
     /// Retrieve the area's width
@@ -477,20 +497,24 @@ impl Area {
 }
 
 
-/// Display element
+/// Factory for display element
 ///
-pub trait Element {
+pub trait ElementFactory {
+    /// Type of the element constructed by this factory
+    ///
+    type Element;
+
     /// Create a new display element at the given position
     ///
-    fn new(row: u16, col: u16) -> Self;
+    fn create_element(self, row: u16, col: u16) -> Self::Element;
 
-    /// Retrieve the width of a display element
+    /// Retrieve the width of the created display element
     ///
-    fn width() -> u16;
+    fn width(&self) -> u16;
 
-    /// Retrieve the height of a display element
+    /// Retrieve the height of the created display element
     ///
-    fn height() -> u16;
+    fn height(&self) -> u16;
 }
 
 

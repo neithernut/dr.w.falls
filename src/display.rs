@@ -440,6 +440,67 @@ impl<'s> ElementFactory for &'s str {
 }
 
 
+/// Representation of a line input element
+///
+pub struct LineInput {
+    width: u16,
+    base_row: u16,
+    base_col: u16,
+}
+
+impl LineInput {
+    /// Update the line input's contents
+    ///
+    pub fn update<'a>(
+        &mut self,
+        display: &'a mut Display<impl io::AsyncWrite + Unpin>,
+        data: &'a str,
+    ) -> impl Future<Output = std::io::Result<()>> + 'a {
+        use std::iter::once;
+
+        let len = data.chars().count();
+        let cmds = once(DrawCommand::SetPos(self.base_row, self.base_col))
+            .chain(once(data.into()))
+            .chain(once(DrawCommand::Format(SGR::Blink(true))))
+            .chain(if len < self.width as usize { Some("_".into()) } else { None })
+            .chain(once(DrawCommand::Format(SGR::Blink(false))))
+            .chain((len..self.width as usize).map(|_| " ".into()));
+        display.send(cmds)
+    }
+}
+
+
+/// Factory for `LineInput`s
+///
+pub struct LineInputFactory {
+    width: u16,
+}
+
+impl LineInputFactory {
+    /// Create a factory for a `LineInput` with the given width
+    ///
+    pub fn new(width: u16) -> Self {
+        Self {width}
+    }
+}
+
+impl ElementFactory for LineInputFactory {
+    type Element = LineInput;
+
+    fn create_element(self, row: u16, col: u16) -> Self::Element {
+        Self::Element {width: self.width, base_row: row, base_col: col}
+    }
+
+    fn width(&self) -> u16 {
+        self.width
+    }
+
+    fn height(&self) -> u16 {
+        1
+    }
+}
+
+
 /// Representation of an area on the display
 ///
 #[derive(Clone)]

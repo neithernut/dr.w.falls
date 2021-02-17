@@ -501,6 +501,53 @@ impl ElementFactory for LineInputFactory {
 }
 
 
+/// Representation of a numerical display element
+///
+pub struct NumField {
+    base_row: u16,
+    base_col: u16,
+}
+
+impl NumField {
+    /// Update the number displayed
+    ///
+    pub fn update<'a>(
+        &mut self,
+        display: &'a mut Display<impl io::AsyncWrite + Unpin>,
+        data: u32,
+    ) -> impl Future<Output = std::io::Result<()>> + 'a {
+        display.send(vec![
+            DrawCommand::SetPos(self.base_row, self.base_col),
+            format!("{:1$}", data, Self::WIDTH as usize).into()
+        ])
+    }
+
+    const WIDTH: u16 = 10;
+}
+
+
+/// Factory for `NumField`s
+///
+#[derive(Default)]
+pub struct NumFieldFactory {}
+
+impl ElementFactory for NumFieldFactory {
+    type Element = NumField;
+
+    fn create_element(self, row: u16, col: u16) -> Self::Element {
+        Self::Element {base_row: row, base_col: col}
+    }
+
+    fn width(&self) -> u16 {
+        Self::Element::WIDTH
+    }
+
+    fn height(&self) -> u16 {
+        1
+    }
+}
+
+
 /// Representation of an area on the display
 ///
 #[derive(Clone)]

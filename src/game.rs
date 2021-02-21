@@ -20,3 +20,13 @@ enum PhaseEnd<T> {
     EndOfGame,
 }
 
+
+/// Game phase indication
+///
+enum GamePhase {
+    Lobby,
+    Waiting,
+    Round(usize),
+    EndOfGame,
+}
+

@@ -21,6 +21,19 @@ enum PhaseEnd<T> {
 }
 
 
+/// Game control messages
+///
+enum GameControl {
+    Settings{
+        /// Number of visuses a field is initialized with
+        viruses: u8,
+        /// Duration of a tick
+        tick: std::time::Duration
+    },
+    EndOfGame,
+}
+
+
 /// Game phase indication
 ///
 enum GamePhase {

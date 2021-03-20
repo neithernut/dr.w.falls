@@ -2,7 +2,42 @@
 
 use std::sync::Arc;
 
+use tokio::sync::oneshot;
+
 use crate::display;
+
+
+/// Registration request
+///
+struct Registration {
+    name: String,
+    token: ConnectionToken,
+    response: oneshot::Sender<RegistrationReply>
+}
+
+
+/// Reply to a registration request
+///
+enum RegistrationReply {
+    Accepted(super::PlayerHandle),
+    Denied(DenialReason)
+}
+
+impl From<DenialReason> for RegistrationReply {
+    fn from(reason: DenialReason) -> Self {
+        Self::Denied(reason)
+    }
+}
+
+
+/// Reason for denial of a registration
+///
+enum DenialReason {
+    AcceptanceClosed,
+    MaxPlayers,
+    NameTaken,
+    RosterAccess,
+}
 
 
 /// Connection token

@@ -47,6 +47,20 @@ impl<P, F: Fn(&P) -> bool> TransitionWatcher<P, F> {
 }
 
 
+/// Game control messages
+///
+#[derive(Clone, Debug)]
+pub enum GameControl {
+    Settings{
+        /// Number of visuses a field is initialized with
+        viruses: u8,
+        /// Duration of a tick
+        tick: std::time::Duration,
+    },
+    EndOfGame,
+}
+
+
 /// A stream of ASCII characters
 ///
 type ASCIIStream<R> = tokio_util::codec::FramedRead<R, ASCIICharDecoder>;

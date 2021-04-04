@@ -15,6 +15,18 @@ struct Registration {
     response: oneshot::Sender<RegistrationReply>
 }
 
+impl Registration {
+    /// Create a new Registration
+    ///
+    pub fn new(
+        name: String,
+        token: ConnectionToken,
+        response: oneshot::Sender<RegistrationReply>
+    ) -> Self {
+        Self {name, token, response}
+    }
+}
+
 
 /// Reply to a registration request
 ///

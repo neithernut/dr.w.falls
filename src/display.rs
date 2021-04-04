@@ -318,7 +318,7 @@ impl<E> ScoreBoard<E>
 /// Factory for `ScoreBoard`s
 ///
 #[derive(Default)]
-struct ScoreBoardFactory<E> {
+pub struct ScoreBoardFactory<E> {
     phantom: std::marker::PhantomData<E>,
 }
 

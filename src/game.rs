@@ -126,3 +126,16 @@ impl tokio_util::codec::Decoder for ASCIICharDecoder {
 ///
 type Display<'a> = display::Display<tcp::WriteHalf<'a>>;
 
+
+/// Retrieve two columns for a Display
+///
+fn columns(display: &mut Display) -> (display::Area, display::Area) {
+    let area = display.area();
+    let width = area.width();
+    let (left, right) = area.split_vertically(width / 2);
+    (
+        left.top_padded(1).bottom_padded(1).left_padded(1).right_padded(1),
+        right.top_padded(1).bottom_padded(1).left_padded(1).right_padded(1),
+    )
+}
+

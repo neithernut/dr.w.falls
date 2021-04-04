@@ -1,7 +1,43 @@
 //! Implementation of the waiting phase
 
 
+use std::sync::Arc;
+
 use crate::display;
+use crate::util;
+
+
+/// Local type for game updates
+///
+type GameUpdate<S, R> = super::GameUpdate<(Arc<Vec<ScoreBoardEntry>>, u8), EndData<S, R>>;
+
+
+/// Local type for phase end
+///
+type PhaseEnd<S, R> = super::PhaseEnd<EndData<S, R>>;
+
+
+/// Phase end data
+///
+pub struct EndData<S, R> {
+    sender: S,
+    receiver: R,
+    field: Vec<(util::Position, util::Colour)>,
+    tick: std::time::Duration,
+    rng: rand_pcg::Pcg32,
+}
+
+impl<S, R> EndData<S, R> {
+    pub fn new(
+        sender: S,
+        receiver: R,
+        field: Vec<(util::Position, util::Colour)>,
+        tick: std::time::Duration,
+        rng: rand_pcg::Pcg32,
+    ) -> Self {
+        Self {sender, receiver, field, tick, rng}
+    }
+}
 
 
 /// Score board entry for the waiting phase

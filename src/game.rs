@@ -139,3 +139,17 @@ fn columns(display: &mut Display) -> (display::Area, display::Area) {
     )
 }
 
+
+/// Game instructions
+///
+const INSTRUCTIONS: &str = concat!(
+    "S:     move left\n",
+    "D:     move right\n",
+    "K:     rotate left\n",
+    "L:     rotate right\n",
+    "space: drop capsule\n",
+    "\n",
+    "P:     pause _your_ game\n",
+    "any:   resume game\n",
+);
+

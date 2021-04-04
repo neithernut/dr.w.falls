@@ -273,7 +273,7 @@ impl<E> ScoreBoard<E>
         &mut self,
         display: &'a mut Display<impl io::AsyncWrite + Unpin>,
         new: Arc<Vec<E>>,
-        highlight: impl AsRef<E::Tag>,
+        highlight: &E::Tag,
     ) -> impl Future<Output = std::io::Result<()>> + 'a {
         use DrawCommand as DC;
 
@@ -284,7 +284,7 @@ impl<E> ScoreBoard<E>
             .filter(|(_, (n, o))| Some(*n) == *o)
             .map(|(r, (n, _))| (r as u16 + 1, n))
             .flat_map(|(r, d)| vec![
-                DC::Format(SGR::Intensity(if d.tag() == *(highlight.as_ref()) {
+                DC::Format(SGR::Intensity(if d.tag() == *highlight {
                     Some(Intensity::Bold)
                 } else if !d.active() {
                     Some(Intensity::Faint)

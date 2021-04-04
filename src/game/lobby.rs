@@ -64,6 +64,7 @@ impl std::hash::Hash for ConnectionToken {
 
 /// Score board entry for the lobby phase
 ///
+#[derive(PartialEq)]
 struct ScoreBoardEntry {
     name: String,
     tag: super::PlayerTag,

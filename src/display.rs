@@ -317,7 +317,6 @@ impl<E> ScoreBoard<E>
 
 /// Factory for `ScoreBoard`s
 ///
-#[derive(Default)]
 pub struct ScoreBoardFactory<E> {
     phantom: std::marker::PhantomData<E>,
 }
@@ -335,6 +334,12 @@ impl<E> ElementFactory for ScoreBoardFactory<E> {
 
     fn height(&self) -> u16 {
         Self::Element::ROW_LIMIT + 1
+    }
+}
+
+impl<E> Default for ScoreBoardFactory<E> {
+    fn default() -> Self {
+        Self {phantom: Default::default() }
     }
 }
 

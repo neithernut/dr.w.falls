@@ -43,3 +43,17 @@ impl tokio_util::codec::Decoder for ASCIICharDecoder {
     }
 }
 
+
+/// Game instructions
+///
+const INSTRUCTIONS: [&str; 8] = [
+    "S:     move left",
+    "D:     move right",
+    "K:     rotate left",
+    "L:     rotate right",
+    "space: drop capsule",
+    "",
+    "P:     pause _your_ game",
+    "any:   resume game",
+];
+

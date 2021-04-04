@@ -5,6 +5,10 @@ mod waiting;
 mod round;
 
 
+use tokio::io;
+use tokio::net::tcp;
+
+
 /// Item type for game update channels
 ///
 enum GameUpdate<U,T> {
@@ -78,6 +82,40 @@ impl PlayerTag {
 impl PartialEq<PlayerTag> for PlayerTag {
     fn eq(&self, other: &PlayerTag) -> bool {
         self.data.ptr_eq(&other.data)
+    }
+}
+
+
+/// A stream of ASCII characters
+///
+type ASCIIStream<'a> = tokio_util::codec::FramedRead<tcp::ReadHalf<'a>, ASCIICharDecoder>;
+
+
+/// Decoder for single ASCII characters
+///
+struct ASCIICharDecoder {}
+
+impl tokio_util::codec::Decoder for ASCIICharDecoder {
+    type Item = char;
+    type Error = io::Error;
+
+    fn decode(
+        &mut self,
+        src: &mut bytes::BytesMut
+    ) -> Result<Option<Self::Item>, Self::Error> {
+        use bytes::Buf;
+
+        if src.has_remaining() {
+            let c = src.get_u8();
+            if c.is_ascii() {
+                Ok(Some(c as char))
+            } else {
+                Err(io::ErrorKind::InvalidData.into())
+            }
+        } else {
+            src.reserve(1);
+            Ok(None)
+        }
     }
 }
 

@@ -210,7 +210,7 @@ impl PlayField {
 /// Factory for `PlayField`s
 ///
 #[derive(Default)]
-struct PlayFieldFactory {}
+pub struct PlayFieldFactory {}
 
 impl ElementFactory for PlayFieldFactory {
     type Element = PlayField;

@@ -118,3 +118,8 @@ impl display::ScoreBoardEntry for ScoreBoardEntry {
     }
 }
 
+
+/// Maximum allowed length for a name
+///
+const NAME_MAX_LEN: u16 = 16;
+

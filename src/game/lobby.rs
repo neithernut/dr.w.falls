@@ -7,6 +7,16 @@ use tokio::sync::oneshot;
 use crate::display;
 
 
+/// Local type for game updates
+///
+type GameUpdate<S, R> = super::GameUpdate<Arc<Vec<ScoreBoardEntry>>, (S, R)>;
+
+
+/// Local type for phase end
+///
+type PhaseEnd<S, R> = super::PhaseEnd<(S, R)>;
+
+
 /// Registration request
 ///
 struct Registration {

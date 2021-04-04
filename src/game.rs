@@ -8,6 +8,8 @@ mod round;
 use tokio::io;
 use tokio::net::tcp;
 
+use crate::display;
+
 
 /// Item type for game update channels
 ///
@@ -118,4 +120,9 @@ impl tokio_util::codec::Decoder for ASCIICharDecoder {
         }
     }
 }
+
+
+/// Local Display type
+///
+type Display<'a> = display::Display<tcp::WriteHalf<'a>>;
 

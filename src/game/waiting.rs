@@ -14,10 +14,10 @@ use crate::util;
 ///
 /// This function provides the interface for the waiting phase.
 ///
-async fn waiting<S, R>(
+async fn waiting<E>(
     input: &mut super::ASCIIStream<'_>,
     display: &mut super::Display<'_>,
-    updates: &mut watch::Receiver<GameUpdate<S, R>>,
+    updates: &mut watch::Receiver<GameUpdate<E>>,
     ready_channel: mpsc::Sender<super::PlayerTag>,
     me: &super::PlayerHandle,
 ) -> io::Result<()> {
@@ -66,12 +66,7 @@ async fn waiting<S, R>(
 
 /// Local type for game updates
 ///
-type GameUpdate<S, R> = super::GameUpdate<(Arc<Vec<ScoreBoardEntry>>, u8), EndData<S, R>>;
-
-
-/// Local type for phase end
-///
-type PhaseEnd<S, R> = super::PhaseEnd<EndData<S, R>>;
+type GameUpdate<E> = super::GameUpdate<(Arc<Vec<ScoreBoardEntry>>, u8), E>;
 
 
 /// Phase end data

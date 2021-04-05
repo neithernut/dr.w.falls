@@ -7,7 +7,6 @@ use tokio::io;
 use tokio::sync::{watch, mpsc};
 
 use crate::display;
-use crate::util;
 
 
 /// Waiting phase function
@@ -67,29 +66,6 @@ async fn waiting<E>(
 /// Local type for game updates
 ///
 type GameUpdate<E> = super::GameUpdate<(Arc<Vec<ScoreBoardEntry>>, u8), E>;
-
-
-/// Phase end data
-///
-pub struct EndData<S, R> {
-    sender: S,
-    receiver: R,
-    field: Vec<(util::Position, util::Colour)>,
-    tick: std::time::Duration,
-    rng: rand_pcg::Pcg32,
-}
-
-impl<S, R> EndData<S, R> {
-    pub fn new(
-        sender: S,
-        receiver: R,
-        field: Vec<(util::Position, util::Colour)>,
-        tick: std::time::Duration,
-        rng: rand_pcg::Pcg32,
-    ) -> Self {
-        Self {sender, receiver, field, tick, rng}
-    }
-}
 
 
 /// Score board entry for the waiting phase

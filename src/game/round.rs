@@ -8,6 +8,11 @@ use crate::display;
 use crate::util;
 
 
+/// Local type for game updates
+///
+type GameUpdate<E> = super::GameUpdate<sync::Arc<Vec<ScoreBoardEntry>>, E>;
+
+
 /// Score board entry for the waiting phase
 ///
 #[derive(PartialEq)]

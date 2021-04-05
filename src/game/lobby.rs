@@ -12,10 +12,10 @@ use crate::display;
 ///
 /// This function provides the connection-task side of the lobby phase logic.
 ///
-async fn lobby<S, R>(
+async fn lobby<E>(
     input: &mut super::ASCIIStream<'_>,
     display: &mut super::Display<'_>,
-    updates: &mut watch::Receiver<GameUpdate<S, R>>,
+    updates: &mut watch::Receiver<GameUpdate<E>>,
     reg_channel: mpsc::Sender<Registration>,
     token: ConnectionToken,
 ) -> io::Result<super::PlayerHandle> {
@@ -97,12 +97,7 @@ async fn lobby<S, R>(
 
 /// Local type for game updates
 ///
-type GameUpdate<S, R> = super::GameUpdate<Arc<Vec<ScoreBoardEntry>>, (S, R)>;
-
-
-/// Local type for phase end
-///
-type PhaseEnd<S, R> = super::PhaseEnd<(S, R)>;
+type GameUpdate<E> = super::GameUpdate<Arc<Vec<ScoreBoardEntry>>, E>;
 
 
 /// Registration request

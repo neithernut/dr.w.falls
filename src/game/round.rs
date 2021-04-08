@@ -1,5 +1,6 @@
 //! Implementation of the round phase
 
+use std::collections::HashMap;
 use std::sync;
 
 use tokio::sync::mpsc;
@@ -7,6 +8,51 @@ use tokio::sync::mpsc;
 use crate::display;
 use crate::gameplay;
 use crate::util;
+
+
+/// Game logic encapsulation
+///
+/// This data type provides the core logic for a round, exposed as functions.
+/// These include functions for performing both controlled moves and ticks.
+///
+struct Actor<'a> {
+    event_sender: mpsc::Sender<(super::PlayerTag, PlayerEvent)>,
+    capsule_receiver: &'a mut mpsc::Receiver<Capsules>,
+    player_tag: super::PlayerTag,
+    moving: gameplay::MovingField,
+    r#static: gameplay::StaticField,
+    viruses: HashMap<util::Position, util::Colour>,
+    active: ActiveElements,
+    next_colours: [util::Colour; 2],
+}
+
+impl<'a> Actor<'a> {
+    /// Create a new actor
+    ///
+    pub fn new(
+        event_sender: mpsc::Sender<(super::PlayerTag, PlayerEvent)>,
+        capsule_receiver: &'a mut mpsc::Receiver<Capsules>,
+        player_tag: super::PlayerTag,
+        viruses: HashMap<util::Position, util::Colour>,
+        next_colours: [util::Colour; 2],
+    ) -> Self {
+        let mut moving: gameplay::MovingField = Default::default();
+        let r#static = viruses
+            .iter()
+            .map(|(p, c)| (p.clone(), c.clone()))
+            .collect();
+        // We'll start with an empty moving field. A capsule will be spawned on the first tick.
+        let active = moving.moving_row_index(util::RowIndex::TOP_ROW).into();
+        let next_colours = [util::Colour::Red, util::Colour::Red];
+        Self {event_sender, capsule_receiver, player_tag, moving, r#static, viruses, active, next_colours}
+    }
+
+    /// Check whether there is a controlled capsule
+    ///
+    pub fn is_controlled(&self) -> bool {
+        self.active.is_controlled()
+    }
+}
 
 
 /// Categorization of currently active capsule elements

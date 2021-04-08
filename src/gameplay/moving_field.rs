@@ -37,6 +37,23 @@ impl MovingField {
             })
     }
 
+    /// Spawn single capsules in the current top row
+    ///
+    /// For each item yielded by `capsules`, this function creates a single,
+    /// unbound capsule with the given colour and place it in the top row at the
+    /// given column. It returns a list of `Update`s reflecting the changes.
+    ///
+    pub fn spawn_single_capsules<'a>(
+        &'a mut self,
+        capsules: impl IntoIterator<Item = (util::ColumnIndex, util::Colour)> + 'a,
+    ) -> impl Iterator<Item = items::Update> + 'a {
+        let top_row = &mut self.data[self.transform(util::RowIndex::TOP_ROW)];
+        capsules
+            .into_iter()
+            .inspect(move |(i, c)| top_row[*i] = Some(items::CapsuleElement::new_single(*c)))
+            .map(|(i, c)| ((util::RowIndex::TOP_ROW, i), Some(c)))
+    }
+
     /// Crate a MovingRowIndex for a given mapped row
     ///
     pub fn moving_row_index(&self, row: util::RowIndex) -> MovingRowIndex {

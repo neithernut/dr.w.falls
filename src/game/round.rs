@@ -81,6 +81,15 @@ impl<'a> Actor<'a> {
     pub fn is_controlled(&self) -> bool {
         self.active.is_controlled()
     }
+
+    /// Send the given event
+    ///
+    async fn send_event(&self, event: PlayerEvent) -> io::Result<()> {
+        self.event_sender
+            .send((self.player_tag.clone(), event))
+            .await
+            .map_err(|_| io::Error::from(io::ErrorKind::Other))
+    }
 }
 
 

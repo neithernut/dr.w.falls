@@ -26,7 +26,7 @@ impl ControlledCapsule {
     ///
     pub fn spawn_capsule(
         moving_field: &mut MovingField,
-        colours: impl AsRef<[util::Colour; 2]>
+        colours: &[util::Colour; 2]
     ) -> Self {
         use util::Step;
 
@@ -36,10 +36,10 @@ impl ControlledCapsule {
             .expect("Failed to compute left position for new capsule");
 
         moving_field[(util::RowIndex::TOP_ROW, lmid)] = Some(
-            items::CapsuleElement::new(colours.as_ref()[0], Some(util::Direction::Right))
+            items::CapsuleElement::new(colours[0], Some(util::Direction::Right))
         );
         moving_field[(util::RowIndex::TOP_ROW, rmid)] = Some(
-            items::CapsuleElement::new(colours.as_ref()[1], Some(util::Direction::Left))
+            items::CapsuleElement::new(colours[1], Some(util::Direction::Left))
         );
         Self {row: moving_field.moving_row_index(util::RowIndex::TOP_ROW), column: lmid}
     }

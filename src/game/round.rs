@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use tokio::io;
 use tokio::sync::{Mutex, mpsc, watch};
+use tokio::time;
 
 use crate::display;
 use crate::field;
@@ -202,6 +203,82 @@ impl From<field::MovingRowIndex> for ActiveElements {
     fn from(row: field::MovingRowIndex) -> Self {
         Self::Uncontrolled(row)
     }
+}
+
+
+/// A paubable/resumable repetition timer
+///
+struct Timer {
+    inner: ResumableInterval,
+    duration: time::Duration,
+}
+
+impl Timer {
+    /// Create a new timer
+    ///
+    /// The timer will trigger each time the given duration elapsed.
+    ///
+    pub fn new(duration: time::Duration) -> Self {
+        Self {inner: ResumableInterval::Interval(time::interval(duration), time::Instant::now()), duration}
+    }
+
+    /// Completes on the next tick
+    ///
+    pub async fn tick(&mut self) -> time::Instant {
+        match &mut self.inner {
+            ResumableInterval::Interval(i, t) => {
+                *t = i.tick().await;
+                *t
+            },
+            ResumableInterval::Remaining(_) => std::future::pending().await,
+        }
+    }
+
+    /// Pause the timer
+    ///
+    /// This function halts the timer and stored the amount of time remaining
+    /// until the next tick. If the timer is already paused, this function
+    /// doesn't have any effect.
+    ///
+    pub fn pause(&mut self) {
+        match self.inner {
+            ResumableInterval::Interval(_, t) => self.inner = ResumableInterval::Remaining(t.elapsed()),
+            ResumableInterval::Remaining(_) => (),
+        }
+    }
+
+    /// Resume the timer
+    ///
+    /// This function restarts the timer. The next tick will be scheduled
+    /// according to the duration previously stored by `pause`. This function
+    /// only has any effect if the timer is paused.
+    ///
+    pub fn resume(&mut self) {
+        match self.inner {
+            ResumableInterval::Interval(..) => (),
+            ResumableInterval::Remaining(d) => {
+                let start = time::Instant::now() + d;
+                self.inner = ResumableInterval::Interval(time::interval_at(start, self.duration), start)
+            },
+        }
+    }
+
+    /// Check whether the timer is paused
+    ///
+    pub fn is_paused(&self) -> bool {
+        match self.inner {
+            ResumableInterval::Interval(..) => false,
+            ResumableInterval::Remaining(..) => true,
+        }
+    }
+}
+
+
+/// Enum representing the possible states of a `Timer`
+///
+enum ResumableInterval {
+    Interval(time::Interval, time::Instant),
+    Remaining(time::Duration),
 }
 
 

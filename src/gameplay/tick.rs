@@ -93,11 +93,11 @@ impl IntoIterator for Settled {
 ///
 pub fn eliminate_elements(
     field: &mut StaticField,
-    settled: Settled
+    settled: &Settled
 ) -> Eliminated {
     use super::items::row_of_four;
 
-    let rows = Eliminated {rows: settled.into_iter().filter_map(|p| row_of_four(field, p)).collect()};
+    let rows = Eliminated {rows: settled.iter().filter_map(|p| row_of_four(field, *p)).collect()};
     rows.positions().for_each(|p| field[p]
         .take()
         .into_element()

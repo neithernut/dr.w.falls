@@ -3,6 +3,7 @@
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 
+use tokio::io;
 use tokio::sync::{Mutex, mpsc, watch};
 
 use crate::display;
@@ -45,6 +46,31 @@ impl<'a> Actor<'a> {
         // We'll start with an empty moving field. A capsule will be spawned on the first tick.
         let active = moving.moving_row_index(util::RowIndex::TOP_ROW).into();
         Self {event_sender, capsule_receiver, player_tag, moving, r#static, viruses, active, next_colours}
+    }
+
+    /// Perform a controlled move
+    ///
+    /// If there is a controlled capsule, this function performs the given move
+    /// (if possible) and updates the given `field` on the given `display`
+    /// accordingly. If there is no controlled capsule, this function does
+    /// nothing.
+    ///
+    pub async fn r#move(
+        &mut self,
+        display_handle: &mut display::DrawHandle<'_, impl io::AsyncWrite + Unpin>,
+        field: &display::FieldUpdater,
+        movement: field::Movement,
+    ) -> Result<(), super::ConnTaskError> {
+        match &mut self.active {
+            ActiveElements::Controlled(c) => {
+                let updates = c
+                    .apply_move(&mut self.moving, &mut self.r#static, movement)
+                    .map(|u| u.to_vec())
+                    .unwrap_or_default();
+                field.update(display_handle, updates).await.map_err(Into::into)
+            }
+            ActiveElements::Uncontrolled(_) => Ok(()),
+        }
     }
 
     /// Check whether there is a controlled capsule

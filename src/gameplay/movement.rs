@@ -161,6 +161,16 @@ impl ControlledCapsule {
         )
     }
 
+
+    /// Retrieve the current "active" row
+    ///
+    /// This function will return the lowest row containing an element of the
+    /// capsule.
+    ///
+    pub fn row(&self) -> MovingRowIndex {
+        self.row
+    }
+
     /// Internal utility function for performing the move
     ///
     /// This function performs a move defined by `transform_pos`. That functor

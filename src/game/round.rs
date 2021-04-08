@@ -146,3 +146,8 @@ impl PartialEq for CapsuleReceiver {
 ///
 type Capsules = Vec<(util::ColumnIndex, util::Colour)>;
 
+
+/// The minimum number of capsules which would be sent to other players
+///
+const MIN_CAPSULES_SEND: usize = 2;
+

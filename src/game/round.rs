@@ -11,6 +11,50 @@ use crate::player;
 use crate::util;
 
 
+/// Game logic encapsulation
+///
+/// This data type provides the core logic for a round, exposed as functions.
+/// These include functions for performing both controlled moves and ticks.
+///
+struct Actor<'a> {
+    event_sender: mpsc::Sender<(player::Tag, Event)>,
+    capsule_receiver: &'a mut CapsulesQueue,
+    player_tag: player::Tag,
+    moving: field::MovingField,
+    r#static: field::StaticField,
+    viruses: HashMap<util::Position, util::Colour>,
+    active: ActiveElements,
+    next_colours: [util::Colour; 2],
+}
+
+impl<'a> Actor<'a> {
+    /// Create a new actor
+    ///
+    pub fn new(
+        event_sender: mpsc::Sender<(player::Tag, Event)>,
+        capsule_receiver: &'a mut CapsulesQueue,
+        player_tag: player::Tag,
+        viruses: HashMap<util::Position, util::Colour>,
+        next_colours: [util::Colour; 2],
+    ) -> Self {
+        let moving: field::MovingField = Default::default();
+        let r#static = viruses
+            .iter()
+            .map(|(p, c)| (p.clone(), c.clone()))
+            .collect();
+        // We'll start with an empty moving field. A capsule will be spawned on the first tick.
+        let active = moving.moving_row_index(util::RowIndex::TOP_ROW).into();
+        Self {event_sender, capsule_receiver, player_tag, moving, r#static, viruses, active, next_colours}
+    }
+
+    /// Check whether there is a controlled capsule
+    ///
+    pub fn is_controlled(&self) -> bool {
+        self.active.is_controlled()
+    }
+}
+
+
 /// Categorization of currently active capsule elements
 ///
 enum ActiveElements {

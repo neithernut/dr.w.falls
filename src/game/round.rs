@@ -142,6 +142,21 @@ impl PartialEq for CapsuleReceiver {
 }
 
 
+/// Generate two random colour items
+///
+fn random_colours(rng: &mut impl rand_core::RngCore) -> [util::Colour; 2] {
+    let gen = |i| match i % 3 {
+        0 => util::Colour::Red,
+        1 => util::Colour::Yellow,
+        _ => util::Colour::Blue,
+    };
+
+    let mut bytes: [u8; 2] = Default::default();
+    rng.fill_bytes(&mut bytes);
+    [gen(bytes[0]), gen(bytes[1])]
+}
+
+
 /// Unbound capsules
 ///
 type Capsules = Vec<(util::ColumnIndex, util::Colour)>;

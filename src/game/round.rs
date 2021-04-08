@@ -3,6 +3,7 @@
 use std::collections::HashMap;
 use std::sync;
 
+use tokio::io;
 use tokio::sync::mpsc;
 
 use crate::display;
@@ -45,6 +46,34 @@ impl<'a> Actor<'a> {
         let active = moving.moving_row_index(util::RowIndex::TOP_ROW).into();
         let next_colours = [util::Colour::Red, util::Colour::Red];
         Self {event_sender, capsule_receiver, player_tag, moving, r#static, viruses, active, next_colours}
+    }
+
+    /// Perform a controlled move
+    ///
+    /// If there is a controlled capsule, this function performs the given move
+    /// (if possible) and updates the given `field` on the given `display`
+    /// accordingly. If there is no controlled capsule, this function does
+    /// nothing.
+    ///
+    pub async fn r#move(
+        &mut self,
+        display: &mut super::Display<'_>,
+        field: &display::PlayField,
+        movement: gameplay::Movement,
+    ) -> io::Result<()> {
+        let moving = &mut self.moving;
+        let r#static = &mut self.r#static;
+
+        match &mut self.active {
+            ActiveElements::Controlled(c) => {
+                let updates = c
+                    .apply_move(moving, r#static, movement)
+                    .map(|u| u.to_vec())
+                    .unwrap_or_default();
+                field.update(display, updates).await
+            }
+            ActiveElements::Uncontrolled(_) => Ok(()),
+        }
     }
 
     /// Check whether there is a controlled capsule

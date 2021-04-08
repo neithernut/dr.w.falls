@@ -157,6 +157,20 @@ fn random_colours(rng: &mut impl rand_core::RngCore) -> [util::Colour; 2] {
 }
 
 
+/// Determine the lower of two (optional) rows
+///
+/// If one row is `None`, the other is considered lower.
+///
+fn lower_row(a: Option<util::RowIndex>, b: Option<util::RowIndex>) -> Option<util::RowIndex> {
+    match (a, b) {
+        (Some(a), Some(b)) => Some(std::cmp::max(a, b)), // rows are enumerated from the top
+        (Some(a), None   ) => Some(a),
+        (None,    Some(b)) => Some(b),
+        (None,    None   ) => None,
+    }
+}
+
+
 /// Unbound capsules
 ///
 type Capsules = Vec<(util::ColumnIndex, util::Colour)>;

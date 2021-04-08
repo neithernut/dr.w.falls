@@ -78,6 +78,12 @@ impl<'a> Actor<'a> {
     pub fn is_controlled(&self) -> bool {
         self.active.is_controlled()
     }
+
+    /// Send the given event
+    ///
+    async fn send_event(&self, event: Event) -> Result<(), super::ConnTaskError> {
+        self.event_sender.send((self.player_tag.clone(), event)).await.map_err(super::ConnTaskError::other)
+    }
 }
 
 

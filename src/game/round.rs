@@ -171,3 +171,8 @@ impl Default for PlayerState {
     }
 }
 
+
+/// The minimum number of capsules which would be sent to other players
+///
+const MIN_CAPSULES_SEND: usize = 2;
+

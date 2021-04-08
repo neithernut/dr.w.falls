@@ -424,3 +424,8 @@ type Capsules = Vec<(util::ColumnIndex, util::Colour)>;
 ///
 const MIN_CAPSULES_SEND: usize = 2;
 
+
+/// Grace period before the first tick
+///
+const GRACE_PERIOD: time::Duration = time::Duration::from_secs(2);
+

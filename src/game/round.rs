@@ -8,9 +8,157 @@ use tokio::sync::{Mutex, mpsc, watch};
 use tokio::time;
 
 use crate::display;
+use crate::error;
 use crate::field;
 use crate::player;
 use crate::util;
+
+
+/// Round phase function
+///
+/// This function implements the connection task part of the game logic for the
+/// round phase.
+///
+pub async fn serve<P>(
+    control: Ports,
+    display: &mut display::Display<impl io::AsyncWrite + Unpin>,
+    mut input: impl futures::stream::Stream<Item = Result<char, io::Error>> + Unpin,
+    mut phase: super::TransitionWatcher<P, impl Fn(&P) -> bool>,
+    me: &player::Handle,
+    viruses: HashMap<util::Position, util::Colour>,
+    tick_diration: std::time::Duration,
+    mut rng: impl rand::Rng,
+) -> Result<(), super::ConnTaskError> {
+    use std::convert::TryInto;
+
+    use futures::stream::StreamExt;
+
+    use super::ConnTaskError;
+
+    let mut scores = control.scores;
+    let events = control.events;
+    let capsules = control
+        .capsules
+        .get(&me.tag())
+        .ok_or_else(|| ConnTaskError::other(error::NoneError))?
+        .clone();
+
+    // Set up display
+    let mut area = display.area().await?.pad_top(1);
+    let mut left = area.split_left(super::COLUMN_SPLIT);
+
+    let field = left.place_top(display::PlayField::default()).await?;
+    left = left.pad_top(1);
+    let indicator = left.place_center(
+        display::DynamicText::new((super::COLUMN_SPLIT - 2).try_into().unwrap(), 4u16.try_into().unwrap())
+    ).await?;
+
+    let max_scores = area.rows().saturating_sub(2);
+    let mut score_board = area.place_center(display::ScoreBoard::new(max_scores)).await?;
+    let highlight = {
+        let tag = me.tag();
+        move |t: &player::Tag| *t == tag
+    };
+    score_board.update(&mut display.handle().await?, scores.borrow().iter(), &highlight).await?;
+
+
+    let next_colours = rng.gen();
+    let mut virus_sym = Default::default();
+    field.place_viruses(&mut display.handle().await?, viruses.clone().into_iter(), virus_sym).await?;
+    field.place_next_elements(&mut display.handle().await?, &next_colours).await?;
+    let mut actor = Actor::new(events, capsules, me.tag(), viruses, next_colours);
+
+    // Let the player grasp the field for a bit before the game starts
+    time::sleep(GRACE_PERIOD).await;
+
+    // Kick off the actual game
+    let mut tick_timer = Timer::new(tick_diration);
+    let mut virs_timer = time::interval(time::Duration::from_secs(1));
+    while !actor.is_defeated() && actor.virus_count() > 0{
+        use field::Movement as M;
+
+        tokio::select! {
+            res = input.next() => match res {
+                Some(Ok('p')) | Some(Ok('P')) | Some(Ok('\x1b')) if !tick_timer.is_paused() => {
+                    tick_timer.pause();
+                    indicator.update_single(&mut display.handle().await?, "Game paused").await?
+                },
+                Some(Ok('s')) | Some(Ok('S')) if !tick_timer.is_paused() =>
+                    actor.r#move(&mut display.handle().await?, &field, M::Left).await?,
+                Some(Ok('d')) | Some(Ok('D')) if !tick_timer.is_paused() =>
+                    actor.r#move(&mut display.handle().await?, &field, M::Right).await?,
+                Some(Ok('k')) | Some(Ok('K')) if !tick_timer.is_paused() =>
+                    actor.r#move(&mut display.handle().await?, &field, M::RotateCCW).await?,
+                Some(Ok('l')) | Some(Ok('L')) if !tick_timer.is_paused() =>
+                    actor.r#move(&mut display.handle().await?, &field, M::RotateCW).await?,
+                Some(Ok(' ')) if !tick_timer.is_paused() => if actor.is_controlled() {
+                    actor.tick(&mut display.handle().await?, &field, &mut rng).await?
+                },
+                Some(Ok(c)) => if tick_timer.is_paused() && !c.is_ascii_control() {
+                    tick_timer.resume();
+                    indicator.clear(&mut display.handle().await?).await?
+                },
+                Some(Err(e)) if e.kind() != io::ErrorKind::WouldBlock => return Err(e.into()),
+                None => return Err(ConnTaskError::Terminated),
+                _ => (),
+            },
+            _ = tick_timer.tick() => actor.tick(&mut display.handle().await?, &field, &mut rng).await?,
+            _ = virs_timer.tick() => {
+                virus_sym = virus_sym.flipped();
+                field.place_viruses(
+                    &mut display.handle().await?,
+                    actor.remaining_viruses(),
+                    virus_sym,
+                ).await?
+            },
+            _ = scores.changed() => score_board
+                .update(&mut display.handle().await?, scores.borrow().iter(), &highlight)
+                .await?,
+            t = phase.transition() => {
+                t?;
+                break
+            },
+        }
+    }
+
+    if actor.is_defeated() {
+        let msg = [
+            "Game over!",
+            "Please wait for the others.",
+        ];
+        indicator.update(&mut display.handle().await?, msg.iter()).await?
+    } else if actor.virus_count() == 0 {
+        indicator.update_single(&mut display.handle().await?, "You won!").await?
+    }
+
+    // Let the defeated player do nothing until the round ended
+    while !phase.transitioned() {
+        tokio::select! {
+            res = input.next() => match res {
+                Some(Err(e)) if e.kind() != io::ErrorKind::WouldBlock => return Err(e.into()),
+                None => return Err(ConnTaskError::Terminated),
+                _ => (),
+            },
+            _ = virs_timer.tick() => {
+                virus_sym = virus_sym.flipped();
+                field.place_viruses(
+                    &mut display.handle().await?,
+                    actor.remaining_viruses(),
+                    virus_sym,
+                ).await?
+            },
+            _ = scores.changed() => score_board
+                .update(&mut display.handle().await?, scores.borrow().iter(), &highlight)
+                .await?,
+            t = phase.transition() => {
+                t?;
+                break
+            },
+        }
+    }
+
+    Ok(())
+}
 
 
 /// Game logic encapsulation

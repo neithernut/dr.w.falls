@@ -27,7 +27,7 @@ impl ControlledCapsule {
     pub fn spawn_capsule(
         moving_field: &mut MovingField,
         colours: &[util::Colour; 2]
-    ) -> Self {
+    ) -> (Self, [items::Update; 2]) {
         use util::Step;
 
         let rmid = util::ColumnIndex::LEFTMOST_COLUMN.forward_checked((util::FIELD_WIDTH/2).into())
@@ -35,13 +35,16 @@ impl ControlledCapsule {
         let lmid = rmid.backward_checked(1)
             .expect("Failed to compute left position for new capsule");
 
-        moving_field[(util::RowIndex::TOP_ROW, lmid)] = Some(
-            items::CapsuleElement::new(colours[0], Some(util::Direction::Right))
-        );
-        moving_field[(util::RowIndex::TOP_ROW, rmid)] = Some(
-            items::CapsuleElement::new(colours[1], Some(util::Direction::Left))
-        );
-        Self {row: moving_field.moving_row_index(util::RowIndex::TOP_ROW), column: lmid}
+        let lmid = (util::RowIndex::TOP_ROW, lmid);
+        let rmid = (util::RowIndex::TOP_ROW, rmid);
+
+        moving_field[lmid] = Some(items::CapsuleElement::new(colours[0], Some(util::Direction::Right)));
+        moving_field[rmid] = Some(items::CapsuleElement::new(colours[1], Some(util::Direction::Left)));
+
+        (
+            Self {row: moving_field.moving_row_index(util::RowIndex::TOP_ROW), column: lmid.1},
+            [(lmid, Some(colours[0])), (rmid, Some(colours[1]))]
+        )
     }
 
     /// Apply a movement to the capsule

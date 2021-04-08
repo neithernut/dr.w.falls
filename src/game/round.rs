@@ -73,6 +73,82 @@ impl<'a> Actor<'a> {
         }
     }
 
+    /// Perform a tick
+    ///
+    /// This function performs the settling, elimination and unsettling
+    /// operation and communicates all the events emerging through the
+    /// event sender encapsulated in the actor. After the unsettling step,
+    /// all unsettled elements are moves one rows downwards.
+    ///
+    /// Furthermore, this function spawns either unbound capsule elements
+    /// received via the encapsulated receiver or a new controlled capsule if
+    /// necessary.
+    ///
+    /// The given `field` is updated via the given `display_handle` accordingly.
+    ///
+    pub async fn tick(
+        &mut self,
+        display_handle: &mut display::DrawHandle<'_, impl io::AsyncWrite + Unpin>,
+        field: &display::FieldUpdater,
+        rng: &mut impl rand::Rng,
+    ) -> Result<(), super::ConnTaskError> {
+        let lowest = self.moving.row_index_from_moving(self.active.lowest_row());
+
+        let (settled, mut lowest) = field::settle_elements(&mut self.moving, &mut self.r#static, lowest);
+
+        if !settled.is_empty() {
+            // A lot of interesting stuff only happens if elements settled
+            let eliminated = field::eliminate_elements(&mut self.r#static, &settled);
+            lowest = lower_row(
+                field::unsettle_elements(&mut self.moving, &mut self.r#static, &eliminated),
+                lowest
+            );
+
+            if eliminated.positions().fold(false, |c, p| c || self.viruses.remove(&p).is_some()) {
+                self.send_event(Event::Score(self.viruses.len() as u32)).await?;
+            }
+            if eliminated.row_count() > MIN_CAPSULES_SEND {
+                let capsules = eliminated.rows_of_four().map(|(c, _)| *c).collect();
+                self.send_event(Event::Capsules(capsules)).await?;
+            }
+            if field::defeated(&self.r#static) {
+                self.send_event(Event::Defeat).await?;
+            }
+
+            field.update(display_handle, eliminated.positions().map(|p| (p, None))).await?;
+
+            if let Some(lowest) = lowest {
+                self.active = self.moving.moving_row_index(lowest).into();
+            }
+        }
+
+        if lowest.is_some() {
+            // We still have moving elements.
+            field.update(display_handle, self.moving.tick()).await.map_err(Into::into)
+        } else {
+            // There are no moving element left. We need to respawn something.
+            use util::RowIndex;
+            if let Some(capsules) = self.capsule_receiver.lock().await.pop_front() {
+                self.active = self.moving.moving_row_index(RowIndex::TOP_ROW).into();
+                return field
+                    .update(display_handle, self.moving.spawn_single_capsules(capsules))
+                    .await
+                    .map_err(Into::into)
+            }
+
+            // We didn't receive any unbound capsules, spawn a controlled capsule.
+            let (capsule, updates) = field::ControlledCapsule::spawn_capsule(
+                &mut self.moving,
+                &self.next_colours
+            );
+            self.next_colours = rng.gen();
+
+            self.active = capsule.into();
+            field.update(display_handle, updates.iter().cloned()).await?;
+            field.place_next_elements(display_handle, &self.next_colours).await.map_err(Into::into)
+        }
+    }
+
     /// Check whether there is a controlled capsule
     ///
     pub fn is_controlled(&self) -> bool {

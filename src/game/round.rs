@@ -158,6 +158,12 @@ impl<'a> Actor<'a> {
         self.active.is_controlled()
     }
 
+    /// Check whether we are defeated
+    ///
+    pub fn is_defeated(&self) -> bool {
+        gameplay::defeated(&self.r#static)
+    }
+
     /// Send the given event
     ///
     async fn send_event(&self, event: PlayerEvent) -> io::Result<()> {

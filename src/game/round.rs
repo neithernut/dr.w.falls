@@ -132,6 +132,7 @@ impl<'a> Actor<'a> {
             // There are no moving element left. We need to respawn something.
             use util::RowIndex;
             tokio::select! {
+                biased;
                 capsules = self.capsule_receiver.recv() => if let Some(capsules) = capsules {
                     self.active = self.moving.moving_row_index(RowIndex::TOP_ROW).into();
                     return field.update(display, self.moving.spawn_single_capsules(capsules)).await;

@@ -13,6 +13,18 @@ use crate::util;
 type GameUpdate<E> = super::GameUpdate<sync::Arc<Vec<ScoreBoardEntry>>, E>;
 
 
+/// Message type for events associated with a particular player
+///
+enum PlayerEvent {
+    /// Capsules to be sent to ther players
+    Capsules(Vec<util::Colour>),
+    /// The player's score has changed
+    Score(u32),
+    /// The player was defeated
+    Defeat,
+}
+
+
 /// Score board entry for the waiting phase
 ///
 #[derive(PartialEq)]

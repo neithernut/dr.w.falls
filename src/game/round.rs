@@ -172,6 +172,20 @@ impl Default for PlayerState {
 }
 
 
+/// Determine the lower of two (optional) rows
+///
+/// If one row is `None`, the other is considered lower.
+///
+fn lower_row(a: Option<util::RowIndex>, b: Option<util::RowIndex>) -> Option<util::RowIndex> {
+    match (a, b) {
+        (Some(a), Some(b)) => Some(std::cmp::max(a, b)), // rows are enumerated from the top
+        (Some(a), None   ) => Some(a),
+        (None,    Some(b)) => Some(b),
+        (None,    None   ) => None,
+    }
+}
+
+
 /// The minimum number of capsules which would be sent to other players
 ///
 const MIN_CAPSULES_SEND: usize = 2;

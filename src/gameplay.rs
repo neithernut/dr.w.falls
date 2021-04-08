@@ -11,7 +11,7 @@ mod tick;
 
 pub use items::Update;
 pub use static_field::{StaticField, defeated};
-pub use moving_field::MovingField;
+pub use moving_field::{MovingField, MovingRowIndex};
 pub use tick::{settle_elements, eliminate_elements, unsettle_elements};
 pub use movement::{Movement, ControlledCapsule};
 pub use preparation::prepare_field;

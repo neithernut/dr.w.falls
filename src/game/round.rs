@@ -5,7 +5,50 @@ use std::sync;
 use tokio::sync::mpsc;
 
 use crate::display;
+use crate::gameplay;
 use crate::util;
+
+
+/// Categorization of currently active capsule elements
+///
+enum ActiveElements {
+    /// A controlled capsule exists
+    Controlled(gameplay::ControlledCapsule),
+    /// Some uncontrolled elements exist including and above this row
+    Uncontrolled(gameplay::MovingRowIndex),
+}
+
+impl ActiveElements {
+    /// Retrieve the lowest row containing active capsule elements
+    ///
+    pub fn lowest_row(&self) -> gameplay::MovingRowIndex {
+        match self {
+            Self::Controlled(c) => c.row(),
+            Self::Uncontrolled(r) => *r,
+        }
+    }
+
+    /// Check whether the active elements are controlled
+    ///
+    pub fn is_controlled(&self) -> bool {
+        match self {
+            Self::Controlled(_) => true,
+            Self::Uncontrolled(_) => false,
+        }
+    }
+}
+
+impl From<gameplay::ControlledCapsule> for ActiveElements {
+    fn from(capsule: gameplay::ControlledCapsule) -> Self {
+        Self::Controlled(capsule)
+    }
+}
+
+impl From<gameplay::MovingRowIndex> for ActiveElements {
+    fn from(row: gameplay::MovingRowIndex) -> Self {
+        Self::Uncontrolled(row)
+    }
+}
 
 
 /// Local type for game updates

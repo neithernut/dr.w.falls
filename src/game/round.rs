@@ -4,12 +4,117 @@ use std::collections::HashMap;
 use std::sync;
 
 use tokio::io;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, watch};
 use tokio::time;
 
 use crate::display;
 use crate::gameplay;
 use crate::util;
+
+
+/// Round phase function
+///
+async fn round<E>(
+    input: &mut super::ASCIIStream<'_>,
+    display: &mut super::Display<'_>,
+    updates: &mut watch::Receiver<GameUpdate<E>>,
+    event_sender: mpsc::Sender<(super::PlayerTag, PlayerEvent)>,
+    me: &super::PlayerHandle,
+    viruses: HashMap<util::Position, util::Colour>,
+    tick_diration: std::time::Duration,
+    rng: &mut impl rand_core::RngCore,
+) -> io::Result<()> {
+    use futures::stream::StreamExt;
+
+    // Set up display
+    let (left, right) = super::columns(display);
+    let (field, left) = left.top_in(display::PlayFieldFactory::default());
+    let mut scoreboard = right.topleft_in(display::ScoreBoardFactory::<ScoreBoardEntry>::default());
+    let (mut paused_text, _) = left.top_padded(1).top_in("PAUSED");
+
+    let next_colours = random_colours(rng);
+
+    field.draw_outlines(display).await?;
+    field.place_viruses(display, viruses.iter().map(|(p, c)| (p.clone(), c.clone()))).await?;
+    field.place_next_elements(display, next_colours[0], next_colours[1]).await?;
+
+    // Set the game object(s)
+    let capsule_receiver = match &*updates.borrow() {
+        GameUpdate::Update(scores) => {
+            use display::ScoreBoardEntry;
+
+            scoreboard.update(display, scores.clone(), &me.tag()).await?;
+            scores
+                .iter()
+                .find(|e| e.tag() == me.tag())
+                .map(|e| e.capsule_receiver())
+                .ok_or(io::Error::from(io::ErrorKind::Other))?
+        },
+        GameUpdate::PhaseEnd(_) => return Ok(()),
+    };
+    let mut capsule_receiver = capsule_receiver.lock().map_err(|_| io::Error::from(io::ErrorKind::Other))?;
+    let mut actor = Actor::new(event_sender, &mut capsule_receiver, me.tag(), viruses, next_colours);
+
+    // Let the player grasp the field for a bit before the game starts
+    time::sleep(GRACE_PERIOD).await;
+
+    // Kick off the actual game
+    let mut tick_timer = Timer::new(tick_diration);
+    while !actor.is_defeated() {
+        use gameplay::Movement as M;
+
+        tokio::select! {
+            res = input.next() => match res {
+                Some(Ok('\x03')) | Some(Ok('\x04')) => return Err(io::ErrorKind::UnexpectedEof.into()),
+                Some(Ok('p')) | Some(Ok('P')) | Some(Ok('\x1b')) if !tick_timer.is_paused() => {
+                    tick_timer.pause();
+                    paused_text.draw(display).await?
+                },
+                Some(Ok('s')) | Some(Ok('S')) if !tick_timer.is_paused() =>
+                    actor.r#move(display, &field, M::Left).await?,
+                Some(Ok('d')) | Some(Ok('D')) if !tick_timer.is_paused() =>
+                    actor.r#move(display, &field, M::Right).await?,
+                Some(Ok('k')) | Some(Ok('K')) if !tick_timer.is_paused() =>
+                    actor.r#move(display, &field, M::RotateCCW).await?,
+                Some(Ok('l')) | Some(Ok('L')) if !tick_timer.is_paused() =>
+                    actor.r#move(display, &field, M::RotateCW).await?,
+                Some(Ok(' ')) if !tick_timer.is_paused() => if actor.is_controlled() {
+                    actor.tick(display, &field, rng).await?
+                },
+                Some(Ok(c)) => if tick_timer.is_paused() && !c.is_ascii_control() {
+                    tick_timer.resume();
+                    paused_text.erase(display).await?
+                },
+                Some(Err(e)) if e.kind() == io::ErrorKind::WouldBlock => (),
+                Some(Err(e)) => return Err(e),
+                None => (),
+            },
+            _ = tick_timer.tick() => actor.tick(display, &field, rng).await?,
+            _ = updates.changed() => match &*updates.borrow() {
+                GameUpdate::Update(scores) => scoreboard
+                    .update(display, scores.clone(), &me.tag())
+                    .await?,
+                GameUpdate::PhaseEnd(_) => return Ok(()),
+            },
+        }
+    }
+
+    // Let the defeated player do nothing until the round ended
+    loop {
+        tokio::select! {
+            res = input.next() => match res {
+                Some(Ok('\x03')) | Some(Ok('\x04')) => return Err(io::ErrorKind::UnexpectedEof.into()),
+                _ => (),
+            },
+            _ = updates.changed() => match &*updates.borrow() {
+                GameUpdate::Update(scores) => scoreboard
+                    .update(display, scores.clone(), &me.tag())
+                    .await?,
+                GameUpdate::PhaseEnd(_) => return Ok(()),
+            },
+        }
+    }
+}
 
 
 /// Game logic encapsulation

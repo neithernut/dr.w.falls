@@ -6,8 +6,51 @@ use std::sync::Arc;
 use tokio::sync::{Mutex, mpsc, watch};
 
 use crate::display;
+use crate::field;
 use crate::player;
 use crate::util;
+
+
+/// Categorization of currently active capsule elements
+///
+enum ActiveElements {
+    /// A controlled capsule exists
+    Controlled(field::ControlledCapsule),
+    /// Some uncontrolled elements exist including and above this row
+    Uncontrolled(field::MovingRowIndex),
+}
+
+impl ActiveElements {
+    /// Retrieve the lowest row containing active capsule elements
+    ///
+    pub fn lowest_row(&self) -> field::MovingRowIndex {
+        match self {
+            Self::Controlled(c) => c.row(),
+            Self::Uncontrolled(r) => *r,
+        }
+    }
+
+    /// Check whether the active elements are controlled
+    ///
+    pub fn is_controlled(&self) -> bool {
+        match self {
+            Self::Controlled(_) => true,
+            Self::Uncontrolled(_) => false,
+        }
+    }
+}
+
+impl From<field::ControlledCapsule> for ActiveElements {
+    fn from(capsule: field::ControlledCapsule) -> Self {
+        Self::Controlled(capsule)
+    }
+}
+
+impl From<field::MovingRowIndex> for ActiveElements {
+    fn from(row: field::MovingRowIndex) -> Self {
+        Self::Uncontrolled(row)
+    }
+}
 
 
 /// Create ports for communication between connection and control task

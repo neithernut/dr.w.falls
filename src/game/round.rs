@@ -38,14 +38,13 @@ impl<'a> Actor<'a> {
         viruses: HashMap<util::Position, util::Colour>,
         next_colours: [util::Colour; 2],
     ) -> Self {
-        let mut moving: gameplay::MovingField = Default::default();
+        let moving: gameplay::MovingField = Default::default();
         let r#static = viruses
             .iter()
             .map(|(p, c)| (p.clone(), c.clone()))
             .collect();
         // We'll start with an empty moving field. A capsule will be spawned on the first tick.
         let active = moving.moving_row_index(util::RowIndex::TOP_ROW).into();
-        let next_colours = [util::Colour::Red, util::Colour::Red];
         Self {event_sender, capsule_receiver, player_tag, moving, r#static, viruses, active, next_colours}
     }
 

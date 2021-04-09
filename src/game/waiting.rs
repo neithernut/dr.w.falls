@@ -13,7 +13,7 @@ use crate::display;
 ///
 /// This function provides the interface for the waiting phase.
 ///
-async fn waiting<E: Clone>(
+pub async fn waiting<E: Clone>(
     input: &mut super::ASCIIStream<impl io::AsyncRead + Unpin>,
     display: &mut display::Display<impl io::AsyncWrite + Unpin>,
     mut updates: watch::Receiver<GameUpdate<E>>,
@@ -63,13 +63,13 @@ async fn waiting<E: Clone>(
 
 /// Local type for game updates
 ///
-type GameUpdate<E> = super::GameUpdate<(Arc<Vec<ScoreBoardEntry>>, u8), E>;
+pub type GameUpdate<E> = super::GameUpdate<(Arc<Vec<ScoreBoardEntry>>, u8), E>;
 
 
 /// Score board entry for the waiting phase
 ///
 #[derive(PartialEq)]
-struct ScoreBoardEntry {
+pub struct ScoreBoardEntry {
     name: String,
     score: u32,
     ready: bool,

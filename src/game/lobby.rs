@@ -102,7 +102,7 @@ pub type GameUpdate<E> = super::GameUpdate<Arc<Vec<ScoreBoardEntry>>, E>;
 
 /// Registration request
 ///
-struct Registration {
+pub struct Registration {
     name: String,
     token: ConnectionToken,
     response: oneshot::Sender<RegistrationReply>
@@ -123,7 +123,7 @@ impl Registration {
 
 /// Reply to a registration request
 ///
-enum RegistrationReply {
+pub enum RegistrationReply {
     Accepted(super::PlayerHandle),
     Denied(DenialReason)
 }
@@ -137,7 +137,7 @@ impl From<DenialReason> for RegistrationReply {
 
 /// Reason for denial of a registration
 ///
-enum DenialReason {
+pub enum DenialReason {
     AcceptanceClosed,
     MaxPlayers,
     NameTaken,

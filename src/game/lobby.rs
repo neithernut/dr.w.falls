@@ -97,7 +97,7 @@ async fn lobby<E>(
 
 /// Local type for game updates
 ///
-type GameUpdate<E> = super::GameUpdate<Arc<Vec<ScoreBoardEntry>>, E>;
+pub type GameUpdate<E> = super::GameUpdate<Arc<Vec<ScoreBoardEntry>>, E>;
 
 
 /// Registration request
@@ -170,7 +170,7 @@ impl std::hash::Hash for ConnectionToken {
 /// Score board entry for the lobby phase
 ///
 #[derive(PartialEq)]
-struct ScoreBoardEntry {
+pub struct ScoreBoardEntry {
     name: String,
     tag: super::PlayerTag,
 }

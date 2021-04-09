@@ -14,16 +14,16 @@ use crate::util;
 
 /// Round phase function
 ///
-async fn round<E>(
+async fn round<E: Clone>(
     input: &mut super::ASCIIStream<'_>,
     display: &mut super::Display<'_>,
-    updates: &mut watch::Receiver<GameUpdate<E>>,
+    mut updates: watch::Receiver<GameUpdate<E>>,
     event_sender: mpsc::Sender<(super::PlayerTag, PlayerEvent)>,
     me: &super::PlayerHandle,
     viruses: HashMap<util::Position, util::Colour>,
     tick_diration: std::time::Duration,
     rng: &mut impl rand_core::RngCore,
-) -> io::Result<()> {
+) -> io::Result<super::PhaseEnd<E>> {
     use futures::stream::StreamExt;
 
     // Set up display
@@ -50,7 +50,7 @@ async fn round<E>(
                 .map(|e| e.capsule_receiver())
                 .ok_or(io::Error::from(io::ErrorKind::Other))?
         },
-        GameUpdate::PhaseEnd(_) => return Ok(()),
+        GameUpdate::PhaseEnd(e) => return Ok(e.clone()),
     };
     let mut capsule_receiver = capsule_receiver.lock().map_err(|_| io::Error::from(io::ErrorKind::Other))?;
     let mut actor = Actor::new(event_sender, &mut capsule_receiver, me.tag(), viruses, next_colours);
@@ -94,7 +94,7 @@ async fn round<E>(
                 GameUpdate::Update(scores) => scoreboard
                     .update(display, scores.clone(), &me.tag())
                     .await?,
-                GameUpdate::PhaseEnd(_) => return Ok(()),
+                GameUpdate::PhaseEnd(e) => return Ok(e.clone()),
             },
         }
     }
@@ -110,7 +110,7 @@ async fn round<E>(
                 GameUpdate::Update(scores) => scoreboard
                     .update(display, scores.clone(), &me.tag())
                     .await?,
-                GameUpdate::PhaseEnd(_) => return Ok(()),
+                GameUpdate::PhaseEnd(e) => break Ok(e.clone()),
             },
         }
     }

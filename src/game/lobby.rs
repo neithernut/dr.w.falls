@@ -12,13 +12,13 @@ use crate::display;
 ///
 /// This function provides the connection-task side of the lobby phase logic.
 ///
-async fn lobby<E>(
+pub async fn lobby<E: Clone>(
     input: &mut super::ASCIIStream<'_>,
     display: &mut super::Display<'_>,
-    updates: &mut watch::Receiver<GameUpdate<E>>,
+    mut updates: watch::Receiver<GameUpdate<E>>,
     reg_channel: mpsc::Sender<Registration>,
     token: ConnectionToken,
-) -> io::Result<super::PlayerHandle> {
+) -> io::Result<(super::PlayerHandle, super::PhaseEnd<E>)> {
     use futures::stream::StreamExt;
 
     // Set up display
@@ -86,12 +86,10 @@ async fn lobby<E>(
                 GameUpdate::Update(players) => scoreboard
                     .update(display, players.clone(), &super::PlayerHandle::default().tag())
                     .await?,
-                GameUpdate::PhaseEnd(_) => break,
+                GameUpdate::PhaseEnd(e) => break Ok((player, e.clone())),
             },
         }
     }
-
-    Ok(player)
 }
 
 

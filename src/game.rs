@@ -123,11 +123,6 @@ impl tokio_util::codec::Decoder for ASCIICharDecoder {
 }
 
 
-/// Local Display type
-///
-type Display<'a> = display::Display<tcp::WriteHalf<'a>>;
-
-
 /// Retrieve two columns for a Display
 ///
 fn columns(display: &mut display::Display<impl io::AsyncWrite + Unpin>) -> (display::Area, display::Area) {

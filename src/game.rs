@@ -13,7 +13,7 @@ use crate::display;
 
 /// Item type for game update channels
 ///
-enum GameUpdate<U,T> {
+pub enum GameUpdate<U,T> {
     Update(U),
     PhaseEnd(PhaseEnd<T>),
 }
@@ -22,7 +22,7 @@ enum GameUpdate<U,T> {
 /// Phase end messages
 ///
 #[derive(Clone)]
-enum PhaseEnd<T> {
+pub enum PhaseEnd<T> {
     Transition(T),
     EndOfGame,
 }

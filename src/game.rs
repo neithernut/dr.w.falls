@@ -6,11 +6,71 @@ mod round;
 
 
 use tokio::io;
-use tokio::net::tcp;
+use tokio::net::{self, tcp};
 use tokio::sync::{watch, mpsc};
 
 use crate::display;
 use crate::util;
+
+
+/// Serve the given connection
+///
+/// This function provides the game interface for players as well as the part
+/// of the game-logic bound to a specific connection.
+///
+pub async fn serve_connection(
+    mut stream: net::TcpStream,
+    updates: watch::Receiver<lobby::GameUpdate<WaitingPhasePreq<impl rand_core::RngCore + Clone>>>,
+    reg_channel: mpsc::Sender<lobby::Registration>,
+    token: lobby::ConnectionToken,
+) -> io::Result<()> {
+    let (conn_in, conn_out) = stream.split();
+
+    let mut input = ASCIIStream::new(conn_in, Default::default());
+    let mut display = display::Display::new(conn_out, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+    display.clear().await?;
+
+    let (handle, phase_end) = lobby::lobby(&mut input, &mut display, updates, reg_channel, token).await?;
+    let mut prep = match phase_end {
+        PhaseEnd::Transition(t) => t,
+        PhaseEnd::EndOfGame => return Ok(()),
+    };
+
+    loop {
+        prep = {
+            display.clear().await?;
+            let phase_end = waiting::waiting(
+                &mut input,
+                &mut display,
+                prep.updates,
+                prep.ready_channel,
+                &handle
+            ).await?;
+
+            let prep = match phase_end {
+                PhaseEnd::Transition(t) => t,
+                PhaseEnd::EndOfGame => return Ok(()),
+            };
+
+            display.clear().await?;
+            let phase_end = round::round(
+                &mut input,
+                &mut display,
+                prep.updates,
+                prep.event_sender,
+                &handle,
+                prep.viruses,
+                prep.tick_diration,
+                prep.rng,
+            ).await?;
+
+            match phase_end {
+                PhaseEnd::Transition(t) => t,
+                PhaseEnd::EndOfGame => return Ok(()),
+            }
+        };
+    }
+}
 
 
 /// Prequisites for the waiting phase

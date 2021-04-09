@@ -13,8 +13,8 @@ use crate::display;
 /// This function provides the connection-task side of the lobby phase logic.
 ///
 pub async fn lobby<E: Clone>(
-    input: &mut super::ASCIIStream<'_>,
-    display: &mut super::Display<'_>,
+    input: &mut super::ASCIIStream<impl io::AsyncRead + Unpin>,
+    display: &mut display::Display<impl io::AsyncWrite + Unpin>,
     mut updates: watch::Receiver<GameUpdate<E>>,
     reg_channel: mpsc::Sender<Registration>,
     token: ConnectionToken,

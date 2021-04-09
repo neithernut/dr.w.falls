@@ -91,7 +91,7 @@ impl PartialEq<PlayerTag> for PlayerTag {
 
 /// A stream of ASCII characters
 ///
-type ASCIIStream<'a> = tokio_util::codec::FramedRead<tcp::ReadHalf<'a>, ASCIICharDecoder>;
+type ASCIIStream<R> = tokio_util::codec::FramedRead<R, ASCIICharDecoder>;
 
 
 /// Decoder for single ASCII characters

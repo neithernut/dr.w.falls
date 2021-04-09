@@ -15,8 +15,8 @@ use crate::util;
 /// Round phase function
 ///
 async fn round<E: Clone>(
-    input: &mut super::ASCIIStream<'_>,
-    display: &mut super::Display<'_>,
+    input: &mut super::ASCIIStream<impl io::AsyncRead + Unpin>,
+    display: &mut display::Display<impl io::AsyncWrite + Unpin>,
     mut updates: watch::Receiver<GameUpdate<E>>,
     event_sender: mpsc::Sender<(super::PlayerTag, PlayerEvent)>,
     me: &super::PlayerHandle,

@@ -14,8 +14,8 @@ use crate::display;
 /// This function provides the interface for the waiting phase.
 ///
 async fn waiting<E: Clone>(
-    input: &mut super::ASCIIStream<'_>,
-    display: &mut super::Display<'_>,
+    input: &mut super::ASCIIStream<impl io::AsyncRead + Unpin>,
+    display: &mut display::Display<impl io::AsyncWrite + Unpin>,
     mut updates: watch::Receiver<GameUpdate<E>>,
     ready_channel: mpsc::Sender<super::PlayerTag>,
     me: &super::PlayerHandle,

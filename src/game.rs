@@ -96,7 +96,7 @@ type ASCIIStream<'a> = tokio_util::codec::FramedRead<tcp::ReadHalf<'a>, ASCIICha
 
 /// Decoder for single ASCII characters
 ///
-struct ASCIICharDecoder {}
+pub struct ASCIICharDecoder {}
 
 impl tokio_util::codec::Decoder for ASCIICharDecoder {
     type Item = char;

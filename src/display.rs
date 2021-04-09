@@ -60,6 +60,12 @@ impl<W> Display<W>
 
         self.writer.send(cmds)
     }
+
+    /// Clear the screen
+    ///
+    pub fn clear<'a>(&'a mut self) -> impl Future<Output = io::Result<()>> + 'a {
+        self.send(std::iter::once(DrawCommand::ClearScreen))
+    }
 }
 
 

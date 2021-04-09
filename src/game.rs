@@ -21,6 +21,7 @@ enum GameUpdate<U,T> {
 
 /// Phase end messages
 ///
+#[derive(Clone)]
 enum PhaseEnd<T> {
     Transition(T),
     EndOfGame,

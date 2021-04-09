@@ -35,7 +35,7 @@ pub async fn round<E: Clone>(
     let next_colours = random_colours(&mut rng);
 
     field.draw_outlines(display).await?;
-    field.place_viruses(display, viruses.iter().map(|(p, c)| (p.clone(), c.clone()))).await?;
+    field.place_viruses(display, viruses.clone().into_iter()).await?;
     field.place_next_elements(display, next_colours[0], next_colours[1]).await?;
 
     // Set the game object(s)

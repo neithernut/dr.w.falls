@@ -13,13 +13,13 @@ use crate::display;
 ///
 /// This function provides the interface for the waiting phase.
 ///
-async fn waiting<E>(
+async fn waiting<E: Clone>(
     input: &mut super::ASCIIStream<'_>,
     display: &mut super::Display<'_>,
-    updates: &mut watch::Receiver<GameUpdate<E>>,
+    mut updates: watch::Receiver<GameUpdate<E>>,
     ready_channel: mpsc::Sender<super::PlayerTag>,
     me: &super::PlayerHandle,
-) -> io::Result<()> {
+) -> io::Result<super::PhaseEnd<E>> {
     use futures::stream::StreamExt;
 
     // Set up display
@@ -54,12 +54,10 @@ async fn waiting<E>(
                     num.update(display, (*count).into()).await?;
                     scoreboard.update(display, scores.clone(), &me.tag()).await?;
                 },
-                GameUpdate::PhaseEnd(_) => break,
+                GameUpdate::PhaseEnd(e) => break Ok(e.clone()),
             },
         }
     }
-
-    Ok(())
 }
 
 

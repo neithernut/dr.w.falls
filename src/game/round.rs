@@ -14,7 +14,7 @@ use crate::util;
 
 /// Round phase function
 ///
-async fn round<E: Clone>(
+pub async fn round<E: Clone>(
     input: &mut super::ASCIIStream<impl io::AsyncRead + Unpin>,
     display: &mut display::Display<impl io::AsyncWrite + Unpin>,
     mut updates: watch::Receiver<GameUpdate<E>>,
@@ -401,12 +401,12 @@ enum ResumableInterval {
 
 /// Local type for game updates
 ///
-type GameUpdate<E> = super::GameUpdate<sync::Arc<Vec<ScoreBoardEntry>>, E>;
+pub type GameUpdate<E> = super::GameUpdate<sync::Arc<Vec<ScoreBoardEntry>>, E>;
 
 
 /// Message type for events associated with a particular player
 ///
-enum PlayerEvent {
+pub enum PlayerEvent {
     /// Capsules to be sent to ther players
     Capsules(Vec<util::Colour>),
     /// The player's score has changed
@@ -419,7 +419,7 @@ enum PlayerEvent {
 /// Score board entry for the waiting phase
 ///
 #[derive(PartialEq)]
-struct ScoreBoardEntry {
+pub struct ScoreBoardEntry {
     name: String,
     total_score: u32,
     round_score: u32,
@@ -465,7 +465,7 @@ impl display::ScoreBoardEntry for ScoreBoardEntry {
 /// Wrapper for capsule receivers
 ///
 #[derive(Clone)]
-struct CapsuleReceiver {
+pub struct CapsuleReceiver {
     inner: sync::Arc<sync::Mutex<mpsc::Receiver<Capsules>>>
 }
 

@@ -54,7 +54,7 @@ enum GamePhase {
 /// Player handle
 ///
 #[derive(Default)]
-struct PlayerHandle {
+pub struct PlayerHandle {
     data: std::sync::Arc<()>,
 }
 

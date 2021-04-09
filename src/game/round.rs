@@ -162,7 +162,7 @@ impl<'a> Actor<'a> {
     ///
     pub async fn r#move(
         &mut self,
-        display: &mut super::Display<'_>,
+        display: &mut display::Display<impl io::AsyncWrite + Unpin>,
         field: &display::PlayField,
         movement: gameplay::Movement,
     ) -> io::Result<()> {
@@ -196,7 +196,7 @@ impl<'a> Actor<'a> {
     ///
     pub async fn tick(
         &mut self,
-        display: &mut super::Display<'_>,
+        display: &mut display::Display<impl io::AsyncWrite + Unpin>,
         field: &display::PlayField,
         rng: &mut impl rand_core::RngCore,
     ) -> io::Result<()> {

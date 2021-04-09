@@ -119,6 +119,7 @@ type ASCIIStream<R> = tokio_util::codec::FramedRead<R, ASCIICharDecoder>;
 
 /// Decoder for single ASCII characters
 ///
+#[derive(Default)]
 pub struct ASCIICharDecoder {}
 
 impl tokio_util::codec::Decoder for ASCIICharDecoder {

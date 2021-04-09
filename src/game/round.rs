@@ -22,7 +22,7 @@ async fn round<E: Clone>(
     me: &super::PlayerHandle,
     viruses: HashMap<util::Position, util::Colour>,
     tick_diration: std::time::Duration,
-    rng: &mut impl rand_core::RngCore,
+    mut rng: impl rand_core::RngCore,
 ) -> io::Result<super::PhaseEnd<E>> {
     use futures::stream::StreamExt;
 
@@ -32,7 +32,7 @@ async fn round<E: Clone>(
     let mut scoreboard = right.topleft_in(display::ScoreBoardFactory::<ScoreBoardEntry>::default());
     let (mut paused_text, _) = left.top_padded(1).top_in("PAUSED");
 
-    let next_colours = random_colours(rng);
+    let next_colours = random_colours(&mut rng);
 
     field.draw_outlines(display).await?;
     field.place_viruses(display, viruses.iter().map(|(p, c)| (p.clone(), c.clone()))).await?;
@@ -79,7 +79,7 @@ async fn round<E: Clone>(
                 Some(Ok('l')) | Some(Ok('L')) if !tick_timer.is_paused() =>
                     actor.r#move(display, &field, M::RotateCW).await?,
                 Some(Ok(' ')) if !tick_timer.is_paused() => if actor.is_controlled() {
-                    actor.tick(display, &field, rng).await?
+                    actor.tick(display, &field, &mut rng).await?
                 },
                 Some(Ok(c)) => if tick_timer.is_paused() && !c.is_ascii_control() {
                     tick_timer.resume();
@@ -89,7 +89,7 @@ async fn round<E: Clone>(
                 Some(Err(e)) => return Err(e),
                 None => (),
             },
-            _ = tick_timer.tick() => actor.tick(display, &field, rng).await?,
+            _ = tick_timer.tick() => actor.tick(display, &field, &mut rng).await?,
             _ = updates.changed() => match &*updates.borrow() {
                 GameUpdate::Update(scores) => scoreboard
                     .update(display, scores.clone(), &me.tag())

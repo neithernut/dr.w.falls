@@ -47,13 +47,12 @@ pub async fn round<E: Clone>(
             scores
                 .iter()
                 .find(|e| e.tag() == me.tag())
-                .map(|e| e.capsule_receiver())
+                .map(|e| e.capsule_receiver().take())
                 .ok_or(io::Error::from(io::ErrorKind::Other))?
         },
         GameUpdate::PhaseEnd(e) => return Ok(e.clone()),
     };
-    let mut capsule_receiver = capsule_receiver.lock().map_err(|_| io::Error::from(io::ErrorKind::Other))?;
-    let mut actor = Actor::new(event_sender, &mut capsule_receiver, me.tag(), viruses, next_colours);
+    let mut actor = Actor::new(event_sender, capsule_receiver, me.tag(), viruses, next_colours);
 
     // Let the player grasp the field for a bit before the game starts
     time::sleep(GRACE_PERIOD).await;
@@ -122,9 +121,9 @@ pub async fn round<E: Clone>(
 /// This data type provides the core logic for a round, exposed as functions.
 /// These include functions for performing both controlled moves and ticks.
 ///
-struct Actor<'a> {
+struct Actor {
     event_sender: mpsc::Sender<(super::PlayerTag, PlayerEvent)>,
-    capsule_receiver: &'a mut mpsc::Receiver<Capsules>,
+    capsule_receiver: mpsc::Receiver<Capsules>,
     player_tag: super::PlayerTag,
     moving: gameplay::MovingField,
     r#static: gameplay::StaticField,
@@ -133,12 +132,12 @@ struct Actor<'a> {
     next_colours: [util::Colour; 2],
 }
 
-impl<'a> Actor<'a> {
+impl Actor {
     /// Create a new actor
     ///
     pub fn new(
         event_sender: mpsc::Sender<(super::PlayerTag, PlayerEvent)>,
-        capsule_receiver: &'a mut mpsc::Receiver<Capsules>,
+        capsule_receiver: mpsc::Receiver<Capsules>,
         player_tag: super::PlayerTag,
         viruses: HashMap<util::Position, util::Colour>,
         next_colours: [util::Colour; 2],
@@ -466,20 +465,20 @@ impl display::ScoreBoardEntry for ScoreBoardEntry {
 ///
 #[derive(Clone)]
 pub struct CapsuleReceiver {
-    inner: sync::Arc<sync::Mutex<mpsc::Receiver<Capsules>>>
+    inner: sync::Arc<sync::Mutex<Option<mpsc::Receiver<Capsules>>>>
 }
 
 impl CapsuleReceiver {
     /// Get a locked inner receiver
     ///
-    pub fn lock(&self) -> sync::LockResult<sync::MutexGuard<'_, mpsc::Receiver<Capsules>>> {
-        self.inner.lock()
+    pub fn take(&self) -> Option<mpsc::Receiver<Capsules>> {
+        self.inner.lock().ok().and_then(|mut i| i.take())
     }
 }
 
 impl From<mpsc::Receiver<Capsules>> for CapsuleReceiver {
     fn from(inner: mpsc::Receiver<Capsules>) -> Self {
-        Self {inner: sync::Arc::new(sync::Mutex::new(inner))}
+        Self {inner: sync::Arc::new(sync::Mutex::new(Some(inner)))}
     }
 }
 

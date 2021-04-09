@@ -7,8 +7,31 @@ mod round;
 
 use tokio::io;
 use tokio::net::tcp;
+use tokio::sync::{watch, mpsc};
 
 use crate::display;
+use crate::util;
+
+
+/// Prequisites for the waiting phase
+///
+#[derive(Clone)]
+pub struct WaitingPhasePreq<R: rand_core::RngCore> {
+    updates: watch::Receiver<waiting::GameUpdate<RoundPhasePreq<R>>>,
+    ready_channel: mpsc::Sender<PlayerTag>,
+}
+
+
+/// Prequisites for the round phase
+///
+#[derive(Clone)]
+pub struct RoundPhasePreq<R: rand_core::RngCore> {
+    updates: watch::Receiver<round::GameUpdate<WaitingPhasePreq<R>>>,
+    event_sender: mpsc::Sender<(PlayerTag, round::PlayerEvent)>,
+    viruses: std::collections::HashMap<util::Position, util::Colour>,
+    tick_diration: std::time::Duration,
+    rng: R,
+}
 
 
 /// Item type for game update channels

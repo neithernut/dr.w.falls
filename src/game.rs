@@ -130,7 +130,7 @@ type Display<'a> = display::Display<tcp::WriteHalf<'a>>;
 
 /// Retrieve two columns for a Display
 ///
-fn columns(display: &mut Display) -> (display::Area, display::Area) {
+fn columns(display: &mut display::Display<impl io::AsyncWrite + Unpin>) -> (display::Area, display::Area) {
     let area = display.area();
     let width = area.width();
     let (left, right) = area.split_vertically(width / 2);

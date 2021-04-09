@@ -223,3 +223,13 @@ const INSTRUCTIONS: [&str; 8] = [
     "any:   resume game",
 ];
 
+
+/// Assumed width of the player's terminal
+///
+const DISPLAY_WIDTH: u16 = 80;
+
+
+/// Assumed height of the player's terminal
+///
+const DISPLAY_HEIGHT: u16 = 24;
+

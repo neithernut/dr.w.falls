@@ -39,20 +39,21 @@ pub async fn round<E: Clone>(
     field.place_next_elements(display, next_colours[0], next_colours[1]).await?;
 
     // Set the game object(s)
-    let capsule_receiver = match &*updates.borrow() {
-        GameUpdate::Update(scores) => {
-            use display::ScoreBoardEntry;
-
-            scoreboard.update(display, scores.clone(), &me.tag()).await?;
-            scores
-                .iter()
-                .find(|e| e.tag() == me.tag())
-                .map(|e| e.capsule_receiver().take())
-                .ok_or(io::Error::from(io::ErrorKind::Other))?
-        },
+    let scores = match &*updates.borrow() {
+        GameUpdate::Update(scores) => scores.clone(),
         GameUpdate::PhaseEnd(e) => return Ok(e.clone()),
     };
+    let capsule_receiver = scores
+        .iter()
+        .find(|e| {
+            use display::ScoreBoardEntry;
+            e.tag() == me.tag()
+        })
+        .and_then(|e| e.capsule_receiver().take())
+        .ok_or(io::Error::from(io::ErrorKind::Other))?;
     let mut actor = Actor::new(event_sender, capsule_receiver, me.tag(), viruses, next_colours);
+
+    scoreboard.update(display, scores, &me.tag()).await?;
 
     // Let the player grasp the field for a bit before the game starts
     time::sleep(GRACE_PERIOD).await;
@@ -89,11 +90,12 @@ pub async fn round<E: Clone>(
                 None => (),
             },
             _ = tick_timer.tick() => actor.tick(display, &field, &mut rng).await?,
-            _ = updates.changed() => match &*updates.borrow() {
-                GameUpdate::Update(scores) => scoreboard
-                    .update(display, scores.clone(), &me.tag())
-                    .await?,
-                GameUpdate::PhaseEnd(e) => return Ok(e.clone()),
+            _ = updates.changed() => {
+                let players = match &*updates.borrow() {
+                    GameUpdate::Update(players) => players.clone(),
+                    GameUpdate::PhaseEnd(e) => return Ok(e.clone()),
+                };
+                scoreboard.update(display, players, &me.tag()).await?
             },
         }
     }
@@ -105,11 +107,12 @@ pub async fn round<E: Clone>(
                 Some(Ok('\x03')) | Some(Ok('\x04')) => return Err(io::ErrorKind::UnexpectedEof.into()),
                 _ => (),
             },
-            _ = updates.changed() => match &*updates.borrow() {
-                GameUpdate::Update(scores) => scoreboard
-                    .update(display, scores.clone(), &me.tag())
-                    .await?,
-                GameUpdate::PhaseEnd(e) => break Ok(e.clone()),
+            _ = updates.changed() => {
+                let players = match &*updates.borrow() {
+                    GameUpdate::Update(players) => players.clone(),
+                    GameUpdate::PhaseEnd(e) => break Ok(e.clone()),
+                };
+                scoreboard.update(display, players, &me.tag()).await?
             },
         }
     }

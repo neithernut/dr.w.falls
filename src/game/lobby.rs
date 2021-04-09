@@ -64,11 +64,12 @@ pub async fn lobby<E: Clone>(
                 Some(Err(e)) => return Err(e),
                 None => (),
             },
-            _ = updates.changed() => match &*updates.borrow() {
-                GameUpdate::Update(players) => scoreboard
-                    .update(display, players.clone(), &super::PlayerHandle::default().tag())
-                    .await?,
-                GameUpdate::PhaseEnd(_) => return Err(io::ErrorKind::Other.into()),
+            _ = updates.changed() => {
+                let players = match &*updates.borrow() {
+                    GameUpdate::Update(players) => players.clone(),
+                    GameUpdate::PhaseEnd(e) => return Err(io::ErrorKind::Other.into()),
+                };
+                scoreboard.update(display, players, &super::PlayerHandle::default().tag()).await?;
             },
         }
     };
@@ -82,11 +83,12 @@ pub async fn lobby<E: Clone>(
                 Some(Err(e)) if e.kind() != io::ErrorKind::WouldBlock => return Err(e),
                 _ => (),
             },
-            _ = updates.changed() => match &*updates.borrow() {
-                GameUpdate::Update(players) => scoreboard
-                    .update(display, players.clone(), &super::PlayerHandle::default().tag())
-                    .await?,
-                GameUpdate::PhaseEnd(e) => break Ok((player, e.clone())),
+            _ = updates.changed() => {
+                let players = match &*updates.borrow() {
+                    GameUpdate::Update(players) => players.clone(),
+                    GameUpdate::PhaseEnd(e) => break Ok((player, e.clone())),
+                };
+                scoreboard.update(display, players, &super::PlayerHandle::default().tag()).await?;
             },
         }
     }

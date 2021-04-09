@@ -49,12 +49,13 @@ pub async fn waiting<E: Clone>(
                 Some(Err(e)) => return Err(e),
                 None => (),
             },
-            _ = updates.changed() => match &*updates.borrow() {
-                GameUpdate::Update((scores, count)) => {
-                    num.update(display, (*count).into()).await?;
-                    scoreboard.update(display, scores.clone(), &me.tag()).await?;
-                },
-                GameUpdate::PhaseEnd(e) => break Ok(e.clone()),
+            _ = updates.changed() => {
+                let (scores, count) = match &*updates.borrow() {
+                    GameUpdate::Update(u) => u.clone(),
+                    GameUpdate::PhaseEnd(e) => break Ok(e.clone()),
+                };
+                num.update(display, count.into()).await?;
+                scoreboard.update(display, scores, &me.tag()).await?;
             },
         }
     }

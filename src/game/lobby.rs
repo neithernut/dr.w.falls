@@ -148,7 +148,7 @@ pub enum DenialReason {
 /// Connection token
 ///
 #[derive(Clone)]
-struct ConnectionToken {
+pub struct ConnectionToken {
     data: Arc<()>,
 }
 

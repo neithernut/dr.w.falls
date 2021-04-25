@@ -149,7 +149,7 @@ pub enum DenialReason {
 ///
 #[derive(Clone)]
 pub struct ConnectionToken {
-    data: Arc<()>,
+    data: Arc<std::net::SocketAddr>,
 }
 
 impl Eq for ConnectionToken {}

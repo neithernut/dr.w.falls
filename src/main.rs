@@ -21,14 +21,21 @@ type Roster = Vec<Player>;
 struct Player {
     name: String,
     tag: game::PlayerTag,
+    peer: std::net::SocketAddr,
+    task: game::ConnTaskHandle,
     score: u32,
 }
 
 impl Player {
     /// Create a new player
     ///
-    pub fn new(name: String, tag: game::PlayerTag) -> Self {
-        Self {name, tag, score: 0}
+    pub fn new(
+        name: String,
+        tag: game::PlayerTag,
+        peer: std::net::SocketAddr,
+        task: game::ConnTaskHandle,
+    ) -> Self {
+        Self {name, tag, peer, task, score: 0}
     }
 }
 

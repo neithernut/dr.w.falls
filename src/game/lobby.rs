@@ -100,6 +100,14 @@ pub async fn lobby<E: Clone>(
 pub type GameUpdate<E> = super::GameUpdate<Arc<Vec<ScoreBoardEntry>>, E>;
 
 
+/// Control message specific to the lobby phase
+///
+enum LobbyControl {
+    Settings{registration_acceptance: bool, max_players: u8},
+    GameStart(watch::Receiver<super::GameControl>),
+}
+
+
 /// Registration request
 ///
 pub struct Registration {

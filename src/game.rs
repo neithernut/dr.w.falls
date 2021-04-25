@@ -172,6 +172,11 @@ impl PartialEq<PlayerTag> for PlayerTag {
 }
 
 
+/// Convenience type for the JoinHandles of connection tasks
+///
+pub type ConnTaskHandle = tokio::task::JoinHandle<tokio::io::Result<()>>;
+
+
 /// A stream of ASCII characters
 ///
 type ASCIIStream<R> = tokio_util::codec::FramedRead<R, ASCIICharDecoder>;

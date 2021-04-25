@@ -158,6 +158,15 @@ pub struct ControlPorts {
 }
 
 
+/// Control message specific to the lobby phase
+///
+#[derive(Clone, Debug)]
+pub enum LobbyControl {
+    Settings{registration_acceptance: bool, max_players: u8},
+    GameStart(watch::Receiver<super::GameControl>),
+}
+
+
 /// Registration request
 ///
 #[derive(Debug)]

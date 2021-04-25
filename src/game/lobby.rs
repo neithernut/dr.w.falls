@@ -142,6 +142,7 @@ pub enum DenialReason {
     MaxPlayers,
     NameTaken,
     RosterAccess,
+    Other,
 }
 
 

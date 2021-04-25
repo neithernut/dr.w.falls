@@ -184,6 +184,14 @@ pub struct ScoreBoardEntry {
     tag: super::PlayerTag,
 }
 
+impl ScoreBoardEntry {
+    /// Create a new score board entry
+    ///
+    pub fn new(name: String, tag: super::PlayerTag) -> Self {
+        Self {name, tag}
+    }
+}
+
 impl display::ScoreBoardEntry for ScoreBoardEntry {
     type Tag = super::PlayerTag;
 

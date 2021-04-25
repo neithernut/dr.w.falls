@@ -96,6 +96,7 @@ pub struct RoundPhasePreq<R: rand_core::RngCore> {
 
 /// Item type for game update channels
 ///
+#[derive(Debug)]
 pub enum GameUpdate<U,T> {
     Update(U),
     PhaseEnd(PhaseEnd<T>),
@@ -104,7 +105,7 @@ pub enum GameUpdate<U,T> {
 
 /// Phase end messages
 ///
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum PhaseEnd<T> {
     Transition(T),
     EndOfGame,
@@ -154,7 +155,7 @@ impl PlayerHandle {
 ///
 /// A value of this type allows identifying a player (via comparison)
 ///
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PlayerTag {
     data: std::sync::Weak<()>,
 }

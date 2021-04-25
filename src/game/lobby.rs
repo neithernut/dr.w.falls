@@ -1,11 +1,14 @@
 //! Implementation of the lobby phase
 
 use std::sync::Arc;
+use std::sync::RwLock;
 
 use tokio::io;
+use tokio::net;
 use tokio::sync::{watch, mpsc, oneshot};
 
 use crate::display;
+use crate::Roster;
 
 
 /// Lobby phase function
@@ -95,6 +98,94 @@ pub async fn lobby<E: Clone>(
 }
 
 
+/// Lobby control function
+///
+/// This function implements the central control logic for the lobby phase.
+///
+pub async fn control_lobby<F, R, O>(
+    listener: net::TcpListener,
+    serve_conn: F,
+    update_sender: &mut watch::Sender<GameUpdate<R>>,
+    update_receiver: watch::Receiver<GameUpdate<R>>,
+    mut control: watch::Receiver<LobbyControl>,
+    roster: Arc<RwLock<Roster>>,
+) -> io::Result<watch::Receiver<super::GameControl>>
+where F: Fn(
+        net::TcpStream,
+        watch::Receiver<GameUpdate<R>>,
+        mpsc::Sender<Registration>,
+        ConnectionToken,
+      ) -> O + 'static + Send + Sync + Copy,
+      R: 'static + Send + Sync + std::fmt::Debug,
+      O: std::future::Future<Output = io::Result<()>> + Send,
+{
+    use crate::util::TryExt;
+
+    let mut accept = true;
+    let mut max_players: u8 = 20;
+
+    let (registrator, mut registrations) = mpsc::channel::<Registration>(1);
+
+    let mut tokens: std::collections::HashMap<ConnectionToken, super::ConnTaskHandle> = Default::default();
+
+    loop {
+        tokio::select! {
+            stream = listener.accept(), if accept => {
+                let (stream, peer) = stream?;
+                log::info!("Accepting connection from {}", peer);
+                let updates = update_receiver.clone();
+                let reg_chan = registrator.clone();
+                let token = ConnectionToken {data: Arc::new(peer)};
+
+                let conn_task = tokio::spawn({
+                    let token = token.clone();
+                    async move { serve_conn(stream, updates, reg_chan, token).await }
+                });
+                tokens.insert(token, conn_task);
+            },
+            _ = control.changed() => match &*control.borrow() {
+                LobbyControl::Settings{registration_acceptance: a, max_players: m} => {
+                    accept = *a;
+                    max_players = *m;
+                },
+                LobbyControl::GameStart(c) => break Ok(c.clone()),
+            },
+            registration = registrations.recv() => if let Some(r) = registration {
+                let res = if let Ok(mut roster) = roster.write() {
+                    if !accept {
+                        DenialReason::AcceptanceClosed.into()
+                    } else if roster.len() >= max_players as usize {
+                        DenialReason::MaxPlayers.into()
+                    } else if roster.iter().any(|p| p.name == r.name) {
+                        DenialReason::NameTaken.into()
+                    } else if let Some(conn_handle) = tokens.remove(&r.token) {
+                        let player_handle: super::PlayerHandle = Default::default();
+                        roster.push(
+                            crate::Player::new(r.name, player_handle.tag(), *r.token.data, conn_handle)
+                        );
+                        let scores: Vec<_> = roster
+                            .iter()
+                            .map(|p| ScoreBoardEntry::new(p.name.clone(), p.tag.clone()))
+                            .collect();
+                        update_sender
+                            .send(GameUpdate::Update(Arc::new(scores)))
+                            .or_warn("Could not send updates");
+                        RegistrationReply::Accepted(player_handle)
+                    } else {
+                        log::warn!("No connection token found for {}", r.token.data);
+                        DenialReason::Other.into()
+                    }
+                } else {
+                    log::warn!("Could not access roster");
+                    DenialReason::RosterAccess.into()
+                };
+                r.response.send(res).ok().or_warn("Failed to send reply");
+            },
+        }
+    }
+}
+
+
 /// Local type for game updates
 ///
 pub type GameUpdate<E> = super::GameUpdate<Arc<Vec<ScoreBoardEntry>>, E>;
@@ -102,7 +193,7 @@ pub type GameUpdate<E> = super::GameUpdate<Arc<Vec<ScoreBoardEntry>>, E>;
 
 /// Control message specific to the lobby phase
 ///
-enum LobbyControl {
+pub enum LobbyControl {
     Settings{registration_acceptance: bool, max_players: u8},
     GameStart(watch::Receiver<super::GameControl>),
 }

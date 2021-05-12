@@ -549,6 +549,11 @@ type Capsules = Vec<(util::ColumnIndex, util::Colour)>;
 const MIN_CAPSULES_SEND: usize = 2;
 
 
+/// The maximum number of capsules sent to a single player
+///
+const MAX_CAPSULE_RECEIVE: usize = 4;
+
+
 /// Grace period before the first tick
 ///
 const GRACE_PERIOD: time::Duration = time::Duration::from_secs(2);

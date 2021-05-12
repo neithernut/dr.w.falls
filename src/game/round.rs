@@ -420,7 +420,7 @@ pub enum PlayerEvent {
 
 /// Score board entry for the waiting phase
 ///
-#[derive(PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ScoreBoardEntry {
     name: String,
     total_score: u32,
@@ -466,7 +466,7 @@ impl display::ScoreBoardEntry for ScoreBoardEntry {
 
 /// Wrapper for capsule receivers
 ///
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CapsuleReceiver {
     inner: sync::Arc<sync::Mutex<Option<mpsc::Receiver<Capsules>>>>
 }

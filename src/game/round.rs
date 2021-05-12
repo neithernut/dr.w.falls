@@ -7,6 +7,7 @@ use tokio::io;
 use tokio::sync::{mpsc, watch};
 use tokio::time;
 
+use crate::Roster;
 use crate::display;
 use crate::gameplay;
 use crate::util;
@@ -116,6 +117,93 @@ pub async fn round<E: Clone>(
             },
         }
     }
+}
+
+
+/// Round control function
+///
+/// This function implements the central control logic for the round phase.
+///
+pub async fn control_round<E: Clone + std::fmt::Debug>(
+    update_sender: &mut watch::Sender<GameUpdate<E>>,
+    mut events: mpsc::Receiver<(super::PlayerTag, PlayerEvent)>,
+    roster: sync::Arc<sync::RwLock<Roster>>,
+    virus_count: u8,
+    mut rng: impl rand_core::RngCore,
+) -> io::Result<()> {
+    use crate::util::TryExt;
+
+    let (mut scores, mut active): (Vec<_>, std::collections::HashMap<_, _>) = roster
+        .read()
+        .map_err(|_| io::ErrorKind::Other)?
+        .iter()
+        .map(|p| {
+            let (sender, receiver) = mpsc::channel(20);
+            let score = ScoreBoardEntry::new(
+                p.name.clone(),
+                p.tag.clone(),
+                p.score,
+                virus_count.into(),
+                receiver
+            );
+            let active = (p.tag.clone(), sender);
+            (score, active)
+        }).unzip();
+
+    while !active.is_empty() {
+        use crate::display::ScoreBoardEntry;
+
+        scores.sort_by_key(|p| p.extra());
+        update_sender
+            .send(GameUpdate::Update(std::sync::Arc::new(scores.clone())))
+            .or_warn("Could not send updates");
+
+        let (player, event) = events
+            .recv()
+            .await
+            .ok_or(io::ErrorKind::Other)?;
+        match event {
+            PlayerEvent::Capsules(elements) => {
+                use std::convert::TryInto;
+
+                let max = scores.first().or_warn("Empty score board").ok_or(io::ErrorKind::Other)?.extra();
+                let targets: Vec<_> = scores
+                    .iter()
+                    .take_while(|p| p.extra() >= max)
+                    .filter_map(|p| active.get(&p.tag()))
+                    .collect();
+                let with_colidx = |e: &[_]| e
+                    .iter()
+                    .cloned()
+                    .map(|e| (
+                        (rng.next_u32() as usize % util::FIELD_WIDTH as usize)
+                            .try_into()
+                            .expect("Could not convert to field index"),
+                        e
+                    )).collect();
+                let sends = elements
+                    .chunks((elements.len() / targets.len()).clamp(1, MAX_CAPSULE_RECEIVE))
+                    .map(with_colidx)
+                    .zip(targets);
+                for (elements, target) in sends {
+                    target.send(elements).await.ok().or_warn("Could not send capsules");
+                }
+            },
+            PlayerEvent::Score(score) => {
+                if let Some(entry) = scores.iter_mut().find(|e| e.tag() == player) {
+                    entry.set_score(score);
+                } else {
+                    log::warn!("Could not find entry for player tag");
+                }
+                if score == 0 {
+                    active.remove(&player).or_warn("Winning player not active");
+                }
+            },
+            PlayerEvent::Defeat => { active.remove(&player).or_warn("Defeated player not active"); },
+        }
+    }
+
+    Ok(())
 }
 
 

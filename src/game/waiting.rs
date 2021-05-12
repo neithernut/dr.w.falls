@@ -127,3 +127,11 @@ impl display::ScoreBoardEntry for ScoreBoardEntry {
     }
 }
 
+
+/// Waiting time in seconds
+///
+/// This constant is used as the initial value for the counter used for counting
+/// down seconds.
+///
+const WAITING_TIME: u8 = 60;
+

@@ -442,6 +442,12 @@ impl ScoreBoardEntry {
         Self {name, total_score, round_score, tag, capsule_receiver: receiver.into()}
     }
 
+    /// Set the player's round score
+    ///
+    pub fn set_score(&mut self, score: u32) {
+        self.round_score = score;
+    }
+
     /// Get the capsule receiver associated with this entry
     ///
     pub fn capsule_receiver(&self) -> CapsuleReceiver {

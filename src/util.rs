@@ -72,7 +72,7 @@ impl Direction {
 /// Instances of this type serve as an index for a row in a field. It represents
 /// values from `0` (for the top row) to `15` (for the bottom row).
 ///
-#[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct RowIndex {
     data: u8,
 }
@@ -112,7 +112,7 @@ pub const ROWS: RangeInclusive<RowIndex> = RangeInclusive::new(RowIndex::TOP_ROW
 /// represents values from `0` (for the leftmost column) to `7` (for the
 /// rightmost column).
 ///
-#[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct ColumnIndex {
     data: u8,
 }

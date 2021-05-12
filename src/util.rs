@@ -275,7 +275,7 @@ pub fn complete_row(row: RowIndex) -> impl Iterator<Item = Position> {
 
 /// Colour of viruses and capsule elements
 ///
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Colour {
     Red,
     Yellow,

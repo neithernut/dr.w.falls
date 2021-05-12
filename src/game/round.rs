@@ -4,7 +4,7 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 
 use tokio::io;
-use tokio::sync::{Mutex, mpsc, watch};
+use tokio::sync::{Mutex, RwLock, mpsc, watch};
 use tokio::time;
 
 use crate::display;
@@ -154,6 +154,86 @@ pub async fn serve<P>(
                 t?;
                 break
             },
+        }
+    }
+
+    Ok(())
+}
+
+
+/// Round control function
+///
+/// This function implements the central control logic for the round phase.
+///
+pub async fn control(
+    ports: ControlPorts,
+    game_control: watch::Receiver<super::GameControl>,
+    roster: Arc<RwLock<player::Roster>>,
+    rng: &mut impl rand::Rng,
+) -> Result<(), error::WrappedErr<Box<dyn std::error::Error>>> {
+    use error::TryExt;
+    type Wrapped = error::WrappedErr::<Box<dyn std::error::Error>>;
+
+    let scores_sender = ports.scores;
+    let mut events = ports.events;
+    let mut active = ports.capsules;
+
+    let mut scores: Vec<ScoreBoardEntry> = roster.read().await.clone().into_iter().map(Into::into).collect();
+
+    while !active.is_empty() {
+        use display::ScoreBoardEntry as _;
+
+        scores.sort_by_key(|p| p.round_score());
+        scores_sender.send(scores.clone()).or_warn("Could not send updates");
+
+        let (player, event) = events
+            .recv()
+            .await
+            .ok_or_else(|| Wrapped::new("could not receive events", Box::new(error::NoneError)))?;
+        match event {
+            Event::Capsules(elements) => {
+                use std::convert::TryInto;
+
+                let max = scores
+                    .first()
+                    .ok_or_else(|| Wrapped::new("no players", Box::new(error::NoneError)))?
+                    .round_score();
+                let targets: Vec<_> = scores
+                    .iter()
+                    .take_while(|p| p.round_score() >= max)
+                    .filter_map(|p| active.get(&p.tag()))
+                    .collect();
+                let with_colidx = |e: &[_]| e
+                    .iter()
+                    .cloned()
+                    .map(|e| (
+                        (rng.next_u32() as usize % util::FIELD_WIDTH as usize)
+                            .try_into()
+                            .expect("Could not convert to field index"),
+                        e
+                    )).collect();
+                let sends = elements
+                    .chunks((elements.len() / targets.len()).clamp(1, MAX_CAPSULE_RECEIVE))
+                    .map(with_colidx)
+                    .zip(targets);
+                for (elements, target) in sends {
+                    target.lock().await.push_back(elements)
+                }
+            },
+            Event::Score(score) => {
+                if let Some(entry) = scores.iter_mut().find(|e| *e.tag() == player) {
+                    entry.set_score(score);
+                } else {
+                    log::warn!("Could not find entry for player tag");
+                }
+                if score == 0 {
+                    active.remove(&player).ok_or_else(||
+                        Wrapped::new("winning player not active", Box::new(error::NoneError))
+                    )?;
+                    break;
+                }
+            },
+            Event::Defeat => { active.remove(&player).or_warn("Defeated player not active"); },
         }
     }
 

@@ -69,7 +69,7 @@ pub type GameUpdate<E> = super::GameUpdate<(Arc<Vec<ScoreBoardEntry>>, u8), E>;
 
 /// Score board entry for the waiting phase
 ///
-#[derive(PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ScoreBoardEntry {
     name: String,
     score: u32,

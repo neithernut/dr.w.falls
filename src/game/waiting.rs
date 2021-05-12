@@ -1,12 +1,14 @@
 //! Implementation of the waiting phase
 
 
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use tokio::io;
 use tokio::sync::{watch, mpsc};
+use tokio::time;
 
 use crate::display;
+use crate::Roster;
 
 
 /// Waiting phase function
@@ -59,6 +61,57 @@ pub async fn waiting<E: Clone>(
             },
         }
     }
+}
+
+
+/// Waiting phase control function
+///
+/// This function implements the central control logic for the waiting phase.
+///
+pub async fn control_waiting<E: Clone + std::fmt::Debug>(
+    update_sender: &mut watch::Sender<GameUpdate<E>>,
+    mut ready: mpsc::Receiver<super::PlayerTag>,
+    mut control: watch::Receiver<super::GameControl>,
+    roster: Arc<RwLock<Roster>>,
+) -> io::Result<()> {
+    use crate::util::TryExt;
+
+    let mut value = WAITING_TIME;
+    let mut timer = time::interval(std::time::Duration::from_secs(1));
+
+    let mut scores: Vec<_> = roster
+        .read()
+        .map_err(|_| io::ErrorKind::Other)?
+        .iter()
+        .map(|p| ScoreBoardEntry::new(p.name.clone(), p.tag.clone(), p.score))
+        .collect();
+    scores.sort_by_key(|p| p.score);
+
+    while value > 0 && scores.iter().any(|e| !e.ready()) {
+        use crate::display::ScoreBoardEntry;
+
+        update_sender
+            .send(GameUpdate::Update((Arc::new(scores.clone()), value)))
+            .or_warn("Could not send updates");
+
+        tokio::select! {
+            _ = timer.tick() => value = value.saturating_sub(1),
+            tag = ready.recv() => {
+                let tag = tag.or_warn("Could not receive readiness").ok_or(io::ErrorKind::Other)?;
+                if let Some(entry) = scores.iter_mut().find(|e| e.tag() == tag) {
+                    entry.set_ready()
+                } else {
+                    log::warn!("Could not find entry for player tag");
+                }
+            },
+            _ = control.changed() => match *control.borrow() {
+                super::GameControl::EndOfGame => break,
+                _ => (),
+            },
+        }
+    }
+
+    Ok(())
 }
 
 

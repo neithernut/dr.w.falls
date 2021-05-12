@@ -77,6 +77,26 @@ pub struct ScoreBoardEntry {
     tag: super::PlayerTag,
 }
 
+impl ScoreBoardEntry {
+    /// Create a new score board entry
+    ///
+    fn new(name: String, tag: super::PlayerTag, score: u32) -> Self {
+        Self {name, score, ready: false, tag}
+    }
+
+    /// Mark the player as ready
+    ///
+    fn set_ready(&mut self) {
+        self.ready = true;
+    }
+
+    /// Retrieve the player's readyness
+    ///
+    fn ready(&self) -> bool {
+        self.ready
+    }
+}
+
 impl display::ScoreBoardEntry for ScoreBoardEntry {
     type Tag = super::PlayerTag;
 

@@ -75,7 +75,7 @@ pub async fn serve_connection(
 
 /// Prequisites for the waiting phase
 ///
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct WaitingPhasePreq<R: rand_core::RngCore> {
     updates: watch::Receiver<waiting::GameUpdate<RoundPhasePreq<R>>>,
     ready_channel: mpsc::Sender<PlayerTag>,
@@ -84,7 +84,7 @@ pub struct WaitingPhasePreq<R: rand_core::RngCore> {
 
 /// Prequisites for the round phase
 ///
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RoundPhasePreq<R: rand_core::RngCore> {
     updates: watch::Receiver<round::GameUpdate<WaitingPhasePreq<R>>>,
     event_sender: mpsc::Sender<(PlayerTag, round::PlayerEvent)>,

@@ -166,9 +166,19 @@ impl PlayerTag {
     }
 }
 
+impl Eq for PlayerTag {}
+
 impl PartialEq<PlayerTag> for PlayerTag {
     fn eq(&self, other: &PlayerTag) -> bool {
         self.data.ptr_eq(&other.data)
+    }
+}
+
+impl std::hash::Hash for PlayerTag {
+    fn hash<H>(&self, state: &mut H)
+        where H: std::hash::Hasher
+    {
+        self.data.as_ptr().hash(state)
     }
 }
 

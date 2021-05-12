@@ -430,6 +430,18 @@ pub struct ScoreBoardEntry {
 }
 
 impl ScoreBoardEntry {
+    /// Create a new score board entry
+    ///
+    fn new(
+        name: String,
+        tag: super::PlayerTag,
+        total_score: u32,
+        round_score: u32,
+        receiver: mpsc::Receiver<Capsules>
+    ) -> Self {
+        Self {name, total_score, round_score, tag, capsule_receiver: receiver.into()}
+    }
+
     /// Get the capsule receiver associated with this entry
     ///
     pub fn capsule_receiver(&self) -> CapsuleReceiver {

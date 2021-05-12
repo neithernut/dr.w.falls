@@ -60,7 +60,7 @@ pub async fn serve_connection(
                 prep.event_sender,
                 &handle,
                 prep.viruses,
-                prep.tick_diration,
+                prep.tick_duration,
                 prep.rng,
             ).await?;
 
@@ -89,7 +89,7 @@ pub struct RoundPhasePreq<R: rand_core::RngCore> {
     updates: watch::Receiver<round::GameUpdate<WaitingPhasePreq<R>>>,
     event_sender: mpsc::Sender<(PlayerTag, round::PlayerEvent)>,
     viruses: std::collections::HashMap<util::Position, util::Colour>,
-    tick_diration: std::time::Duration,
+    tick_duration: std::time::Duration,
     rng: R,
 }
 

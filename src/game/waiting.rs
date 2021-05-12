@@ -1,7 +1,10 @@
 //! Implementation of the waiting phase
 
+use std::sync::Arc;
+
 use tokio::io;
-use tokio::sync::{watch, mpsc};
+use tokio::sync::{RwLock, watch, mpsc};
+use tokio::time;
 
 use crate::display;
 use crate::player;
@@ -73,6 +76,52 @@ async fn serve<P>(
                 .update_single(&mut display.handle().await?, *countdown.borrow())
                 .await?,
             t = phase.transition() => break t,
+        }
+    }
+}
+
+
+/// Waiting phase control function
+///
+/// This function implements the central control logic for the waiting phase.
+///
+pub async fn control<E: Clone + std::fmt::Debug>(
+    ports: ControlPorts,
+    mut game_control: watch::Receiver<super::GameControl>,
+    roster: Arc<RwLock<player::Roster>>,
+) -> () {
+    use crate::error::TryExt;
+    use display::ScoreBoardEntry as _;
+
+    let scores = ports.scores;
+    let countdown = ports.countdown;
+    let mut ready = ports.ready;
+
+    let mut value = WAITING_TIME;
+    let mut timer = time::interval(std::time::Duration::from_secs(1));
+
+    let mut roster: Vec<ScoreBoardEntry> = roster.read().await.clone().into_iter().map(Into::into).collect();
+    roster.sort_by_key(|p| p.tag().score());
+
+    while value > 0 && roster.iter().any(|e| !e.ready()) && !game_control.borrow().is_end_of_game() {
+        scores.send(roster.clone()).or_warn("Could not send scores");
+
+        tokio::select! {
+            _ = timer.tick() => {
+                value = value.saturating_sub(1);
+                countdown.send(value).or_warn("Could not send countdown value");
+            },
+            tag = ready.recv() => if let Some(tag) = tag {
+                if let Some(entry) = roster.iter_mut().find(|e| *e.tag() == tag) {
+                    entry.set_ready()
+                } else {
+                    log::warn!("Could not find entry for player tag");
+                }
+            } else {
+                log::warn!("Could not receive readiness");
+                break;
+            },
+            _ = game_control.changed() => (),
         }
     }
 }

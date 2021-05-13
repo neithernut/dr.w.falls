@@ -24,6 +24,7 @@ async fn serve_connection(
     reg_channel: mpsc::Sender<lobby::Registration>,
     token: lobby::ConnectionToken,
 ) -> io::Result<()> {
+    stream.set_nodelay(true)?;
     let (conn_in, conn_out) = stream.split();
 
     let mut input = ASCIIStream::new(conn_in, Default::default());

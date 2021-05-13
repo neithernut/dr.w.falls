@@ -73,6 +73,103 @@ pub async fn serve_connection(
 }
 
 
+/// Run the game
+///
+/// This function implements the the overall game phase logic. During the lobby
+/// phase, connections will be accepted via the given `listener` and new players
+/// are added to the `roster`. Commands will be `control` accepted via the given
+/// `control` receiver. Game phases are broadcasted via `game_phase`.
+///
+pub async fn run_game(
+    listener: net::TcpListener,
+    control: watch::Receiver<lobby::LobbyControl>,
+    game_phase: watch::Sender<GamePhase>,
+    roster: std::sync::Arc<std::sync::RwLock<crate::Roster>>,
+) -> io::Result<()> {
+    use rand_core::SeedableRng;
+
+    use util::Step;
+
+    let (mut lobby_updates, receiver) = watch::channel(GameUpdate::Update(Default::default()));
+
+    game_phase.send(GamePhase::Lobby).map_err(|_| io::ErrorKind::Other)?;
+    let control = lobby::control_lobby(
+        listener,
+        serve_connection,
+        &mut lobby_updates,
+        receiver,
+        control,
+        roster.clone()
+    ).await?;
+
+    let (mut waiting_updates, mut waiting_receiver) = watch::channel(GameUpdate::Update(Default::default()));
+    let (mut ready_sender, mut ready_receiver) = mpsc::channel(10);
+    lobby_updates
+        .send(WaitingPhasePreq {updates: waiting_receiver, ready_channel: ready_sender}.into())
+        .map_err(|_| io::ErrorKind::Other)?;
+
+    let mut round_num = 0usize;
+
+    loop {
+        game_phase.send(GamePhase::Waiting).map_err(|_| io::ErrorKind::Other)?;
+        waiting::control_waiting(
+            &mut waiting_updates,
+            ready_receiver,
+            control.clone(),
+            roster.clone()
+        ).await?;
+
+        let (virus_count, tick_duration) = match *control.borrow() {
+            GameControl::Settings{viruses, tick} => (viruses, tick),
+            GameControl::EndOfGame => break,
+        };
+
+        let mut rng = rand_pcg::Pcg64Mcg::from_entropy();
+        let viruses = crate::gameplay::prepare_field(
+            &mut rng,
+            util::RowIndex::TOP_ROW.forward_checked(FREE_ROWS).unwrap(),
+            virus_count
+        ).collect();
+
+        let (mut round_updates, receiver) = watch::channel(GameUpdate::Update(Default::default()));
+        let (event_sender, event_receiver) = mpsc::channel(10);
+        waiting_updates
+            .send(RoundPhasePreq {
+                updates: receiver,
+                event_sender,
+                viruses,
+                tick_duration,
+                rng: rng.clone()
+            }.into())
+            .map_err(|_| io::ErrorKind::Other)?;
+        waiting_updates.closed().await;
+
+        round_num = round_num + 1;
+        game_phase.send(GamePhase::Round(round_num)).map_err(|_| io::ErrorKind::Other)?;
+        round::control_round(
+            &mut round_updates,
+            event_receiver,
+            roster.clone(),
+            virus_count,
+            rng
+        ).await?;
+
+        let updates = watch::channel(GameUpdate::Update(Default::default()));
+        waiting_updates = updates.0;
+        waiting_receiver = updates.1;
+        let ready = mpsc::channel(10);
+        ready_sender = ready.0;
+        ready_receiver = ready.1;
+        round_updates
+            .send(WaitingPhasePreq {updates: waiting_receiver, ready_channel: ready_sender}.into())
+            .map_err(|_| io::ErrorKind::Other)?;
+        round_updates.closed().await;
+    }
+
+    Ok(())
+}
+
+
 /// Prequisites for the waiting phase
 ///
 #[derive(Clone, Debug)]

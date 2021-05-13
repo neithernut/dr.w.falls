@@ -38,16 +38,16 @@ effectively correspond to phases of the game:
 As all players will transition to the next phase together, phase boundaries are
 necessary synchronization points. Also, all screens involve the display of
 registered players, in most cases with their scores. This implies that the
-player roaster, including the scores, is also shared and that updates must be
-broadcast in some way. Furthermore, roaster and score updates are related to
+player roster, including the scores, is also shared and that updates must be
+broadcast in some way. Furthermore, roster and score updates are related to
 some of the phase transitions. On the other hand, the logic for each phase and
 details regarding what information is included in the score board differ greatly
 between the different phases.
 
 Therefore, we'll pursue a design with a single control task constructed from few
 phase-specific functions, which will implement the logic for a given phase and
-manage the roaster. Each of those functions will receive, among other relevant
-data, a mutable references of the roaster, `Sender`s and `Reciever`s necessary
+manage the roster. Each of those functions will receive, among other relevant
+data, a mutable references of the roster, `Sender`s and `Reciever`s necessary
 for communicating with connection tasks as well as the game control channel.
 
 Each phase control function will receive updates from connection tasks via
@@ -120,7 +120,7 @@ and the item type for the response channel is
     success(player handle) | failure
 
 Upon registration, the player name and connection task handle will be added to
-the roaster. The item type of the game control channel deviates from the item
+the roster. The item type of the game control channel deviates from the item
 type of the other phase control functions:
 
     registration acceptance |
@@ -130,7 +130,7 @@ type of the other phase control functions:
 ### Waiting control function
 
 During the waiting phase, we need to handle a timer for the countdown and
-collect readiness indications from players. We'll broadcast the roaster with the
+collect readiness indications from players. We'll broadcast the roster with the
 current overall scores and an indication of the player's readiness.
 
 The round phase will require a bit of additional data which is described in the
@@ -149,7 +149,7 @@ The readiness channel's item type will simply be
     player tag
 
 The waiting control task will start the round control task, passing it the
-required `Sender` and `Receiver` as well as roaster with the overall score.
+required `Sender` and `Receiver` as well as roster with the overall score.
 
 ### Round preparation
 
@@ -198,7 +198,7 @@ The channel for updates from the connections will have the following item type:
 
     (player tag, capsule elements | new score)
 
-Before returning, the function will update the roaster by adding the round
+Before returning, the function will update the roster by adding the round
 scores to the overall scores.
 
 
@@ -231,7 +231,7 @@ phase as well as the connection token. Besides the `Sender` and `Receiver` for
 the waiting phase as part of the transition message, it will return the
 (optional) handle for the registered player.
 
-The phase function will receive roaster updates from the game control task,
+The phase function will receive roster updates from the game control task,
 which it will translate into displayable content and send to the client. It will
 also receive input from the client: the characters for the player name as well
 as registration commands in the form of control characters. The function will
@@ -247,7 +247,7 @@ This function will receive as parameters the `Sender` and `Receiver` for the
 phase as well as a reference to the player handle. It will return the transition
 message's content.
 
-The phase function will receive updates of the roaster and the countdown value
+The phase function will receive updates of the roster and the countdown value
 from the game control task, which it will render and send to the client. It will
 also listen for input from the client. If any of the characters defined in the
 specification is received, it will indicate readiness to the game control task
@@ -259,7 +259,7 @@ This function will receive as parameters the `Sender` and `Receiver` for the
 phase, the prepared field, tick duration and PRNG seed as well as a reference to
 the player handle. It will return the transition message's content.
 
-This is undoubtedly the most complex of the phase functions. It receives roaster
+This is undoubtedly the most complex of the phase functions. It receives roster
 updates as well as unbound capsule elements from the game control task as well
 as control input from the client. It renders the scoreboard and implements the
 actual game logic concerning the field using the utilities defined in the
@@ -294,7 +294,7 @@ A single game master console task is created for all consoles. It will receive
 parsed lines from the various consoles, process them and send replies. It will
 receive the `Sender` for the initial game control channel passed to the lobby
 and the `Receiver` for phase updates. Furthermore it will access the global game
-settings as well as the roaster initialized by the lobby control task.
+settings as well as the roster initialized by the lobby control task.
 
 This task is also responsible for accepting connections from UNIX domain
 sockets.

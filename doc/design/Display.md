@@ -44,7 +44,7 @@ we can use the area below it for an indication of victory or defeat as well as
 a "paused" indicator.
 
 Although the displays differ the various phases, each of them features a display
-of a roaster or score board. We want to keep common elements in one place. Thus,
+of a roster or score board. We want to keep common elements in one place. Thus,
 we'll reserve the screen's right half for the score board during other phases.
 
 During the lobby and waiting phase, we'll require far less of the left half for
@@ -80,15 +80,15 @@ the generation of draw commands for the initialization, updates and the
 capsule preview.
 
 
-## Score board/roaster
+## Score board/roster
 
-Each phase features a roaster or score-board, and while there are differences,
+Each phase features a roster or score-board, and while there are differences,
 there also are lots of similarities between what's displayed as part of the
 score-board. In particular, the overall score and player (connection) status
 should be conveyed in the same way during the waiting and the round phases. An
 abstraction which covers all these cases would be preferable.
 
-In all cases, the roaster will be exposed to connection tasks as a list, with
+In all cases, the roster will be exposed to connection tasks as a list, with
 each item corresponding to one player, and be displayed as a table, with each
 row corresponding to one list entry. Thus, we'll only need to focus on how to
 accommodate for the different item types, assuming that we'll manage to agree on
@@ -103,7 +103,7 @@ A generic function taking the list of items as input will render the entire
 table. Rendering the entire table each time would, however, be unnecessary.
 Instead we'll cache the previously rendered list inside a datatype, of which
 the rendering function will be a member. This, of course, implies that the list
-is (cheaply) clonable. Hence, it may be beneficial to transmit the roaster
+is (cheaply) clonable. Hence, it may be beneficial to transmit the roster
 wrapped in an `Arc` or as some container for which cloning will be cheap. Since
 no such container comes to mind, we'll wrap the container in an `Arc`.
 

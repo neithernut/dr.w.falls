@@ -17,7 +17,7 @@ task with those sockets.
 For the parsing of command line arguments, we'll use [clap](https://clap.rs/),
 since we're already somewhat accustomed to working with this library. The data
 type holding the game configuration data will be defined in the main module, as
-well as the public roaster, safeguarded by a lock allowing concurrent access by
+well as the public roster, safeguarded by a lock allowing concurrent access by
 the game control and game console tasks.
 
 

@@ -18,7 +18,7 @@ use crate::util;
 /// This function provides the game interface for players as well as the part
 /// of the game-logic bound to a specific connection.
 ///
-pub async fn serve_connection(
+async fn serve_connection(
     mut stream: net::TcpStream,
     updates: watch::Receiver<lobby::GameUpdate<WaitingPhasePreq<impl rand_core::RngCore + Clone>>>,
     reg_channel: mpsc::Sender<lobby::Registration>,

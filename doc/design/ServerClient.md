@@ -288,17 +288,17 @@ player registration or if a phase function returns an end of game indication. In
 the case of a closed connection, the task will terminate.
 
 
-## Game master console task
+## Game master console tasks
 
-A single game master console task is created for all consoles. It will receive
-parsed lines from the various consoles, process them and send replies. It will
-receive the `Sender` for the initial game control channel passed to the lobby
-and the `Receiver` for phase updates. Furthermore it will access the global game
-settings as well as the roster initialized by the lobby control task.
+One task will be responsible for accepting connections to the console socket via
+an optional UNIX domain socket and spawning game consoles. In addition, this
+task will listen for `SIGUSR1`, upon which it will initiate the game start.
 
-This task is also responsible for accepting connections from UNIX domain
-sockets.
+Each console task will receive a handle through which it may pull a `Sender` for
+issuing commands as well as the `Receiver` for phase updates. Furthermore it
+will access the global game settings as well as the roster.
 
-If this task receives an "end of game" indication via the phase update channel,
-or if the channel's writing end closes, this task will terminate.
+All game console tasks, as well as the central game console task, will terminate
+if receiving an "end of game" indication via the phase update channel or if the
+channel's writing end closes.
 

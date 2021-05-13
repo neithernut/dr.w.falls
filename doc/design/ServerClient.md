@@ -54,7 +54,7 @@ Each phase control function will receive updates from connection tasks via
 channels and broadcast general game-state information. The `tokio::sync::watch`
 channel will come in handy for the latter. In addition to game state updates,
 each broadcast channel used for sending messages from the control task to the
-connection tasks will support a special transmission message type as well as a
+connection tasks will support a special transition message type as well as a
 variant indicating end of game.
 
 The transition message, which will be the last message sent via that channel in

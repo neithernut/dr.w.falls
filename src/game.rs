@@ -114,7 +114,7 @@ pub enum PhaseEnd<T> {
 
 /// Game control messages
 ///
-enum GameControl {
+pub enum GameControl {
     Settings{
         /// Number of visuses a field is initialized with
         viruses: u8,

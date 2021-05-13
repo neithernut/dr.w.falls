@@ -81,6 +81,12 @@ pub struct WaitingPhasePreq<R: rand_core::RngCore> {
     ready_channel: mpsc::Sender<PlayerTag>,
 }
 
+impl<U, R: rand_core::RngCore> From<WaitingPhasePreq<R>> for GameUpdate<U, WaitingPhasePreq<R>> {
+    fn from(preq: WaitingPhasePreq<R>) -> Self {
+        Self::PhaseEnd(PhaseEnd::Transition(preq))
+    }
+}
+
 
 /// Prequisites for the round phase
 ///
@@ -91,6 +97,12 @@ pub struct RoundPhasePreq<R: rand_core::RngCore> {
     viruses: std::collections::HashMap<util::Position, util::Colour>,
     tick_duration: std::time::Duration,
     rng: R,
+}
+
+impl<U, R: rand_core::RngCore> From<RoundPhasePreq<R>> for GameUpdate<U, RoundPhasePreq<R>> {
+    fn from(preq: RoundPhasePreq<R>) -> Self {
+        Self::PhaseEnd(PhaseEnd::Transition(preq))
+    }
 }
 
 

@@ -304,3 +304,8 @@ const DISPLAY_WIDTH: u16 = 80;
 ///
 const DISPLAY_HEIGHT: u16 = 24;
 
+
+/// Number of rows at the top to keep free when placing viruses
+///
+const FREE_ROWS: usize = 4;
+

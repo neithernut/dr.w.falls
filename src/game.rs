@@ -134,6 +134,12 @@ pub enum GamePhase {
     EndOfGame,
 }
 
+impl Default for GamePhase {
+    fn default() -> Self {
+        Self::Lobby
+    }
+}
+
 
 /// Player handle
 ///

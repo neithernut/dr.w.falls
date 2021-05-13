@@ -127,7 +127,7 @@ pub enum GameControl {
 
 /// Game phase indication
 ///
-enum GamePhase {
+pub enum GamePhase {
     Lobby,
     Waiting,
     Round(usize),

@@ -6,7 +6,7 @@ mod round;
 
 
 use tokio::io;
-use tokio::net::{self, tcp};
+use tokio::net;
 use tokio::sync::{watch, mpsc};
 
 use crate::display;

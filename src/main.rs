@@ -18,7 +18,7 @@ type Roster = Vec<Player>;
 
 /// Representation of a single player within the roster
 ///
-struct Player {
+pub struct Player {
     name: String,
     tag: game::PlayerTag,
     peer: std::net::SocketAddr,

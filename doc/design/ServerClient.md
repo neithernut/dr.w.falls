@@ -53,33 +53,26 @@ for communicating with connection tasks as well as the game control channel.
 Each phase control function will receive updates from connection tasks via
 channels and broadcast general game-state information. The `tokio::sync::watch`
 channel will come in handy for the latter. In addition to game state updates,
-each broadcast channel used for sending messages from the control task to the
-connection tasks will support a special transition message type as well as a
-variant indicating end of game.
+the central task will broadcast the current phase or an end-of-game indication
+in the form of a rust `enum` via a separate channel. These phase update messages
+will also serve as the vehicle for transmitting preparation data as well as
+senders and receivers to connection tasks. The variant for a round will include
+the round's number.
 
-The transition message, which will be the last message sent via that channel in
-most cases, will include `Sender`s for sending updates from connection tasks as
-well as `Reciever`s for game state updates for the next phase. Since the message
-must be received by all connection tasks, we cannot drop the previous `Sender`
-before all those tasks had a chance to observe the state change. Hence, we'll
-close the the `Sender`, possibly using the blocking `closed` function. This
-implies that we need to drop old `Receiver`s in the connection task after
-observing a transition message.
+Since we don't want to couple the phases too closely, phase and phase control
+function will never interact with the phase update channel directly. It will be
+the toplevel control function's responsibility to send these updates and the
+connection task's toplevel function's responsibility to unpack perquisite data.
 
-Since we don't want to couple the phases too closely, we'll use a generic
-type for those senders and receivers, allowing us to inject the channel item
-types for the next phase from the outside in a convenient and transparent
-manner. The aforementioned transition message will hence not be sent by the
-phase control function itself but the toplevel task, which will also close
-the previous channel. This scheme will cause a circular dependency between the
-message or item data types used for the waiting and round phases. However, this
-should not be problematic since we'll declare all those specializations in a
-single module anyway.
-
-In addition, the task will broadcast a notification about the transition via a
-phase update channel with the following item type:
-
-    lobby | waiting | round(number) | end of game
+However, we still need to communicate phase transitions to phase functions in
+order for them to return control. We'll achieve this by using type erasure via a
+trait which allows polling for transitions. For the sake of further decoupling,
+or rather, allowing the use of non-public types, we'll also hide at least the
+senders and receivers included with perquisite data behind types which will be
+mainly opaque for parts of the software not dealing with a specific phase. Since
+those structs are already strongly coupled to a specific phase, we may choose to
+implement some of the connection task side of the logic as member functions of
+those structs.
 
 Using a direct channel for receiving updates from each connection would allow
 identifying the sender simply via the identity of the `Receiver`, and make
@@ -109,7 +102,7 @@ success or failure of the registration. In the case of a successful registration
 we include a handle to use for tagging updates in later phases. Thus, the item
 type for the game state update channel is
 
-    list of player names | sender+receiver for the next phase | end of game
+    list of player names
 
 while the item type for the registration channel is
 
@@ -131,16 +124,10 @@ type of the other phase control functions:
 
 During the waiting phase, we need to handle a timer for the countdown and
 collect readiness indications from players. We'll broadcast the roster with the
-current overall scores and an indication of the player's readiness.
+current overall scores and an indication of the players' readiness, resulting in
+the following item type for the game state update channel:
 
-The round phase will require a bit of additional data which is described in the
-following section in more detail, resulting in the following item type for the
-game state update channel:
-
-    (list of (player name, overall score, readyness), countdown value) |
-    (sender+receiver for the next phase, prepared field, tick duration,
-        seeded PRNG) |
-    end of game
+    (list of (player name, overall score, readyness), countdown value)
 
 with "readiness" also indicating whether a player is still connected.
 
@@ -179,20 +166,15 @@ round control function's responsibilities are:
 The latter will affect only a single player. At the same time, we must ensure
 no values are lost. Especially the need to preserve all values rules out using a
 watch channel for this purpose. Hence, we do make use of direct channels in this
-instance. The `Receiver`s will be distributed via the score board.
+instance. These will be included in the perquisite data for the round, together
+with the prepared field, tick duration and seeded PRNG.
 
-The item type for the game state update channel will thus be
+The item type for the game state update channel will be
 
-    list of (player name, round score, overall score, player state,
-        capsule reciever) |
-    (sender+receiver for the waiting phase, list of (player name, round score,
-        overall score), tag of winner) |
-    end of game
+    (list of (player name, round score, overall score, player state),
+    optional tag of winner)
 
-with "player state" indicating whether a player is still present and a capsule
-receiver's item type of `capsule element unit`. The winner will be sent by the
-task's top-level function. Hence, this function needs to communicate this
-information via its return value.
+with "player state" indicating whether a player is still present.
 
 The channel for updates from the connections will have the following item type:
 
@@ -205,19 +187,16 @@ scores to the overall scores.
 ## Player connection tasks
 
 As described above, we'll spawn one task for each player connection. Each task
-will hold a `Sender` and `Receiver` for the current phase. Upon receiving a
-transition message, the task will assume the new `Sender` and `Receiver`,
-replacing the old ones (i.e. those will be dropped).
+will hold a `Receiver` for game phase updates, from which it may derive the
+`Sender`s and `Receiver`s specific for the current phase as well as a handle for
+detecting transitions.
 
-As phase transitions are driven by those transition messages, we won't need to
+As phase transitions are driven by the game phase updates, we won't need to
 duplicate the transition logic from the game control task. And centralizing that
 logic is one objective of the game control task. However, we'll split the logic
 into phase-specific functions just as we split the logic among phase-specific
 control functions in the central task. Each of those functions will take as
-input the contents of a transition message initiating the phase and return
-either the contents of the contents of the transition message for the next phase
-or an end of game indication. We'll decouple the phase-specific functions the
-same way we do for the game control task.
+input the perquisite data.
 
 The main task will be responsible for consuming (or rather discarding) all input
 from the client not consumed by a phase function when transitioning from one
@@ -227,9 +206,8 @@ transmission of written content to the client after processing an event.
 ### Lobby phase function
 
 This function will receive as parameters the `Sender` and `Receiver` for the
-phase as well as the connection token. Besides the `Sender` and `Receiver` for
-the waiting phase as part of the transition message, it will return the
-(optional) handle for the registered player.
+phase as well as the connection token. It will return the (optional) handle for
+the registered player.
 
 The phase function will receive roster updates from the game control task,
 which it will translate into displayable content and send to the client. It will
@@ -244,8 +222,7 @@ to the client.
 ### Waiting phase function
 
 This function will receive as parameters the `Sender` and `Receiver` for the
-phase as well as a reference to the player handle. It will return the transition
-message's content.
+phase as well as a reference to the player handle.
 
 The phase function will receive updates of the roster and the countdown value
 from the game control task, which it will render and send to the client. It will
@@ -257,7 +234,7 @@ and ignore any further input.
 
 This function will receive as parameters the `Sender` and `Receiver` for the
 phase, the prepared field, tick duration and PRNG seed as well as a reference to
-the player handle. It will return the transition message's content.
+the player handle.
 
 This is undoubtedly the most complex of the phase functions. It receives roster
 updates as well as unbound capsule elements from the game control task as well

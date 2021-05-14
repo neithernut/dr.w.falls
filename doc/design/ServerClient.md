@@ -178,7 +178,7 @@ with "player state" indicating whether a player is still present.
 
 The channel for updates from the connections will have the following item type:
 
-    (player tag, capsule elements | new score)
+    (player tag, capsule elements | new score | defeat)
 
 Before returning, the function will update the roster by adding the round
 scores to the overall scores.

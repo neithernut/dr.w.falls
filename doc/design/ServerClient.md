@@ -165,9 +165,11 @@ round control function's responsibilities are:
 
 The latter will affect only a single player. At the same time, we must ensure
 no values are lost. Especially the need to preserve all values rules out using a
-watch channel for this purpose. Hence, we do make use of direct channels in this
-instance. These will be included in the perquisite data for the round, together
-with the prepared field, tick duration and seeded PRNG.
+watch channel for this purpose. In fact, any kind of channel may be unsuitable
+since we will never wait for the availability of a value. Rather, we'll use a
+queuing data structure behind a mutex for each player. Handles for these will be
+included in the perquisite data for the round, together with the prepared field,
+tick duration and seeded PRNG.
 
 The item type for the game state update channel will be
 

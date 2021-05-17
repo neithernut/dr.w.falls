@@ -100,7 +100,7 @@ success or failure of the registration. In the case of a successful registration
 we include a handle to use for tagging updates in later phases. Thus, the item
 type for the game state update channel is
 
-    list of player names
+    list of player data references
 
 while the item type for the registration channel is
 
@@ -121,13 +121,12 @@ type of the other phase control functions:
 ### Waiting control function
 
 During the waiting phase, we need to handle a timer for the countdown and
-collect readiness indications from players. We'll broadcast the roster with the
-current overall scores and an indication of the players' readiness, resulting in
-the following item type for the game state update channel:
+collect readiness indications from players. We'll broadcast references to roster
+entries, which include a player's current overall score and connection status,
+with an indication of the players' readiness, resulting in the following item
+type for the game state update channel:
 
-    (list of (player name, overall score, readyness), countdown value)
-
-with "readiness" also indicating whether a player is still connected.
+    (list of (player data reference, readyness), countdown value)
 
 The readiness channel's item type will simply be
 
@@ -171,10 +170,10 @@ tick duration and seeded PRNG.
 
 The item type for the game state update channel will be
 
-    (list of (player name, round score, overall score, player state),
-    optional tag of winner)
+    list of (player data reference, round score, player state)
 
-with "player state" indicating whether a player is still present.
+with "player state" indicating whether a player is playing, defeated or suceeded
+in clearing the field of viruses.
 
 The channel for updates from the connections will have the following item type:
 

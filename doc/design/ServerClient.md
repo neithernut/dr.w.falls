@@ -126,7 +126,11 @@ entries, which include a player's current overall score and connection status,
 with an indication of the players' readiness, resulting in the following item
 type for the game state update channel:
 
-    (list of (player data reference, readyness), countdown value)
+    list of (player data reference, readyness)
+
+At the same time, we'll need to broadcast updates of the countdown value. Rather
+than incorporating this information in the messages described above, we'll use
+a separate watch-channel transporting only the countdown value.
 
 The readiness channel's item type will simply be
 

@@ -20,16 +20,22 @@ the SGR parameters, return to the resting position and unhide the cursor after
 each display update. Naturally, we'll want to make this automatic and not
 clutter the display code with repeated explicit resets.
 
-We'll achieve this by implementing a `tokio_util::codec::Encoder` which will
-wrap a display update with a sequence for hiding the cursor and sequences for
-performing the reset. The display update itself will not be provided as bytes,
-but in the form of an `Iterator` over a type representing draw commands. Such
-a draw command may indicate the intend to
+We naturally want to avoid the necessity of providing ANSII sequences as raw
+bytes. Instead, we'll introduce a type representing draw commands as well as a
+`tokio_util::codec::Encoder`, which will let us construct a sink for draw
+commands. Such a draw command may indicate the intend to
 
  * clear the entire screen,
  * position the cursor at a declared absolute position,
- * set SGR parameters or
- * put characters/text on the screen at the cursor position.
+ * set SGR parameters,
+ * put characters/text on the screen at the cursor position or
+ * show/hide the cursor.
+
+We'll avoid exposing the draw commands to code not involved in drawing. Thus, we
+may choose to wrap the sink into a type which will be somewhat opaque and allow
+drawing code to retrieve a handle which will let it access the sink. Using the
+RAII pattern, we can enforce (un)hiding and moving the cursor to the resting
+position.
 
 
 ## General screen structure

@@ -101,13 +101,10 @@ Hence, we'll abstract the transformation into a function which is called from
 the initialization code and the function transforming updates into draw
 commands.
 
-We don't want to hard-code the field's exact position on the screen in the
-coordinate transformation function. At the same time, we don't want to pass
-that information explicitly each time and make sure the positions agree for
-both the initialization and updates. Hence, we'll abstract the field itself
-in a type, which encapsulates the position and features public functions for
-the generation of draw commands for the initialization, updates and the
-capsule preview.
+Naturally, we'll define a datataype abstracting the field, which will features
+public functions for the generation of draw commands for the initialization,
+updates and the capsule preview. Instances of that type will be returned by an
+appropriate entity factory.
 
 
 ## Score board/roster

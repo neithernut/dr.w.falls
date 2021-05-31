@@ -58,6 +58,30 @@ items relevant to the phase itself. We'll place that content in the upper half
 and use the lower half for some minimal manual introducing the player to the
 controls.
 
+For realizing this structure, we'll use a data type representing an area of the
+screen. An instance of this type will allow horizontal and vertical splitting as
+well as placing an entity on the area. By using such an abstraction, we ensure
+that we don't suffer from overlapping screen elements.
+
+The display will provide a function for creating an area covering the entire
+screen above the resting area, i.e. 80 columns and 23 rows. The function will
+clear the screen before returning the area, thus ensuring that no old content
+occupies the screen.
+
+For entities which may be placed on the screen, we'll define a factory trait,
+which will also be accepted by the function of the area type placing those
+entities. The trait should provide a function for retrieving the size required
+on the screen, a function creating the entity with a given position, as well as
+a function for drawing the entity in its initial stage.
+
+We'll need factories for the following entities:
+
+ * Play field
+ * Score boards
+ * Static text (displayed once)
+ * Dynamic text (some messages, waiting phase countdown, ...)
+ * Input field (lobby)
+
 
 ## Play field
 

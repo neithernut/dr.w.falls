@@ -67,10 +67,16 @@ described in the [player entities design](Player.md).
 This module will implement all of the types and functions defined in the
 [display design](Display.md). It will expose a type wrapping a `Sink` for
 draw commands, which will allow keeping those commands private to the module,
-the described functions and utility types for rendering the various elements as
-well as some utility functions for displaying general text and clearing the
-screen. In particular, it will expose the trait used for scoreboard entries,
-which will be implemented by various types of the game module described below.
+the described display entities and entity factories. In particular, it will
+expose the trait used for scoreboard entries, which will be implemented by
+various types of the game module described below.
+
+The display module will host:
+ * a submodule defining the draw command data types and other utilities such as
+   traits designed to keep draw commands internal to the display code,
+ * a submodule for the central display type,
+ * a submodule for the type representing a screen area and
+ * a dedicated submodule for each display entity/factory pair.
 
 
 ## Game module

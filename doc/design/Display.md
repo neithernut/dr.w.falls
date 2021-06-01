@@ -122,9 +122,8 @@ accommodate for the different item types, assuming that we'll manage to agree on
 a container or iterable.
 
 We'll hide the differences between the item types behind a trait, which will
-allow querying the name, the overall score, the player's connection status and
-an optional additional item implementing `Display`. We'll use the latter for
-rendering the readiness indicator for the waiting screen and the round score.
+allow querying the player data, round score and phase-specific status (readiness
+during the waiting phase, activity/"still-playing" during the round phase).
 
 A generic function taking the list of items as input will render the entire
 table. Rendering the entire table each time would, however, be unnecessary.

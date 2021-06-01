@@ -51,6 +51,12 @@ field, and in order to differentiate from the `game` module described below, we
 choose the name `field`.
 
 
+## Player module
+
+This module will implement the player data struct and associated datatypes
+described in the [player entities design](Player.md).
+
+
 ## Display module
 
 This module will implement all of the types and functions defined in the

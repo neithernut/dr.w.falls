@@ -30,6 +30,11 @@ described below, we'd rather have them in a separate module. Since none of them
 really won't warrant a top-level module of their own, we throw them together.
 
 
+## Error module
+
+This module will provide error handling and reporting utilities.
+
+
 ## Field module
 
 This module will implement the remaining types and functions defined in the

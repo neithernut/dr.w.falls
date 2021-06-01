@@ -125,11 +125,9 @@ We'll hide the differences between the item types behind a trait, which will
 allow querying the player data, round score and phase-specific status (readiness
 during the waiting phase, activity/"still-playing" during the round phase).
 
-A generic function taking the list of items as input will render the entire
-table. Rendering the entire table each time would, however, be unnecessary.
-Instead we'll cache the previously rendered list inside a datatype, of which
-the rendering function will be a member. This, of course, implies that the list
-is (cheaply) clonable. Hence, it may be beneficial to transmit the roster
-wrapped in an `Arc` or as some container for which cloning will be cheap. Since
-no such container comes to mind, we'll wrap the container in an `Arc`.
+A generic member function of the entity, which will take the list of items as
+input, will render the entire table. Rendering every row each time would,
+however, be unnecessary. Instead we'll cache the hashes of previously rendered
+rows inside the entity and re-render only those rows for which the new hash
+differs from the old one.
 

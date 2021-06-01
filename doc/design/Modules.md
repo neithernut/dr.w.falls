@@ -30,7 +30,7 @@ described below, we'd rather have them in a separate module. Since none of them
 really won't warrant a top-level module of their own, we throw them together.
 
 
-## Gameplay module
+## Field module
 
 This module will implement the remaining types and functions defined in the
 [gameplay implementation design](Gameplay.md). The definition of the types and
@@ -45,6 +45,10 @@ itself will only contain those module definitions and re-exports. We'll define:
  * a `tick` submodule defining the pre-tick functions and transfer types,
  * a `movement` submodule defining the movement function and input types and
  * a `preparation` submodule defining the preparation of a field.
+
+Since the defining types will be the ones representing the moving and static
+field, and in order to differentiate from the `game` module described below, we
+choose the name `field`.
 
 
 ## Display module

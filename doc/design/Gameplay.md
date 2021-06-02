@@ -280,9 +280,9 @@ fields and a type encapsulating the row handle and horizontal position.
 Construction of such a value will coincide with the spawning of a capsule. If
 the capsule settles, we'll erase the handle and thus remove the possibility of
 interference during phases in which the player should not have any control.
-We'll achieve this by placing that value in an `Option`, which will be
-initialized as we spawn a capsule and cleared whenever a capsule element
-settles.
+We'll achieve this by placing that value in the variant of an enum which will be
+initialized as we spawn a capsule. The second variant will indicate the presence
+of uncontrolled capsules.
 
 
 ## Display updates

@@ -285,6 +285,23 @@ pub enum Colour {
     Blue,
 }
 
+impl Colour {
+    /// Cycle through the colours
+    ///
+    /// This function chooses anothe colour based on `dir`. Each colour will be
+    /// returned only once for three "rotatios" with a given `dir`.
+    pub fn rotate(self, dir: bool) -> Self {
+        match (self, dir) {
+            (Self::Red,    false) => Self::Yellow,
+            (Self::Red,    true ) => Self::Blue,
+            (Self::Yellow, false) => Self::Blue,
+            (Self::Yellow, true ) => Self::Red,
+            (Self::Blue,   false) => Self::Red,
+            (Self::Blue,   true ) => Self::Yellow,
+        }
+    }
+}
+
 impl Distribution<Colour> for StandardDist {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Colour {
         match rng.gen_range(0u8..3u8) {

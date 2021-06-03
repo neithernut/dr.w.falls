@@ -77,3 +77,25 @@ impl<T> TryExt for Option<T> {
     }
 }
 
+
+/// Error type combining a message with an error value
+#[derive(Debug)]
+pub struct DebugErr<E> {
+    msg: &'static str,
+    inner: E,
+}
+
+impl<E> DebugErr<E> {
+    pub fn new(msg: &'static str, inner: E) -> Self {
+        Self {msg, inner}
+    }
+}
+
+impl<E: fmt::Debug> Error for DebugErr<E> {}
+
+impl<E: fmt::Debug> fmt::Display for DebugErr<E> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {:?}", self.msg, self.inner)
+    }
+}
+

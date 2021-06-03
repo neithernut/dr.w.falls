@@ -2,6 +2,9 @@
 
 use std::convert::{TryFrom, TryInto};
 
+use rand::Rng;
+use rand::distributions::{Distribution, Standard as StandardDist};
+
 
 pub const FIELD_WIDTH: u8 = 8;
 pub const FIELD_HEIGHT: u8 = 16;
@@ -280,6 +283,16 @@ pub enum Colour {
     Red,
     Yellow,
     Blue,
+}
+
+impl Distribution<Colour> for StandardDist {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Colour {
+        match rng.gen_range(0u8..3u8) {
+            0 => Colour::Red,
+            1 => Colour::Yellow,
+            _ => Colour::Blue,
+        }
+    }
 }
 
 

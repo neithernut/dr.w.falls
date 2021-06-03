@@ -90,18 +90,6 @@ implemented in phase-specific sub-modules:
  * the `waiting` module and
  * the `round` module.
 
-Each of these sub-modules may depend on the gameplay and display modules.
-
-The game module itself will contain the definition of a generic type intended
-for game-state updates, which depends on a type for actual update messages as
-well as one for the transition message. This type will be instantiated in the
-phase-specific modules and used in the signatures of the phase functions.
-
-In addition, the game module will also contain the phase update channel's item
-type definition and the phase control channel item type definition, which will
-also be exposed. Furthermore, it will contain the definitions for the player
-handle and tag.
-
 
 ## Console module
 

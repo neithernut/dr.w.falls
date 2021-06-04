@@ -26,27 +26,25 @@ pub fn prepare_field(
     let area = rows.len() * (util::FIELD_WIDTH as usize);
 
     (0..number_of_virs).filter_map(move |virus_count| {
-        // Select an unoccupied position
-        let unfilled = area - (virus_count as usize);
-        let pos = rows
-            .clone()
-            .flat_map(util::complete_row)
-            .filter(|p| field[*p].is_none())
-            .take(rng.gen::<u32>() as usize % unfilled)
-            .last();
-
         // Select a colour. If colouring the tile would result in a row of four,
         // we'll select another colour through rotation. Since we only have two
         // dimensitons but three colours, we are guranteed to reach a solution.
         let mut colour: util::Colour = rng.gen();
         let rotation_dir = rng.gen();
-        pos.map(|pos| loop {
-            field[pos] = Some(colour);
-            if super::items::row_of_four(&field, pos).is_none() {
-                break (pos, colour)
-            }
-            colour = colour.rotate(rotation_dir);
-        })
+
+        // Select an unoccupied position and fill it with a colour
+        let unfilled = area - (virus_count as usize);
+        rows.clone()
+            .flat_map(util::complete_row)
+            .filter(|p| field[*p].is_none())
+            .nth(rng.gen_range(0..unfilled))
+            .map(|pos| loop {
+                field[pos] = Some(colour);
+                if super::items::row_of_four(&field, pos).is_none() {
+                    break (pos, colour)
+                }
+                colour = colour.rotate(rotation_dir);
+            })
     })
 }
 

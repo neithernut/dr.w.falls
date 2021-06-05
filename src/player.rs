@@ -68,9 +68,9 @@ impl Drop for Handle {
         self.conn_state
             .write()
             .map_err(|e| DebugErr::new("Could not acquire connection state lock", e))
-            .or_warn(format!("Could not clear connection state for player: {}", self.name()).as_ref())
+            .or_warn(format!("Could not clear connection state for player: {}", self.name()))
             .and_then(|mut s| s.take())
-            .or_err(format!("Player already disconnected: {}", self.name()).as_ref());
+            .or_err(format!("Player already disconnected: {}", self.name()));
 
         self.notifier.send(self.tag()).or_warn("Could not send disconnection notification");
     }

@@ -26,24 +26,24 @@ pub trait TryExt: Sized {
     ///
     /// Equivalent to `or_log(log::Level::Error, msg)`
     ///
-    fn or_err(self, msg: &str) -> Option<Self::Output> {
-        self.or_log(log::Level::Error, msg)
+    fn or_err(self, msg: impl AsRef<str>) -> Option<Self::Output> {
+        self.or_log(log::Level::Error, msg.as_ref())
     }
 
     /// Return the wrapped value or warn
     ///
     /// Equivalent to `or_log(log::Level::Warn, msg)`
     ///
-    fn or_warn(self, msg: &str) -> Option<Self::Output> {
-        self.or_log(log::Level::Warn, msg)
+    fn or_warn(self, msg: impl AsRef<str>) -> Option<Self::Output> {
+        self.or_log(log::Level::Warn, msg.as_ref())
     }
 
     /// Return the wrapped value or inform
     ///
     /// Equivalent to `or_log(log::Level::Info, msg)`
     ///
-    fn or_info(self, msg: &str) -> Option<Self::Output> {
-        self.or_log(log::Level::Info, msg)
+    fn or_info(self, msg: impl AsRef<str>) -> Option<Self::Output> {
+        self.or_log(log::Level::Info, msg.as_ref())
     }
 }
 

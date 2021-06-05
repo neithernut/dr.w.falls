@@ -9,6 +9,11 @@ use tokio::task::JoinHandle;
 use tokio::sync::mpsc;
 
 
+/// Convenience type for player roster
+///
+pub type Roster = Vec<Arc<Data>>;
+
+
 /// A player handle
 ///
 /// Instances of this are meant to be held by a player, or rather a task

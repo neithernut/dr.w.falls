@@ -1,10 +1,111 @@
 //! Player data and management
 
 use std::net::SocketAddr;
+use std::ops::Deref;
 use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 use tokio::task::JoinHandle;
+use tokio::sync::mpsc;
+
+
+/// A player handle
+///
+/// Instances of this are meant to be held by a player, or rather a task
+/// associated to the player exclusively. It allows creating tags for player
+/// identification and notifications via a provided channel when dropped.
+///
+pub struct Handle {
+    data: Arc<Data>,
+    notifier: mpsc::UnboundedSender<Tag>
+}
+
+impl Handle {
+    /// Create a new player handle
+    ///
+    /// When dropped, the handle will send its tag via the `notifier` channel.
+    ///
+    pub fn new(data: Arc<Data>, notifier: mpsc::UnboundedSender<Tag>) -> Self {
+        Self {data, notifier}
+    }
+
+    /// Create a tag for this player
+    ///
+    pub fn tag(&self) -> Tag {
+        Tag {data: self.data.clone()}
+    }
+}
+
+impl PartialEq<Tag> for Handle {
+    fn eq(&self, other: &Tag) -> bool {
+        Arc::ptr_eq(&self.data, &other.data)
+    }
+}
+
+impl AsRef<Data> for Handle {
+    fn as_ref(&self) -> &Data {
+        self.data.as_ref()
+    }
+}
+
+impl Deref for Handle {
+    type Target = Data;
+
+    fn deref(&self) -> &Self::Target {
+        self.data.deref()
+    }
+}
+
+impl Drop for Handle {
+    fn drop(&mut self) {
+        use crate::error::{DebugErr, TryExt};
+
+        self.conn_state
+            .write()
+            .map_err(|e| DebugErr::new("Could not acquire connection state lock", e))
+            .or_warn(format!("Could not clear connection state for player: {}", self.name()).as_ref())
+            .and_then(|mut s| s.take())
+            .or_err(format!("Player already disconnected: {}", self.name()).as_ref());
+
+        self.notifier.send(self.tag()).or_warn("Could not send disconnection notification");
+    }
+}
+
+
+/// Tag identifying a specific player
+///
+/// In addition to identification, a tag also allows accessing the player data.
+///
+#[derive(Clone, Debug)]
+pub struct Tag {
+    data: Arc<Data>,
+}
+
+impl PartialEq for Tag {
+    fn eq(&self, other: &Self) -> bool {
+        self.eq(&other.data)
+    }
+}
+
+impl PartialEq<Arc<Data>> for Tag {
+    fn eq(&self, other: &Arc<Data>) -> bool {
+        Arc::ptr_eq(&self.data, other)
+    }
+}
+
+impl AsRef<Data> for Tag {
+    fn as_ref(&self) -> &Data {
+        self.data.as_ref()
+    }
+}
+
+impl Deref for Tag {
+    type Target = Data;
+
+    fn deref(&self) -> &Self::Target {
+        self.data.deref()
+    }
+}
 
 
 /// Data associated to a player

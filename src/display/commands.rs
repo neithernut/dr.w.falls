@@ -2,9 +2,74 @@
 
 use std::borrow::Cow;
 
+use tokio::io::AsyncWrite;
 use tokio_util::codec;
 
 use crate::util;
+
+
+/// Handle for drawing
+///
+/// An instance of this type will allow performing drawing operations as well
+/// performing predefined operations when dropped. It is intended to be opaque
+/// to code outside the `display` module.
+///
+pub struct DrawHandle<'a, W: AsyncWrite + Unpin> {
+    write: codec::FramedWrite<W, ANSIEncoder>,
+    termination_seq: &'a [DrawCommand<'a>],
+}
+
+impl<'a, W: AsyncWrite + Unpin> Drop for DrawHandle<'a, W> {
+    fn drop(&mut self) {
+        use futures::SinkExt;
+        use futures::stream::iter;
+
+        use crate::error::TryExt;
+
+        let cmds = self.termination_seq.iter().cloned().map(Ok);
+        tokio::runtime::Runtime::new()
+            .and_then(|r| r.block_on(self.write.send_all(&mut iter(cmds))))
+            .or_warn("Failed to send termination sequence")
+            .unwrap_or_default()
+    }
+}
+
+
+/// Create a draw handle
+///
+/// The handle will write encoded commands via the given `write`. When dropped,
+/// it will issue the given termination sequence.
+///
+pub fn draw_handle<'a, W: AsyncWrite + Unpin>(
+    write: W,
+    termination_seq: &'a [DrawCommand<'a>],
+) -> DrawHandle<'a, W> {
+    DrawHandle {write: codec::FramedWrite::new(write, ANSIEncoder::new()), termination_seq}
+}
+
+
+/// A proxy for sinks
+///
+/// This trait will allow keeping the exact type of `futures::Sink`s internal to the
+/// `display` module. It therefore not intended to be exported by `display` at all.
+///
+pub trait SinkProxy {
+    /// Type of the underlying sink
+    ///
+    type Sink;
+
+    /// Retrieve a reference to the underlying sink
+    ///
+    fn as_sink(&mut self) -> &mut Self::Sink;
+}
+
+impl<'a, W: AsyncWrite + Unpin> SinkProxy for DrawHandle<'a, W> {
+    type Sink = codec::FramedWrite<W, ANSIEncoder>;
+
+    fn as_sink(&mut self) -> &mut Self::Sink {
+        &mut self.write
+    }
+}
 
 
 /// Encoder for `DrawCommand`s

@@ -28,14 +28,18 @@ pub trait Entity {
     /// Create an initialization of the placed entity
     ///
     /// The returned initialization contains instructions for drawing the
-    /// entity's initial state.
+    /// entity's initial state. The function expects the first element of `pos`
+    /// to contain the topmost row and the second to contain the leftmost
+    /// column of the area reserved for the entity.
     ///
     fn init(&self, pos: (u16, u16)) -> PlacedInit;
 
     /// Place the entity
     ///
     /// This function places the entity on the given position and returns a
-    /// value representing the entity after being placed.
+    /// value representing the entity after being placed. The function expects
+    /// the first element of `pos` to contain the topmost row and the second to
+    /// contain the leftmost column of the area reserved for the entity.
     ///
     fn place(self, pos: (u16, u16)) -> Self::PlacedEntity;
 }

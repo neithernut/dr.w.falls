@@ -20,6 +20,7 @@ pub type Roster = Vec<Arc<Data>>;
 /// associated to the player exclusively. It allows creating tags for player
 /// identification and notifications via a provided channel when dropped.
 ///
+#[derive(Debug)]
 pub struct Handle {
     data: Arc<Data>,
     notifier: mpsc::UnboundedSender<Tag>

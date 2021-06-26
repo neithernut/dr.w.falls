@@ -229,6 +229,12 @@ pub trait Entry {
     }
 }
 
+impl Entry for player::Tag {
+    fn tag(&self) -> &player::Tag {
+        &self
+    }
+}
+
 
 /// Representation of an entry's state at a given point in time
 ///

@@ -4,9 +4,43 @@ use std::fmt;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use tokio::sync::oneshot;
+use tokio::sync::{mpsc, oneshot, watch};
 
 use crate::player;
+
+
+/// Create ports for communication between connection and control task
+///
+/// This function returns a pair of ports specific to the lobby phase, one for
+/// the connection task and one for the control task.
+///
+pub fn ports() -> (Ports, ControlPorts) {
+    let (score_sender, score_receiver) = watch::channel(Default::default());
+    let (registration_sender, registration_receiver) = mpsc::channel(20); // TODO: replace hard-coded value?
+
+    let ports = Ports {scores: score_receiver, registration: registration_sender};
+    let control = ControlPorts {scores: score_sender, registration: registration_receiver};
+
+    (ports, control)
+}
+
+
+/// Connection task side of communication ports for the lobby phase
+///
+#[derive(Clone, Debug)]
+pub struct Ports {
+    scores: watch::Receiver<Vec<player::Tag>>,
+    registration: mpsc::Sender<Registration>,
+}
+
+
+/// Control task side of communication ports for the lobby phase
+///
+#[derive(Debug)]
+pub struct ControlPorts {
+    scores: watch::Sender<Vec<player::Tag>>,
+    registration: mpsc::Receiver<Registration>,
+}
 
 
 /// Registration request

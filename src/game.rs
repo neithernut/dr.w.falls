@@ -5,6 +5,44 @@ mod waiting;
 mod round;
 
 use tokio::io;
+use tokio::sync::watch;
+
+
+/// Utility for awaiting a phase transition
+///
+pub struct TransitionWatcher<P, F: Fn(&P) -> bool> {
+    receiver: watch::Receiver<P>,
+    predicate: F,
+}
+
+impl<P, F: Fn(&P) -> bool> TransitionWatcher<P, F> {
+    /// Create a new transition watcher
+    ///
+    /// The watcher will receive phase updates via the `receiver`. It will
+    /// observe a transition if `predicate` returns `true` for the phase.
+    ///
+    pub fn new(receiver: watch::Receiver<P>, predicate: F) -> Self {
+        Self {receiver, predicate}
+    }
+
+    /// Wait for a transition
+    ///
+    /// This function will return only if either a transition was observed or an
+    /// error occured.
+    ///
+    pub async fn transition(&mut self) -> Result<(), watch::error::RecvError> {
+        while !self.transitioned() {
+            self.receiver.changed().await?
+        }
+        Ok(())
+    }
+
+    /// Check wehther a transition occured
+    ///
+    pub fn transitioned(&self) -> bool {
+        (self.predicate)(&self.receiver.borrow())
+    }
+}
 
 
 /// A stream of ASCII characters

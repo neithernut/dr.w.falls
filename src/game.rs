@@ -50,6 +50,15 @@ impl tokio_util::codec::Decoder for ASCIICharDecoder {
 const COLUMN_SPLIT: u16 = 32;
 
 
+/// Number of rows to split from the top when displaying instructions
+///
+/// During some phases, we'll display instructions in the lower part of the left
+/// column. This value specifies the number of rows of the left column to use
+/// for other content during those phases.
+///
+const INSTRUCTION_SPLIT: u16 = 12;
+
+
 /// Game instructions
 ///
 const INSTRUCTIONS: [&str; 8] = [

@@ -180,3 +180,8 @@ impl Data {
 ///
 pub type ConnTaskHandle = JoinHandle<()>;
 
+
+/// Maximum allowed length for a player name
+///
+pub const MAX_PLAYER_NAME_LEN: usize = 16;
+

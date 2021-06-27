@@ -67,7 +67,7 @@ impl fmt::Display for DenialReason {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::AcceptanceClosed  => write!(f, "Registration is closed"),
-            Self::MaxPlayers        => write!(f, "Maximum number of players reached"),
+            Self::MaxPlayers        => write!(f, "Max number of players reached"),
             Self::NameTaken         => write!(f, "Name is already taken"),
             Self::TemporaryFailure  => write!(f, "Temporary registration failure"),
             Self::PermanentFailure  => write!(f, "Permanent registration failure"),

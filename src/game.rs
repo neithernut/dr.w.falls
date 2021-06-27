@@ -4,6 +4,8 @@ mod lobby;
 mod waiting;
 mod round;
 
+use std::fmt;
+
 use tokio::io;
 use tokio::sync::watch;
 
@@ -77,6 +79,54 @@ impl tokio_util::codec::Decoder for ASCIICharDecoder {
         } else {
             src.reserve(1);
             Ok(None)
+        }
+    }
+}
+
+
+/// Error type for connection task functions
+///
+/// This error type is intended for functions and utilities used in connection
+/// tasks.
+///
+#[derive(Debug)]
+pub enum ConnTaskError {
+    /// The connection was terminated in some way
+    ///
+    /// The conneciton was terminated, presumably actively by the user.
+    Terminated,
+    /// Some other error occured
+    Other(Box<dyn std::error::Error>),
+}
+
+impl ConnTaskError {
+    /// Create an "other" error
+    ///
+    pub fn other(e: impl std::error::Error + 'static) -> Self {
+        Self::Other(Box::new(e))
+    }
+}
+
+impl<E: Into<io::Error>> From<E> for ConnTaskError {
+    fn from(e: E) -> Self {
+        Self::other(e.into())
+    }
+}
+
+impl std::error::Error for ConnTaskError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Terminated => None,
+            Self::Other(err) => Some(err.as_ref()),
+        }
+    }
+}
+
+impl fmt::Display for ConnTaskError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Terminated    => write!(f, "Connection terminated"),
+            Self::Other(_)      => write!(f, "Error in connection task"),
         }
     }
 }

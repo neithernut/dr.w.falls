@@ -62,7 +62,7 @@ struct ASCIICharDecoder {}
 
 impl tokio_util::codec::Decoder for ASCIICharDecoder {
     type Item = char;
-    type Error = io::Error;
+    type Error = ConnTaskError;
 
     fn decode(
         &mut self,
@@ -72,7 +72,7 @@ impl tokio_util::codec::Decoder for ASCIICharDecoder {
 
         if src.has_remaining() {
             match src.get_u8() {
-                0x03 | 0x04         => Err(io::ErrorKind::UnexpectedEof.into()),
+                0x03 | 0x04         => Err(ConnTaskError::Terminated),
                 c if c.is_ascii()   => Ok(Some(c as char)),
                 _                   => Err(io::ErrorKind::InvalidData.into())
             }

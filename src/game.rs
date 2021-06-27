@@ -44,6 +44,12 @@ impl tokio_util::codec::Decoder for ASCIICharDecoder {
 }
 
 
+/// Number of columns to split from the left
+///
+/// The remeining columns are reserved for the score board.
+const COLUMN_SPLIT: u16 = 32;
+
+
 /// Game instructions
 ///
 const INSTRUCTIONS: [&str; 8] = [

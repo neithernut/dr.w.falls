@@ -4,9 +4,124 @@ use std::fmt;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use tokio::io;
 use tokio::sync::{mpsc, oneshot, watch};
 
+use crate::display;
 use crate::player;
+
+
+/// Connection function for the lobby phase
+///
+/// This function implements the connection task part of the game logic for the
+/// lobby phase.
+///
+pub async fn serve<P>(
+    control: Ports,
+    mut display: display::Display<impl io::AsyncWrite + Unpin>,
+    mut input: impl futures::stream::Stream<Item = Result<char, io::Error>> + Unpin,
+    mut phase: super::TransitionWatcher<P, impl Fn(&P) -> bool>,
+    token: ConnectionToken,
+) -> Result<Option<player::Handle>, super::ConnTaskError> {
+    use std::convert::TryInto;
+
+    use futures::stream::StreamExt;
+
+    use super::ConnTaskError;
+
+    let mut scores = control.scores;
+    let registration = control.registration;
+
+
+    // Set up the display
+    let mut area = display.area().await?.pad_top(1);
+    let mut left = area.split_left(super::COLUMN_SPLIT);
+    let mut reg = left.split_top(super::INSTRUCTION_SPLIT);
+
+    reg.place_top(display::StaticText::from("Please enter your name:")).await?;
+    reg = reg.pad_top(1);
+    let mut name_input = reg.place_top(
+        display::LineInput::new((player::MAX_PLAYER_NAME_LEN as u16).try_into().unwrap())
+    ).await?;
+    let reply_text = reg.place_center(
+        display::DynamicText::new((super::COLUMN_SPLIT - 2).try_into().unwrap(), 4u16.try_into().unwrap())
+    ).await?;
+
+    left.place_center(display::StaticText::from(super::INSTRUCTIONS.iter().cloned())).await?;
+
+    let max_scores = area.rows().saturating_sub(2);
+    let mut score_board = area.place_center(display::ScoreBoard::new(max_scores).show_scores(false)).await?;
+    score_board.update(&mut display.handle().await?, scores.borrow().iter(), |_| false).await?;
+
+
+    // Get the player to register
+    let handle = loop {
+        tokio::select!{
+            res = input.next() => match res {
+                Some(Ok(c)) => {
+                    let name = name_input
+                        .update(&mut display.handle().await?, c)
+                        .await?
+                        .map(ToString::to_string);
+                    if let Some(name) = name {
+                        let (reply_sender, reply) = oneshot::channel();
+                        registration
+                            .send(Registration::new(name, token.clone(), reply_sender))
+                            .await
+                            .map_err(ConnTaskError::other)?;
+                        match reply.await.map_err(|_| io::Error::from(io::ErrorKind::Other))? {
+                            RegistrationReply::Accepted(handle) => break handle,
+                            RegistrationReply::Denied(reason)   => reply_text
+                                .update_single(&mut display.handle().await?, reason)
+                                .await?,
+                        }
+                    }
+                }
+                Some(Err(e)) if e.kind() != io::ErrorKind::WouldBlock => return Err(e.into()),
+                None => return Err(ConnTaskError::Terminated),
+                _ => (),
+            },
+            _ = scores.changed() => score_board
+                .update(&mut display.handle().await?, scores.borrow().iter(), |_| false)
+                .await?,
+            t = phase.transition() => {
+                t?;
+                reply_text
+                    .update_single(&mut display.handle().await?, "The game started without you.")
+                    .await?;
+                return Ok(None)
+            },
+        }
+    };
+
+    let reg_msg = [
+        "You are now registered.",
+        "Please wait for the game",
+        "to start.",
+    ];
+    reply_text.update(&mut display.handle().await?, reg_msg.iter()).await?;
+
+
+    // Wait for the transition, updating scores
+    while !phase.transitioned() {
+        tokio::select!{
+            res = input.next() => match res {
+                Some(Err(e)) if e.kind() != io::ErrorKind::WouldBlock => return Err(e.into()),
+                None => return Err(ConnTaskError::Terminated),
+                _ => (),
+            },
+            _ = scores.changed() => score_board
+                .update(&mut display.handle().await?, scores.borrow().iter(), |t| handle == *t)
+                .await?,
+            t = phase.transition() => {
+                t?;
+                break
+            },
+        }
+    }
+
+    Ok(Some(handle))
+}
 
 
 /// Create ports for communication between connection and control task

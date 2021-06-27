@@ -32,9 +32,9 @@ impl<P, F: Fn(&P) -> bool> TransitionWatcher<P, F> {
     /// This function will return only if either a transition was observed or an
     /// error occured.
     ///
-    pub async fn transition(&mut self) -> Result<(), watch::error::RecvError> {
+    pub async fn transition(&mut self) -> Result<(), ConnTaskError> {
         while !self.transitioned() {
-            self.receiver.changed().await?
+            self.receiver.changed().await.map_err(ConnTaskError::other)?
         }
         Ok(())
     }

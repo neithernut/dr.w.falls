@@ -79,7 +79,7 @@ impl fmt::Display for DenialReason {
 /// Connection token
 ///
 #[derive(Clone, Debug)]
-struct ConnectionToken {
+pub struct ConnectionToken {
     data: Arc<SocketAddr>,
 }
 

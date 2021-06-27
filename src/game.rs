@@ -9,7 +9,7 @@ use tokio::io;
 
 /// A stream of ASCII characters
 ///
-type ASCIIStream<'a, R> = tokio_util::codec::FramedRead<R, ASCIICharDecoder>;
+type ASCIIStream<R> = tokio_util::codec::FramedRead<R, ASCIICharDecoder>;
 
 
 /// Decoder for single ASCII characters

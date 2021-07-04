@@ -60,6 +60,17 @@ pub enum GameControl {
     EndOfGame,
 }
 
+impl GameControl {
+    /// Check whether the game control indicates an end of game condition
+    ///
+    pub fn is_end_of_game(&self) -> bool {
+        match self {
+            Self::EndOfGame => true,
+            _ => false,
+        }
+    }
+}
+
 
 /// A stream of ASCII characters
 ///

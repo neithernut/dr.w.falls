@@ -11,7 +11,7 @@ use tokio::sync::mpsc;
 
 /// Convenience type for player roster
 ///
-pub type Roster = Vec<Arc<Data>>;
+pub type Roster = Vec<Tag>;
 
 
 /// A player handle

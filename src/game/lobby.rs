@@ -4,8 +4,10 @@ use std::fmt;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use log;
 use tokio::io;
-use tokio::sync::{mpsc, oneshot, watch};
+use tokio::net;
+use tokio::sync::{RwLock, mpsc, oneshot, watch};
 
 use crate::display;
 use crate::player;
@@ -121,6 +123,90 @@ pub async fn serve<P>(
     }
 
     Ok(Some(handle))
+}
+
+
+/// Lobby control function
+///
+/// This function implements the central control logic for the lobby phase.
+///
+pub async fn control<F, P, O>(
+    ports: ControlPorts,
+    mut lobby_control: watch::Receiver<LobbyControl>,
+    phase: watch::Receiver<P>,
+    listener: net::TcpListener,
+    serve_conn: F,
+    roster: Arc<RwLock<player::Roster>>,
+) -> io::Result<(watch::Receiver<super::GameControl>, mpsc::UnboundedReceiver<player::Tag>)>
+where F: Fn(net::TcpStream, watch::Receiver<P>, ConnectionToken) -> O + 'static + Send + Sync + Copy,
+      P: 'static + Send + Sync + std::fmt::Debug,
+      O: std::future::Future<Output = ()> + Send,
+{
+    use crate::error::TryExt;
+
+    let scores = ports.scores;
+    let mut registrations = ports.registration;
+
+    let mut accept = true;
+    let mut max_players: u8 = 20;
+
+    let mut tokens: std::collections::HashMap<ConnectionToken, player::ConnTaskHandle> = Default::default();
+
+    let (player_notify, mut player_notifications) = mpsc::unbounded_channel();
+
+    loop {
+        tokio::select! {
+            stream = listener.accept(), if accept => {
+                let (stream, peer) = stream?;
+                log::info!("Accepting connection from {}", peer);
+                let token: ConnectionToken = peer.into();
+
+                let conn_task = tokio::spawn({
+                    let token = token.clone();
+                    let phase = phase.clone();
+                    async move { serve_conn(stream, phase, token).await }
+                });
+                tokens.insert(token, conn_task);
+            },
+            _ = lobby_control.changed() => match &*lobby_control.borrow() {
+                LobbyControl::Settings{registration_acceptance: a, max_players: m} => {
+                    accept = *a;
+                    max_players = *m;
+                },
+                LobbyControl::GameStart(c) => break Ok((c.clone(), player_notifications)),
+            },
+            registration = registrations.recv() => if let Some(r) = registration {
+                let mut roster = roster.write().await;
+                let res = if !accept {
+                    DenialReason::AcceptanceClosed.into()
+                } else if roster.len() >= max_players as usize {
+                    DenialReason::MaxPlayers.into()
+                } else if roster.iter().any(|p| p.name() == r.name) {
+                    DenialReason::NameTaken.into()
+                } else if let Some(conn_handle) = tokens.remove(&r.token) {
+                    let handle = player::Handle::new(
+                        Arc::new(player::Data::new(r.name, *r.token.data, conn_handle)),
+                        player_notify.clone(),
+                    );
+                    roster.push(handle.tag());
+                    scores.send(roster.clone()).or_warn("Could not send updates");
+                    RegistrationReply::Accepted(handle)
+                } else {
+                    log::warn!("No connection token found for {}", r.token.data);
+                    DenialReason::PermanentFailure.into()
+                };
+                r.response.send(res).ok().or_warn("Failed to send reply");
+            },
+            _ = player_notifications.recv() => {
+                let mut roster = roster.write().await;
+                let original_size = roster.len();
+                roster.retain(|p| p.is_connected());
+                if roster.len() < original_size {
+                    scores.send(roster.clone()).or_warn("Could not send updates");
+                }
+            }
+        }
+    }
 }
 
 

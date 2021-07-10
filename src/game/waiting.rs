@@ -15,7 +15,7 @@ use crate::player;
 /// This function implements the connection task part of the game logic for the
 /// waiting phase.
 ///
-async fn serve<P>(
+pub async fn serve<P>(
     control: Ports,
     display: &mut display::Display<impl io::AsyncWrite + Unpin>,
     mut input: impl futures::stream::Stream<Item = Result<char, io::Error>> + Unpin,

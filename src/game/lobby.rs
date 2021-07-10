@@ -21,7 +21,7 @@ use crate::player;
 pub async fn serve<P>(
     control: Ports,
     mut display: display::Display<impl io::AsyncWrite + Unpin>,
-    mut input: impl futures::stream::Stream<Item = Result<char, io::Error>> + Unpin,
+    mut input: impl futures::stream::Stream<Item = Result<char, super::ConnTaskError>> + Unpin,
     mut phase: super::TransitionWatcher<P, impl Fn(&P) -> bool>,
     token: ConnectionToken,
 ) -> Result<Option<player::Handle>, super::ConnTaskError> {
@@ -79,7 +79,7 @@ pub async fn serve<P>(
                         }
                     }
                 }
-                Some(Err(e)) if e.kind() != io::ErrorKind::WouldBlock => return Err(e.into()),
+                Some(Err(e)) if !e.is_would_block() => return Err(e.into()),
                 None => return Err(ConnTaskError::Terminated),
                 _ => (),
             },
@@ -108,7 +108,7 @@ pub async fn serve<P>(
     while !phase.transitioned() {
         tokio::select!{
             res = input.next() => match res {
-                Some(Err(e)) if e.kind() != io::ErrorKind::WouldBlock => return Err(e.into()),
+                Some(Err(e)) if !e.is_would_block() => return Err(e.into()),
                 None => return Err(ConnTaskError::Terminated),
                 _ => (),
             },

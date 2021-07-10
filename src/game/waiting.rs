@@ -18,7 +18,7 @@ use crate::player;
 pub async fn serve<P>(
     control: Ports,
     display: &mut display::Display<impl io::AsyncWrite + Unpin>,
-    mut input: impl futures::stream::Stream<Item = Result<char, io::Error>> + Unpin,
+    mut input: impl futures::stream::Stream<Item = Result<char, super::ConnTaskError>> + Unpin,
     mut phase: super::TransitionWatcher<P, impl Fn(&P) -> bool>,
     me: &player::Handle,
 ) -> Result<(), super::ConnTaskError> {
@@ -69,7 +69,7 @@ pub async fn serve<P>(
                     ready.send(me.tag()).await.map_err(ConnTaskError::other)?;
                     inst.update_single(&mut display.handle().await?, "Wait to the round to start.").await?;
                 },
-                Some(Err(e)) if e.kind() != io::ErrorKind::WouldBlock => return Err(e.into()),
+                Some(Err(e)) if !e.is_would_block() => return Err(e.into()),
                 None => return Err(ConnTaskError::Terminated),
                 _ => (),
             },

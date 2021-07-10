@@ -139,6 +139,8 @@ pub enum ConnTaskError {
     ///
     /// The conneciton was terminated, presumably actively by the user.
     Terminated,
+    /// The operation would block
+    WouldBlock,
     /// Some other error occured
     Other(Box<dyn std::error::Error>),
 }
@@ -149,19 +151,35 @@ impl ConnTaskError {
     pub fn other(e: impl std::error::Error + 'static) -> Self {
         Self::Other(Box::new(e))
     }
+
+    /// Check whether this error just indicates that an operation would block
+    ///
+    pub fn is_would_block(&self) -> bool {
+        if let Self::WouldBlock = self {
+            true
+        } else {
+            false
+        }
+    }
 }
 
 impl<E: Into<io::Error>> From<E> for ConnTaskError {
     fn from(e: E) -> Self {
-        Self::other(e.into())
+        let err = e.into();
+        if err.kind() == io::ErrorKind::WouldBlock {
+            Self::WouldBlock
+        } else {
+            Self::other(err)
+        }
     }
 }
 
 impl std::error::Error for ConnTaskError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::Terminated => None,
-            Self::Other(err) => Some(err.as_ref()),
+        if let Self::Other(err) =  self {
+            Some(err.as_ref())
+        } else {
+            None
         }
     }
 }
@@ -170,6 +188,7 @@ impl fmt::Display for ConnTaskError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Terminated    => write!(f, "Connection terminated"),
+            Self::WouldBlock    => write!(f, "Operation would block"),
             Self::Other(_)      => write!(f, "Error in connection task"),
         }
     }

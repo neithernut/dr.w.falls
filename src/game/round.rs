@@ -18,9 +18,9 @@ use crate::util;
 /// This data type provides the core logic for a round, exposed as functions.
 /// These include functions for performing both controlled moves and ticks.
 ///
-struct Actor<'a> {
+struct Actor {
     event_sender: mpsc::Sender<(player::Tag, Event)>,
-    capsule_receiver: &'a mut CapsulesQueue,
+    capsule_receiver: CapsulesQueue,
     player_tag: player::Tag,
     moving: field::MovingField,
     r#static: field::StaticField,
@@ -29,12 +29,12 @@ struct Actor<'a> {
     next_colours: [util::Colour; 2],
 }
 
-impl<'a> Actor<'a> {
+impl Actor {
     /// Create a new actor
     ///
     pub fn new(
         event_sender: mpsc::Sender<(player::Tag, Event)>,
-        capsule_receiver: &'a mut CapsulesQueue,
+        capsule_receiver: CapsulesQueue,
         player_tag: player::Tag,
         viruses: HashMap<util::Position, util::Colour>,
         next_colours: [util::Colour; 2],

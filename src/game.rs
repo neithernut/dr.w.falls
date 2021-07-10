@@ -142,13 +142,13 @@ pub enum ConnTaskError {
     /// The operation would block
     WouldBlock,
     /// Some other error occured
-    Other(Box<dyn std::error::Error>),
+    Other(Box<dyn std::error::Error + Send>),
 }
 
 impl ConnTaskError {
     /// Create an "other" error
     ///
-    pub fn other(e: impl std::error::Error + 'static) -> Self {
+    pub fn other(e: impl std::error::Error + Send + 'static) -> Self {
         Self::Other(Box::new(e))
     }
 

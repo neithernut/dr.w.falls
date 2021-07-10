@@ -1,8 +1,55 @@
 //! Implementation of the round phase
 
+use std::collections::{HashMap, VecDeque};
+use std::sync::Arc;
+
+use tokio::sync::{Mutex, mpsc, watch};
+
 use crate::display;
 use crate::player;
 use crate::util;
+
+
+/// Create ports for communication between connection and control task
+///
+/// This function returns a pair of ports specific to the round phase, one for
+/// the connection task and one for the control task.
+///
+pub fn ports(scores: impl IntoIterator<Item = player::Tag>) -> (Ports, ControlPorts) {
+    let (capsules, scores): (HashMap<_, _>, Vec<_>) = scores
+        .into_iter()
+        .map(|t| ((t.clone(), Default::default()), t.into()))
+        .unzip();
+    let player_num = scores.len();
+
+    let (score_sender, score_receiver) = watch::channel(scores);
+    let (event_sender, event_receiver) = mpsc::channel(player_num);
+
+    let ports = Ports {scores: score_receiver, events: event_sender, capsules: Arc::new(capsules.clone())};
+    let control = ControlPorts {scores: score_sender, events: event_receiver, capsules};
+
+    (ports, control)
+}
+
+
+/// Connection task side of communication ports for the lobby phase
+///
+#[derive(Clone, Debug)]
+pub struct Ports {
+    scores: watch::Receiver<Vec<ScoreBoardEntry>>,
+    events: mpsc::Sender<(player::Tag, Event)>,
+    capsules: Arc<HashMap<player::Tag, CapsulesQueue>>,
+}
+
+
+/// Control task side of communication ports for the lobby phase
+///
+#[derive(Debug)]
+pub struct ControlPorts {
+    scores: watch::Sender<Vec<ScoreBoardEntry>>,
+    events: mpsc::Receiver<(player::Tag, Event)>,
+    capsules: HashMap<player::Tag, CapsulesQueue>,
+}
 
 
 /// Message type for events associated with a particular player
@@ -16,6 +63,16 @@ enum Event {
     /// The player was defeated
     Defeat,
 }
+
+
+/// Queue for distribution of capsules
+///
+type CapsulesQueue = Arc<Mutex<VecDeque<Capsules>>>;
+
+
+/// Convenience type for a batch of capsules
+///
+type Capsules = Vec<(util::ColumnIndex, util::Colour)>;
 
 
 /// Score board entry for the waiting phase

@@ -102,6 +102,7 @@ type ASCIIStream<R> = tokio_util::codec::FramedRead<R, ASCIICharDecoder>;
 /// an enf-of-file condition on ETX (`0x03`) and EOT (`0x04`) by issuing an
 /// `UnexpectedEof` error.
 ///
+#[derive(Default, Debug)]
 struct ASCIICharDecoder {}
 
 impl tokio_util::codec::Decoder for ASCIICharDecoder {

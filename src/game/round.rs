@@ -174,9 +174,9 @@ pub async fn control(
     ports: ControlPorts,
     roster: Arc<RwLock<player::Roster>>,
     rng: &mut impl rand::Rng,
-) -> Result<(), error::WrappedErr<Box<dyn std::error::Error>>> {
+) -> Result<(), error::WrappedErr<Box<dyn std::error::Error + Send>>> {
     use error::TryExt;
-    type Wrapped = error::WrappedErr::<Box<dyn std::error::Error>>;
+    type Wrapped = error::WrappedErr::<Box<dyn std::error::Error + Send>>;
 
     let scores_sender = ports.scores;
     let mut events = ports.events;

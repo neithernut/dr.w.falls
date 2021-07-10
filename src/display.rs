@@ -11,6 +11,7 @@ mod static_text;
 
 
 pub use area::Area;
+pub use commands::DrawHandle;
 pub use display::Display;
 pub use dynamic_text::DynamicText;
 pub use field::PlayField;

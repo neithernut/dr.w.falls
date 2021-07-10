@@ -167,7 +167,6 @@ pub async fn serve<P>(
 ///
 pub async fn control(
     ports: ControlPorts,
-    game_control: watch::Receiver<super::GameControl>,
     roster: Arc<RwLock<player::Roster>>,
     rng: &mut impl rand::Rng,
 ) -> Result<(), error::WrappedErr<Box<dyn std::error::Error>>> {

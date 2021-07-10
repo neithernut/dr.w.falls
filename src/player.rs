@@ -87,6 +87,8 @@ pub struct Tag {
     data: Arc<Data>,
 }
 
+impl Eq for Tag {}
+
 impl PartialEq for Tag {
     fn eq(&self, other: &Self) -> bool {
         self.eq(&other.data)
@@ -96,6 +98,14 @@ impl PartialEq for Tag {
 impl PartialEq<Arc<Data>> for Tag {
     fn eq(&self, other: &Arc<Data>) -> bool {
         Arc::ptr_eq(&self.data, other)
+    }
+}
+
+impl std::hash::Hash for Tag {
+    fn hash<H>(&self, state: &mut H)
+        where H: std::hash::Hasher
+    {
+        Arc::as_ptr(&self.data).hash(state)
     }
 }
 

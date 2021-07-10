@@ -2,6 +2,20 @@
 
 use crate::display;
 use crate::player;
+use crate::util;
+
+
+/// Message type for events associated with a particular player
+///
+#[derive(Clone, Debug)]
+enum Event {
+    /// Capsules to be sent to ther players
+    Capsules(Vec<util::Colour>),
+    /// The player's score has changed
+    Score(u32),
+    /// The player was defeated
+    Defeat,
+}
 
 
 /// Score board entry for the waiting phase

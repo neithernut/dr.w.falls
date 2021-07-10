@@ -51,7 +51,11 @@ async fn serve<P>(
 
     let max_scores = area.rows().saturating_sub(2);
     let mut score_board = area.place_center(display::ScoreBoard::new(max_scores).show_scores(false)).await?;
-    score_board.update(&mut display.handle().await?, scores.borrow().iter(), |_| false).await?;
+    let highlight = {
+        let tag = me.tag();
+        move |t: &player::Tag| *t == tag
+    };
+    score_board.update(&mut display.handle().await?, scores.borrow().iter(), &highlight).await?;
 
 
     num_display.update_single(&mut display.handle().await?, *countdown.borrow()).await?;
@@ -70,7 +74,7 @@ async fn serve<P>(
                 _ => (),
             },
             _ = scores.changed() => score_board
-                .update(&mut display.handle().await?, scores.borrow().iter(), |_| false)
+                .update(&mut display.handle().await?, scores.borrow().iter(), &highlight)
                 .await?,
             _ = countdown.changed() => num_display
                 .update_single(&mut display.handle().await?, *countdown.borrow())

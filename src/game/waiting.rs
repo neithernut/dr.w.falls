@@ -89,7 +89,7 @@ pub async fn serve<P>(
 ///
 /// This function implements the central control logic for the waiting phase.
 ///
-pub async fn control<E: Clone + std::fmt::Debug>(
+pub async fn control(
     ports: ControlPorts,
     mut game_control: watch::Receiver<super::GameControl>,
     roster: Arc<RwLock<player::Roster>>,

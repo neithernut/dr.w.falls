@@ -162,6 +162,18 @@ impl<'a> Actor<'a> {
         field::defeated(&self.r#static)
     }
 
+    /// Retrieve the number of remaining viruses
+    ///
+    pub fn virus_count(&self) -> usize {
+        self.viruses.len()
+    }
+
+    /// Retrieve the remaining viruses
+    ///
+    pub fn remaining_viruses(&self) -> impl Iterator<Item = (util::Position, util::Colour)> {
+        self.viruses.clone().into_iter()
+    }
+
     /// Send the given event
     ///
     async fn send_event(&self, event: Event) -> Result<(), super::ConnTaskError> {

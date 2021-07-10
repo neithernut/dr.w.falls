@@ -175,6 +175,7 @@ impl FieldUpdater {
 
 /// Helper for graphical representations of viruses
 ///
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum VirusSym {A, B}
 
 impl VirusSym {

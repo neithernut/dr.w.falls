@@ -132,10 +132,13 @@ pub async fn control<E: Clone + std::fmt::Debug>(
 /// This function returns a pair of ports specific to the waiting phase, one for
 /// the connection task and one for the control task.
 ///
-pub fn ports() -> (Ports, ControlPorts) {
-    let (score_sender, score_receiver) = watch::channel(Default::default());
+pub fn ports(scores: impl IntoIterator<Item = player::Tag>) -> (Ports, ControlPorts) {
+    let scores: Vec<_> = scores.into_iter().map(Into::into).collect();
+    let player_num = scores.len();
+
+    let (score_sender, score_receiver) = watch::channel(scores);
     let (countdown_sender, countdown_receiver) = watch::channel(Default::default());
-    let (readiness_sender, readiness_receiver) = mpsc::channel(20); // TODO: replace hard-coded value?
+    let (readiness_sender, readiness_receiver) = mpsc::channel(player_num);
 
     let ports = Ports {scores: score_receiver, countdown: countdown_receiver, ready: readiness_sender};
     let control = ControlPorts {scores: score_sender, countdown: countdown_sender, ready: readiness_receiver};

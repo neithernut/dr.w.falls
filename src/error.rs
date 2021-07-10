@@ -125,3 +125,16 @@ impl<E> fmt::Display for WrappedErr<E> {
     }
 }
 
+
+/// Error type indicating some `Option` being `None`
+#[derive(Default, Debug)]
+pub struct NoneError;
+
+impl Error for NoneError {}
+
+impl fmt::Display for NoneError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt("found None", f)
+    }
+}
+

@@ -59,7 +59,10 @@ pub async fn serve<P>(
         let tag = me.tag();
         move |t: &player::Tag| *t == tag
     };
-    score_board.update(&mut display.handle().await?, scores.borrow().iter(), &highlight).await?;
+    {
+        let scores = scores.borrow().clone();
+        score_board.update(&mut display.handle().await?, scores.iter(), &highlight).await?
+    }
 
 
     let next_colours = rng.gen();
@@ -111,9 +114,10 @@ pub async fn serve<P>(
                     virus_sym,
                 ).await?
             },
-            _ = scores.changed() => score_board
-                .update(&mut display.handle().await?, scores.borrow().iter(), &highlight)
-                .await?,
+            _ = scores.changed() => {
+                let scores = scores.borrow().clone();
+                score_board.update(&mut display.handle().await?, scores.iter(), &highlight) .await?
+            },
             t = phase.transition() => {
                 t?;
                 break
@@ -147,9 +151,10 @@ pub async fn serve<P>(
                     virus_sym,
                 ).await?
             },
-            _ = scores.changed() => score_board
-                .update(&mut display.handle().await?, scores.borrow().iter(), &highlight)
-                .await?,
+            _ = scores.changed() => {
+                let scores = scores.borrow().clone();
+                score_board.update(&mut display.handle().await?, scores.iter(), &highlight) .await?
+            },
             t = phase.transition() => {
                 t?;
                 break

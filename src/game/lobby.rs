@@ -53,7 +53,10 @@ pub async fn serve<P>(
 
     let max_scores = area.rows().saturating_sub(2);
     let mut score_board = area.place_center(display::ScoreBoard::new(max_scores).show_scores(false)).await?;
-    score_board.update(&mut display.handle().await?, scores.borrow().iter(), |_| false).await?;
+    {
+        let scores = scores.borrow().clone();
+        score_board.update(&mut display.handle().await?, scores.iter(), |_| false).await?
+    }
 
 
     // Get the player to register
@@ -83,9 +86,10 @@ pub async fn serve<P>(
                 None => return Err(ConnTaskError::Terminated),
                 _ => (),
             },
-            _ = scores.changed() => score_board
-                .update(&mut display.handle().await?, scores.borrow().iter(), |_| false)
-                .await?,
+            _ = scores.changed() => {
+                let scores = scores.borrow().clone();
+                score_board.update(&mut display.handle().await?, scores.iter(), |_| false).await?
+            },
             t = phase.transition() => {
                 t?;
                 reply_text
@@ -112,9 +116,10 @@ pub async fn serve<P>(
                 None => return Err(ConnTaskError::Terminated),
                 _ => (),
             },
-            _ = scores.changed() => score_board
-                .update(&mut display.handle().await?, scores.borrow().iter(), |t| handle == *t)
-                .await?,
+            _ = scores.changed() => {
+                let scores = scores.borrow().clone();
+                score_board.update(&mut display.handle().await?, scores.iter(), |t| handle == *t).await?
+            },
             t = phase.transition() => {
                 t?;
                 break

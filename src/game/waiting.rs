@@ -55,10 +55,16 @@ pub async fn serve<P>(
         let tag = me.tag();
         move |t: &player::Tag| *t == tag
     };
-    score_board.update(&mut display.handle().await?, scores.borrow().iter(), &highlight).await?;
+    {
+        let scores = scores.borrow().clone();
+        score_board.update(&mut display.handle().await?, scores.iter(), &highlight).await?
+    }
 
 
-    num_display.update_single(&mut display.handle().await?, *countdown.borrow()).await?;
+    {
+        let countdown = *countdown.borrow();
+        num_display.update_single(&mut display.handle().await?, countdown).await?
+    }
     inst.update_single(&mut display.handle().await?, "Press any key when ready.").await?;
 
     // Actual waiting display logic
@@ -73,12 +79,14 @@ pub async fn serve<P>(
                 None => return Err(ConnTaskError::Terminated),
                 _ => (),
             },
-            _ = scores.changed() => score_board
-                .update(&mut display.handle().await?, scores.borrow().iter(), &highlight)
-                .await?,
-            _ = countdown.changed() => num_display
-                .update_single(&mut display.handle().await?, *countdown.borrow())
-                .await?,
+            _ = scores.changed() => {
+                let scores = scores.borrow().clone();
+                score_board.update(&mut display.handle().await?, scores.iter(), &highlight).await?
+            },
+            _ = countdown.changed() => {
+                let countdown = *countdown.borrow();
+                num_display.update_single(&mut display.handle().await?, countdown).await?
+            },
             t = phase.transition() => break t,
         }
     }

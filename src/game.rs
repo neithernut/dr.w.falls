@@ -4,10 +4,29 @@ mod lobby;
 mod waiting;
 mod round;
 
+use std::collections::HashMap;
 use std::fmt;
 
 use tokio::io;
 use tokio::sync::watch;
+
+use crate::util;
+
+
+/// Game phase updates
+#[derive(Debug, Clone)]
+enum GamePhase<R: rand::Rng> {
+    Lobby{ports: lobby::Ports},
+    Waiting{ports: waiting::Ports},
+    Round{
+        ports: round::Ports,
+        viruses: HashMap<util::Position, util::Colour>,
+        tick_duration: std::time::Duration,
+        rng: R,
+        num: u32,
+    },
+    End,
+}
 
 
 /// Utility for awaiting a phase transition

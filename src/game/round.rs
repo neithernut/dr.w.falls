@@ -178,6 +178,7 @@ pub async fn control(
     roster: Arc<RwLock<player::Roster>>,
     rng: &mut impl rand::Rng,
 ) -> Result<(), error::WrappedErr<Box<dyn std::error::Error + Send>>> {
+    use display::ScoreBoardEntry as _;
     use error::TryExt;
     type Wrapped = error::WrappedErr::<Box<dyn std::error::Error + Send>>;
 
@@ -188,7 +189,6 @@ pub async fn control(
     let mut scores: Vec<ScoreBoardEntry> = roster.read().await.clone().into_iter().map(Into::into).collect();
 
     while !active.is_empty() {
-        use display::ScoreBoardEntry as _;
 
         scores.sort_by_key(|p| p.round_score());
         scores_sender.send(scores.clone()).or_warn("Could not send updates");
@@ -243,6 +243,9 @@ pub async fn control(
             Event::Defeat => { active.remove(&player).or_warn("Defeated player not active"); },
         }
     }
+
+    // Preserve the round scores by adding them to the overall scores
+    scores.into_iter().for_each(|e| {e.tag().add_score(e.round_score()); });
 
     Ok(())
 }

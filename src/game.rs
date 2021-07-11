@@ -6,14 +6,78 @@ mod round;
 
 use std::collections::HashMap;
 use std::fmt;
+use std::sync::Arc;
 
 use tokio::io;
 use tokio::net;
-use tokio::sync::watch;
+use tokio::sync::{RwLock, watch};
 
 use crate::error;
 use crate::player;
 use crate::util;
+
+
+/// Run the game
+///
+/// This function implements the the overall game phase logic. During the lobby
+/// phase, connections will be accepted via the given `listener` and new players
+/// are added to the `roster`.
+///
+pub async fn run_game<R>(
+    listener: net::TcpListener,
+    lobby_control: watch::Receiver<lobby::LobbyControl>,
+    roster: Arc<RwLock<player::Roster>>,
+    phase: watch::Sender<GamePhase<R>>,
+    phase_receiver: watch::Receiver<GamePhase<R>>,
+) -> Result<(), error::WrappedErr<Box<dyn std::error::Error + Send>>>
+where R: rand::Rng + rand::SeedableRng + Clone + Send + Sync + fmt::Debug + 'static
+{
+    use crate::field::prepare_field;
+    use util::Step;
+
+    type E = error::WrappedErr<Box<dyn std::error::Error + Send>>;
+
+    let (ports, control) = lobby::ports();
+    phase.send(GamePhase::Lobby{ports}).map_err(|e| E::new("Could not send phase updates", Box::new(e)))?;
+    let (game_control, _disconnects) = lobby::control(
+        control,
+        lobby_control,
+        phase_receiver,
+        listener,
+        serve_connection,
+        roster.clone(),
+    ).await.unwrap();
+
+    let mut num = 1;
+
+    while !game_control.borrow().is_end_of_game() {
+        let (ports, control) = waiting::ports(roster.read().await.clone());
+        phase
+            .send(GamePhase::Waiting{ports})
+            .map_err(|e| E::new("Could not send phase updates", Box::new(e)))?;
+        waiting::control(control, game_control.clone(), roster.clone()).await;
+
+        let mut rng = R::from_entropy();
+        let (viruses, tick_duration) = match game_control.borrow().clone() {
+            GameControl::Settings{viruses, tick} => {
+                let first_row = util::RowIndex::TOP_ROW.forward_checked(FREE_ROWS)
+                    .expect("Not enough rows to keep free");
+                (prepare_field(&mut rng, first_row, viruses).collect(), tick)
+            },
+            GameControl::EndOfGame => break,
+        };
+
+        let (ports, control) = round::ports(roster.read().await.clone());
+        phase
+            .send(GamePhase::Round{ports, viruses, tick_duration, rng: rng.clone(), num})
+            .map_err(|e| E::new("Could not send phase updates", Box::new(e)))?;
+        round::control(control, roster.clone(), &mut rng).await?;
+
+        num = num + 1;
+    }
+
+    phase.send(GamePhase::End).map_err(|e| E::new("Could not send final phase updates", Box::new(e)))
+}
 
 
 /// Serve a given connection

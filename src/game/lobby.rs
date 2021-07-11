@@ -49,7 +49,7 @@ pub async fn serve<P>(
         display::DynamicText::new((super::COLUMN_SPLIT - 2).try_into().unwrap(), 4u16.try_into().unwrap())
     ).await?;
 
-    left.place_center(display::StaticText::from(super::INSTRUCTIONS.iter().cloned())).await?;
+    left.place_center(display::StaticText::from(&super::INSTRUCTIONS as &[_])).await?;
 
     let max_scores = area.rows().saturating_sub(2);
     let mut score_board = area.place_center(display::ScoreBoard::new(max_scores).show_scores(false)).await?;

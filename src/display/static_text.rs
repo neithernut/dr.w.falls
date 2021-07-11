@@ -8,31 +8,31 @@ use super::commands::{DrawCommand as DC};
 ///
 /// An instance of this type itself is useless unless it is placed in an `Area`.
 ///
-pub struct StaticText<'a, I: IntoIterator<Item = &'a str> + Clone> {
-    lines: I,
+pub struct StaticText {
+    lines: Vec<&'static str>,
 }
 
-impl<'a, I: IntoIterator<Item = &'a str> + Clone> StaticText<'a, I> {
+impl StaticText {
     /// Retrieve an iterator over the lines to display
     ///
-    pub fn lines(&self) -> I::IntoIter {
+    pub fn lines(&self) -> impl Iterator<Item = &'static str> {
         self.lines.clone().into_iter()
     }
 }
 
-impl<'a> From<&'a str> for StaticText<'a, std::str::Lines<'a>> {
-    fn from(string: &'a str) -> Self {
-        string.lines().into()
+impl From<&'static str> for StaticText {
+    fn from(string: &'static str) -> Self {
+        Self {lines: string.lines().collect()}
     }
 }
 
-impl<'a, I: IntoIterator<Item = &'a str> + Clone> From<I> for StaticText<'a, I> {
-    fn from(lines: I) -> Self {
-        Self {lines}
+impl From<&[&'static str]> for StaticText {
+    fn from(lines: &[&'static str]) -> Self {
+        Self {lines: lines.to_vec()}
     }
 }
 
-impl<'a, I: IntoIterator<Item = &'a str> + Clone> area::Entity for StaticText<'a, I> {
+impl area::Entity for StaticText {
     type PlacedEntity = ();
 
     fn rows(&self) -> u16 {
@@ -46,7 +46,8 @@ impl<'a, I: IntoIterator<Item = &'a str> + Clone> area::Entity for StaticText<'a
     fn init(&self, (base_row, base_col): (u16, u16)) -> area::PlacedInit {
         use std::iter::once;
 
-        self.lines()
+        self.lines
+            .iter()
             .enumerate()
             .flat_map(|(n, l)| once(DC::SetPos(base_row + n as u16, base_col)).chain(once((*l).into())))
             .collect::<Vec<_>>()

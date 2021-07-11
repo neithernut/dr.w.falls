@@ -17,6 +17,9 @@ use crate::player;
 use crate::util;
 
 
+pub use lobby::LobbyControl;
+
+
 /// Run the game
 ///
 /// This function implements the the overall game phase logic. During the lobby

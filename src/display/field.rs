@@ -107,12 +107,12 @@ impl FieldUpdater {
 
         use futures::stream::iter;
 
-        let viruses = viruses.into_iter().flat_map(|(pos, col)|
+        let cmds: Vec<_> = viruses.into_iter().flat_map(|(pos, col)|
             once(self.transform(pos))
                 .chain(once(Colour::from(col).into()))
                 .chain(once(vir_sym.symbol().into()))
-        ).map(Ok);
-        draw_handle.as_sink().send_all(&mut iter(viruses)).await
+        ).map(Ok).collect();
+        draw_handle.as_sink().send_all(&mut iter(cmds)).await
     }
 
     /// Place the next capsule elements in the appropriate position

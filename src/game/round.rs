@@ -135,6 +135,9 @@ pub async fn serve<P>(
         indicator.update_single(&mut display.handle().await?, "You won!").await?
     }
 
+    // Make sure the player isn't thrown into the next waiting phase directly
+    time::sleep(GRACE_PERIOD).await;
+
     // Let the defeated player do nothing until the round ended
     while !phase.transitioned() {
         tokio::select! {

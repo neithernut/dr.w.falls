@@ -98,6 +98,12 @@ pub enum GamePhase<R: rand::Rng> {
     End,
 }
 
+impl<R: rand::Rng> Default for GamePhase<R> {
+    fn default() -> Self {
+        GamePhase::End
+    }
+}
+
 
 /// Utility for awaiting a phase transition
 ///

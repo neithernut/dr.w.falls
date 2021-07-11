@@ -83,16 +83,14 @@ impl InputUpdater {
             '\x08' => {
                 self.value.pop();
                 let len = self.value.len() as u16;
-                let cmds = [
-                    DC::SetPos(self.base_row, self.base_col + len),
-                    SGR::Blink(true).into(),
-                    "_".into(),
+                let mut cmds = vec![
+                    Ok(DC::SetPos(self.base_row, self.base_col + len)),
+                    Ok(SGR::Blink(true).into()),
+                    Ok("_".into()),
                 ];
-                let cmds = cmds
-                    .iter()
-                    .cloned()
-                    .chain(if len + 1 < self.max_length.get() { Some(" ".into()) } else { None })
-                    .map(Ok);
+                if len + 1 < self.max_length.get() {
+                    cmds.push(Ok(" ".into()))
+                }
                 draw_handle.as_sink().send_all(&mut iter(cmds)).await?
             },
             c if c.is_ascii() && !c.is_control() => {
@@ -100,16 +98,14 @@ impl InputUpdater {
                 let max_len = self.max_length.get();
                 if old_len < max_len {
                     self.value.push(c);
-                    let cmds = [
-                        DC::SetPos(self.base_row, self.base_col + old_len),
-                        String::from(c).into(),
-                        SGR::Blink(true).into(),
+                    let mut cmds = vec![
+                        Ok(DC::SetPos(self.base_row, self.base_col + old_len)),
+                        Ok(String::from(c).into()),
+                        Ok(SGR::Blink(true).into()),
                     ];
-                    let cmds = cmds
-                        .iter()
-                        .cloned()
-                        .chain(if self.value.len() < max_len.into() { Some("_".into()) } else { None })
-                        .map(Ok);
+                    if self.value.len() < max_len.into() {
+                        cmds.push(Ok("_".into()))
+                    }
                     draw_handle.as_sink().send_all(&mut iter(cmds)).await?
                 }
             },

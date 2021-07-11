@@ -85,7 +85,7 @@ async fn do_serve(
 
 /// Game phase updates
 #[derive(Debug, Clone)]
-enum GamePhase<R: rand::Rng> {
+pub enum GamePhase<R: rand::Rng> {
     Lobby{ports: lobby::Ports},
     Waiting{ports: waiting::Ports},
     Round{

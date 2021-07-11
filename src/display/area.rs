@@ -204,12 +204,8 @@ where H: BorrowMut<DrawHandle<'a, W>>,
             self.col_a + self.cols().checked_sub(entity.cols()).ok_or(ErrorKind::Other)? / 2,
         );
 
-        self.handle
-            .borrow_mut()
-            .as_sink()
-            .send_all(&mut iter(entity.init(pos).cmds.into_iter().map(Ok)))
-            .await
-            .map(|_| entity.place(pos))
+        let cmds: Vec<_> = entity.init(pos).cmds.into_iter().map(Ok).collect();
+        self.handle.borrow_mut().as_sink().send_all(&mut iter(cmds)).await.map(|_| entity.place(pos))
     }
 }
 

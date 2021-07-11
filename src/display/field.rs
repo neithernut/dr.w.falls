@@ -150,16 +150,16 @@ impl FieldUpdater {
 
         use futures::stream::iter;
 
-        let updates = updates.into_iter().flat_map(move |(pos, col)| {
+        let cmds: Vec<_> = updates.into_iter().flat_map(move |(pos, col)| {
             let sym = if col.is_some() {
                 "()"
             } else {
                 "  "
             };
             once(self.transform(pos)).chain(col.map(|c| Colour::from(c).into())).chain(once(sym.into()))
-        }).map(Ok);
+        }).map(Ok).collect();
 
-        draw_handle.as_sink().send_all(&mut iter(updates)).await
+        draw_handle.as_sink().send_all(&mut iter(cmds)).await
     }
 
     /// Transform field positions to display positions

@@ -6,6 +6,32 @@ use crate::error;
 use crate::game;
 
 
+/// Game settings
+///
+#[derive(Clone, Default, Debug)]
+pub struct Settings {
+    pub accept_players: bool,
+    pub max_players: u8,
+    pub virus_count: u8,
+    pub tick_duration: std::time::Duration,
+}
+
+impl Settings {
+    /// Create a LobbyControl message reflecting the relevant settings
+    fn as_lobby_control(&self) -> game::LobbyControl {
+        game::LobbyControl::Settings{
+            registration_acceptance: self.accept_players,
+            max_players: self.max_players,
+        }
+    }
+
+    /// Create a GameControl message reflecting the relevant settings
+    fn as_game_control(&self) -> game::GameControl {
+        game::GameControl::Settings{viruses: self.virus_count, tick: self.tick_duration}
+    }
+}
+
+
 /// Common sender for both lobby and "regular" control
 ///
 enum ControlSender {

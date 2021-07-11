@@ -133,7 +133,7 @@ impl BoardUpdater {
         // enumerated hashes to be consumed as there are entries. Thus, `hashes`
         // will be advanced to the position where there shouldn't be any more
         // entries.
-        let cmds = hashes
+        let mut cmds: Vec<_> = hashes
             .by_ref()
             .zip(entries.into_iter())
             .filter_map(|((row, old_hash), entry)| {
@@ -180,18 +180,19 @@ impl BoardUpdater {
                 }
                 res
             })
-            .map(Ok);
-        draw_handle.as_sink().send_all(&mut iter(cmds)).await?;
+            .map(Ok)
+            .collect();
 
         // We might have fewer entries than before. We thus need to clear all of
         // the remaining rows which were previously filled.
-        let cmds = hashes
+        cmds.extend(hashes
             .filter(|(_, hash)| **hash != Default::default())
             .flat_map(|(row, hash)| {
                 *hash = Default::default();
                 std::iter::once(row_pos(row)).chain((0..ScoreBoard::WIDTH).map(|_| " ".into()))
             })
-            .map(Ok);
+            .map(Ok)
+        );
         draw_handle.as_sink().send_all(&mut iter(cmds)).await
     }
 }

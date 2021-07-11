@@ -8,9 +8,79 @@ use std::collections::HashMap;
 use std::fmt;
 
 use tokio::io;
+use tokio::net;
 use tokio::sync::watch;
 
+use crate::error;
+use crate::player;
 use crate::util;
+
+
+/// Serve a given connection
+///
+async fn serve_connection(
+    connection: net::TcpStream,
+    phase: watch::Receiver<GamePhase<impl rand::Rng + Clone>>,
+    token: lobby::ConnectionToken,
+) {
+    use crate::error::TryExt;
+
+    match do_serve(connection, phase, token).await {
+        Err(ConnTaskError::Terminated) => log::info!("Player disconnected"),
+        e => { e.or_warn("Lost player"); },
+    }
+}
+
+
+/// Actual connection logic
+///
+async fn do_serve(
+    connection: net::TcpStream,
+    phase: watch::Receiver<GamePhase<impl rand::Rng + Clone>>,
+    token: lobby::ConnectionToken,
+) -> Result<(), ConnTaskError> {
+    use crate::display::Display;
+
+    use {GamePhase as P, TransitionWatcher as W};
+
+    connection.set_nodelay(true)?;
+    let (conn_in, conn_out) = connection.into_split();
+    let mut display = Display::new(conn_out, DISPLAY_HEIGHT, DISPLAY_WIDTH);
+    let mut input = ASCIIStream::new(conn_in, Default::default());
+
+    let mut me: Option<player::Handle> = Default::default();
+
+    loop {
+        let p = phase.borrow().clone();
+        match p {
+            P::Lobby{ports} => me = lobby::serve(
+                ports,
+                &mut display,
+                &mut input,
+                W::new(phase.clone(), |p| if let P::Lobby{..} = p { false } else { true }),
+                token.clone(),
+            ).await?,
+            P::Waiting{ports} => waiting::serve(
+                ports,
+                &mut display,
+                &mut input,
+                W::new(phase.clone(), |p| if let P::Waiting{..} = p { false } else { true }),
+                me.as_ref().ok_or_else(|| ConnTaskError::other(error::NoneError))?,
+            ).await?,
+            P::Round{ports, viruses, tick_duration, rng, ..} => round::serve(
+                ports,
+                &mut display,
+                &mut input,
+                W::new(phase.clone(), |p| if let P::Round{..} = p { false } else { true }),
+                me.as_ref().ok_or_else(|| ConnTaskError::other(error::NoneError))?,
+                viruses,
+                tick_duration,
+                rng,
+            ).await?,
+            P::End => break Ok(()),
+        }
+    }
+}
 
 
 /// Game phase updates

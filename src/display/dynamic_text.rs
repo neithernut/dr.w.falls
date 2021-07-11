@@ -68,13 +68,7 @@ impl TextUpdater {
         &self,
         draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Unpin>,
     ) -> std::io::Result<()> {
-        use futures::SinkExt;
-        use futures::stream::iter;
-
-        use commands::SinkProxy;
-
-        let cmds = self.row_pos().flat_map(|p| std::iter::once(p).chain(self.empty_row())).map(Ok);
-        draw_handle.as_sink().send_all(&mut iter(cmds)).await
+        self.update(draw_handle, std::iter::empty::<&'static str>()).await
     }
 
     /// Update the text field with the given contents

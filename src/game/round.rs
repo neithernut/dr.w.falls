@@ -177,10 +177,10 @@ pub async fn control(
     ports: ControlPorts,
     roster: Arc<RwLock<player::Roster>>,
     rng: &mut impl rand::Rng,
-) -> Result<(), error::WrappedErr<Box<dyn std::error::Error + Send>>> {
+) -> Result<(), error::WrappedErr> {
     use display::ScoreBoardEntry as _;
     use error::TryExt;
-    type Wrapped = error::WrappedErr::<Box<dyn std::error::Error + Send>>;
+    use error::WrappedErr as E;
 
     let scores_sender = ports.scores;
     let mut events = ports.events;
@@ -196,15 +196,12 @@ pub async fn control(
         let (player, event) = events
             .recv()
             .await
-            .ok_or_else(|| Wrapped::new("could not receive events", Box::new(error::NoneError)))?;
+            .ok_or_else(|| E::new("could not receive events", error::NoneError))?;
         match event {
             Event::Capsules(elements) => {
                 use std::convert::TryInto;
 
-                let max = scores
-                    .first()
-                    .ok_or_else(|| Wrapped::new("no players", Box::new(error::NoneError)))?
-                    .round_score();
+                let max = scores.first().ok_or_else(|| E::new("no players", error::NoneError))?.round_score();
                 let targets: Vec<_> = scores
                     .iter()
                     .take_while(|p| p.round_score() >= max)
@@ -234,9 +231,9 @@ pub async fn control(
                     log::warn!("Could not find entry for player tag");
                 }
                 if score == 0 {
-                    active.remove(&player).ok_or_else(||
-                        Wrapped::new("winning player not active", Box::new(error::NoneError))
-                    )?;
+                    active
+                        .remove(&player)
+                        .ok_or_else(|| E::new("winning player not active", error::NoneError))?;
                     break;
                 }
             },

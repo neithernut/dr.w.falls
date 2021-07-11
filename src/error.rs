@@ -102,24 +102,24 @@ impl<E: fmt::Debug> fmt::Display for DebugErr<E> {
 
 /// Error type augmenting an inner error with a message
 #[derive(Debug)]
-pub struct WrappedErr<E> {
+pub struct WrappedErr {
     msg: &'static str,
-    inner: E,
+    inner: Box<dyn Error + Send + 'static>,
 }
 
-impl<E> WrappedErr<E> {
-    pub fn new(msg: &'static str, inner: E) -> Self {
-        Self {msg, inner}
+impl WrappedErr {
+    pub fn new(msg: &'static str, inner: impl Error + Send + 'static) -> Self {
+        Self {msg, inner: Box::new(inner)}
     }
 }
 
-impl<E: Error + 'static> Error for WrappedErr<E> {
+impl Error for WrappedErr {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
-        Some(&self.inner)
+        Some(self.inner.as_ref())
     }
 }
 
-impl<E> fmt::Display for WrappedErr<E> {
+impl fmt::Display for WrappedErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(self.msg, f)
     }

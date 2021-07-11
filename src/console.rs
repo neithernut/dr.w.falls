@@ -50,21 +50,20 @@ impl ControlSender {
     pub async fn send_regular(
         &mut self,
         message: game::GameControl,
-    ) -> Result<(), error::WrappedErr<Box<dyn std::error::Error>>> {
-        type E = error::WrappedErr<Box<dyn std::error::Error>>;
+    ) -> Result<(), error::WrappedErr> {
 
         match self {
             Self::Lobby(old) => {
                 let (sender, receiver) = watch::channel(message);
                 old.send(game::LobbyControl::GameStart(receiver))
-                    .map_err(|e| E::new("Could not send game start message", Box::new(e)))?;
+                    .map_err(|e| error::WrappedErr::new("Could not send game start message", e))?;
                 old.closed().await;
                 *self = Self::Regular(sender);
                 Ok(())
             },
             Self::Regular(sender) => sender
                 .send(message)
-                .map_err(|e| E::new("Could not send control message", Box::new(e))),
+                .map_err(|e| error::WrappedErr::new("Could not send control message", e)),
         }
     }
 

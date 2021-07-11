@@ -32,16 +32,15 @@ pub async fn run_game<R>(
     roster: Arc<RwLock<player::Roster>>,
     phase: watch::Sender<GamePhase<R>>,
     phase_receiver: watch::Receiver<GamePhase<R>>,
-) -> Result<(), error::WrappedErr<Box<dyn std::error::Error + Send>>>
+) -> Result<(), error::WrappedErr>
 where R: rand::Rng + rand::SeedableRng + Clone + Send + Sync + fmt::Debug + 'static
 {
     use crate::field::prepare_field;
+    use error::WrappedErr as E;
     use util::Step;
 
-    type E = error::WrappedErr<Box<dyn std::error::Error + Send>>;
-
     let (ports, control) = lobby::ports();
-    phase.send(GamePhase::Lobby{ports}).map_err(|e| E::new("Could not send phase updates", Box::new(e)))?;
+    phase.send(GamePhase::Lobby{ports}).map_err(|e| E::new("Could not send phase updates", e))?;
     let (game_control, _disconnects) = lobby::control(
         control,
         lobby_control,
@@ -55,9 +54,7 @@ where R: rand::Rng + rand::SeedableRng + Clone + Send + Sync + fmt::Debug + 'sta
 
     while !game_control.borrow().is_end_of_game() {
         let (ports, control) = waiting::ports(roster.read().await.clone());
-        phase
-            .send(GamePhase::Waiting{ports})
-            .map_err(|e| E::new("Could not send phase updates", Box::new(e)))?;
+        phase.send(GamePhase::Waiting{ports}).map_err(|e| E::new("Could not send phase updates", e))?;
         waiting::control(control, game_control.clone(), roster.clone()).await;
 
         let mut rng = R::from_entropy();
@@ -73,13 +70,13 @@ where R: rand::Rng + rand::SeedableRng + Clone + Send + Sync + fmt::Debug + 'sta
         let (ports, control) = round::ports(roster.read().await.clone());
         phase
             .send(GamePhase::Round{ports, viruses, tick_duration, rng: rng.clone(), num})
-            .map_err(|e| E::new("Could not send phase updates", Box::new(e)))?;
+            .map_err(|e| E::new("Could not send phase updates", e))?;
         round::control(control, roster.clone(), &mut rng).await?;
 
         num = num + 1;
     }
 
-    phase.send(GamePhase::End).map_err(|e| E::new("Could not send final phase updates", Box::new(e)))
+    phase.send(GamePhase::End).map_err(|e| E::new("Could not send final phase updates", e))
 }
 
 

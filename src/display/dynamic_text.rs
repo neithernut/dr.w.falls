@@ -93,14 +93,13 @@ impl TextUpdater {
 
         let mut rows = self.row_pos();
 
-        let cmds = rows
+        let mut cmds: Vec<_> = rows
             .by_ref()
             .zip(lines)
             .flat_map(|(p, l)| once(p).chain(once(format!("{0:^1$}", l, self.cols.get() as usize).into())))
-            .map(Ok);
-        draw_handle.as_sink().send_all(&mut iter(cmds)).await?;
-
-        let cmds = rows.flat_map(|p| once(p).chain(self.empty_row())).map(Ok);
+            .map(Ok)
+            .collect();
+        cmds.extend(rows.flat_map(|p| once(p).chain(self.empty_row())).map(Ok));
         draw_handle.as_sink().send_all(&mut iter(cmds)).await
     }
 

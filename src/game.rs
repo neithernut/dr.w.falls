@@ -162,6 +162,17 @@ pub enum GamePhase<R: rand::Rng> {
     End,
 }
 
+impl<R: rand::Rng> GamePhase<R> {
+    /// Check whether we reached the end of the game
+    ///
+    pub fn is_end_of_game(&self) -> bool {
+        match self {
+            Self::End => true,
+            _ => false,
+        }
+    }
+}
+
 impl<R: rand::Rng> Default for GamePhase<R> {
     fn default() -> Self {
         GamePhase::End

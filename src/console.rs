@@ -1,13 +1,161 @@
 //! Game master console
 
+use std::sync::Arc;
 use std::time::Duration;
 
-use tokio::sync::watch;
+use tokio::io;
+use tokio::sync::{RwLock, watch};
+use tokio_util::codec;
 
 use crate::error;
 use crate::game;
+use crate::player;
 
 use error::WrappedErr;
+
+
+/// Serve a game master console via the given reader and writer
+///
+async fn serve(
+    reader: impl io::AsyncRead + Unpin,
+    writer: impl io::AsyncWrite + Unpin,
+    central: Arc<RwLock<Central>>,
+    mut phase: watch::Receiver<game::GamePhase<impl rand::Rng>>,
+    roster: Arc<RwLock<player::Roster>>,
+) {
+    use futures::SinkExt;
+    use io::AsyncBufReadExt;
+
+    use error::TryExt;
+
+    let mut commands = io::BufReader::new(reader).lines();
+    let mut out = codec::FramedWrite::new(writer, codec::LinesCodec::new());
+
+    while !phase.borrow().is_end_of_game() {
+        tokio::select!{
+            line = commands.next_line() => if let Some(line) = line.or_err("Could not get line").flatten() {
+                if match process_line(line.as_ref(), &mut out, &central, &phase, &roster).await {
+                    Ok(()) => out.send("OK").await.or_err("Could not send msg to GM"),
+                    Err(e) => out.send(e.to_string()).await.or_err("Could not report error"),
+                }.is_none() {
+                    break
+                }
+            },
+            r = phase.changed() => if r.or_warn("Phase channel closed").is_none() {
+                break
+            },
+        }
+    }
+}
+
+
+/// Process a single command line
+///
+async fn process_line(
+    command: &str,
+    out: &mut codec::FramedWrite<impl io::AsyncWrite + Unpin, codec::LinesCodec>,
+    central: &Arc<RwLock<Central>>,
+    phase: &watch::Receiver<game::GamePhase<impl rand::Rng>>,
+    roster: &Arc<RwLock<player::Roster>>,
+) -> Result<(), WrappedErr> {
+    use std::ops::Deref;
+
+    use futures::{SinkExt, stream::iter};
+
+    use error::{NoneError as N, WrappedErr as E};
+
+    fn parse_bool(input: &str) -> Option<bool> {
+        match input {
+            "true"  | "t" => Some(true),
+            "false" | "f" => Some(false),
+            _ => None,
+        }
+    }
+
+    let mut words = command.split_whitespace();
+    match words.next() {
+        Some("players") => {
+            let entries: Vec<_> = roster
+                .read()
+                .await
+                .iter()
+                .enumerate()
+                .map(|(n, p)| Ok(format!("{} {} {} {}", n, p.name(), p.is_connected(), p.addr())))
+                .collect();
+            out.send_all(&mut iter(entries)).await.map_err(|e| E::new("Could not report result", e))
+        },
+        Some("accept") => {
+            let v = words.next().and_then(parse_bool).ok_or_else(|| E::new("Expected 'true' or 'false'", N))?;
+            central.write().await.accept_players(v)
+        },
+        Some("restrict") => {
+            let num = words.next().and_then(|s| s.parse().ok()).ok_or_else(|| E::new("Expected number", N))?;
+            central.write().await.set_max_players(num)
+        },
+        Some("kick") => {
+            let num: usize = words
+                .next()
+                .and_then(|s| s.parse().ok())
+                .ok_or_else(|| E::new("Expected number", N))?;
+            roster.read().await.get(num).map(|p| p.kick()); // TODO: check return value?
+            Ok(())
+        },
+        Some("status") => {
+            let status = match phase.borrow().deref() {
+                game::GamePhase::Lobby{..}      => "lobby".to_string(),
+                game::GamePhase::Waiting{..}    => "waiting".to_string(),
+                game::GamePhase::Round{num, ..} => format!("round {}", num),
+                game::GamePhase::End            => "end".to_string(),
+            };
+            out.send(status).await.map_err(|e| E::new("Could not report result", e))
+        },
+        Some("start") => {
+            let mut central = central.write().await;
+            let msg = central.settings.as_game_control();
+            central.control.send_regular(msg).await
+        },
+        Some("end") => central.write().await.control.send_regular(game::GameControl::EndOfGame).await,
+        Some("set") => {
+            let updated = match words.next() {
+                Some("virs") => {
+                    let num = words
+                        .next()
+                        .and_then(|s| s.parse().ok())
+                        .ok_or_else(|| E::new("Expected number", N))?;
+                    central.write().await.set_virus_count(num)
+                },
+                Some("ticks") => {
+                    let num = words
+                        .next()
+                        .and_then(|s| s.parse().ok())
+                        .ok_or_else(|| E::new("Expected number", N))?;
+                    central.write().await.set_tick_duration(Duration::from_millis(num))
+                },
+                _ => Err(E::new("No such value", N)),
+            }?;
+            if updated {
+                Ok(())
+            } else {
+                out.send("Value will be sent when game starts")
+                    .await
+                    .map_err(|e| E::new("Could not report", e))
+            }
+        },
+        Some("get") => match words.next() {
+            Some("virs") => out
+                .send(central.read().await.settings.virus_count.to_string())
+                .await
+                .map_err(|e| E::new("Could not report result", e)),
+            Some("ticks") => out
+                .send(central.read().await.settings.tick_duration.as_millis().to_string())
+                .await
+                .map_err(|e| E::new("Could not report result", e)),
+            _ => Err(E::new("No such value", N)),
+        },
+        None => Ok(()),
+        _ => Err(E::new("No such command", N)),
+    }
+}
 
 
 /// Utility struct for central objects shared between all consoles

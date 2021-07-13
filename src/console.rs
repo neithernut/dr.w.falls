@@ -4,6 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::io;
+use tokio::net;
 use tokio::sync::{RwLock, watch};
 use tokio_util::codec;
 
@@ -12,6 +13,62 @@ use crate::game;
 use crate::player;
 
 use error::WrappedErr;
+
+
+/// Implementation of the game master logic
+///
+/// This function starts the game if a SIGUSR1 is received. If a `listener` is
+/// passed, the function will accept connections from the associated socket and
+/// serve game master consoles over them.
+///
+pub async fn game_master(
+    control: watch::Sender<game::LobbyControl>,
+    settings: Settings,
+    mut phase: watch::Receiver<game::GamePhase<impl rand::Rng + Send + Sync + 'static>>,
+    roster: Arc<RwLock<player::Roster>>,
+    mut listener: Option<net::UnixListener>,
+) -> Result<(), WrappedErr> {
+    use tokio::signal::unix;
+
+    use error::{TryExt, WrappedErr as E};
+
+    let central = Arc::new(RwLock::new(Central {control: control.into(), settings}));
+    let mut sigusr1 = unix::signal(unix::SignalKind::user_defined1())
+        .map_err(|e| E::new("Could not create SIGUSR1 listener", e))?;
+
+    while !phase.borrow().is_end_of_game() {
+        tokio::select!{
+            c = accept(listener.as_mut()) => if let Some(conn) = c.or_warn("Could not accept GM conn") {
+                let (reader, writer) = conn.into_split();
+                let central = central.clone();
+                let phase = phase.clone();
+                let roster = roster.clone();
+                tokio::spawn(async move { serve(reader, writer, central, phase, roster).await });
+            },
+            r = phase.changed() => r.map_err(|e| E::new("Phase channel closed", e))?,
+            s = sigusr1.recv() => if s.is_some() {
+                let mut central = central.write().await;
+                let msg = central.settings.as_game_control();
+                central.control.send_regular(msg).await.or_err("Could not start game");
+            },
+        }
+    }
+
+    Ok(())
+}
+
+
+/// Accept a connection from a UnixListener
+///
+async fn accept(
+    listener: Option<&mut net::UnixListener>
+) -> io::Result<net::UnixStream> {
+    if let Some(listener) = listener {
+        listener.accept().await.map(|(s, _)| s)
+    } else {
+        futures::future::pending().await
+    }
+}
 
 
 /// Serve a game master console via the given reader and writer

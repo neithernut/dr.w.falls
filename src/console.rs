@@ -7,6 +7,87 @@ use tokio::sync::watch;
 use crate::error;
 use crate::game;
 
+use error::WrappedErr;
+
+
+/// Utility struct for central objects shared between all consoles
+///
+struct Central {
+    pub control: ControlSender,
+    pub settings: Settings,
+}
+
+impl Central {
+    /// Set and send accept player setting
+    ///
+    /// This function returns an error if `control` is not a
+    /// `ControlSender::Lobby`.
+    ///
+    pub fn accept_players(&mut self, accept: bool) -> Result<(), WrappedErr> {
+        self.settings.accept_players = accept;
+        self.send_lobby_settings()
+    }
+
+    /// Set and send max player setting
+    ///
+    /// This function returns an error if `control` is not a
+    /// `ControlSender::Lobby`.
+    ///
+    pub fn set_max_players(&mut self, max_players: u8) -> Result<(), WrappedErr> {
+        self.settings.max_players = max_players;
+        self.send_lobby_settings()
+    }
+
+    /// Set and send virus count setting
+    ///
+    /// This function returns an error if `control` is not a
+    /// `ControlSender::Regular`.
+    ///
+    pub fn set_virus_count(&mut self, virus_count: u8) -> Result<bool, WrappedErr> {
+        self.settings.virus_count = virus_count;
+        self.send_game_settings()
+    }
+
+    /// Set and send tock duration setting
+    ///
+    /// This function returns an error if `control` is not a
+    /// `ControlSender::Regular`.
+    ///
+    pub fn set_tick_duration(&mut self, duration: Duration) -> Result<bool, WrappedErr> {
+        self.settings.tick_duration = duration;
+        self.send_game_settings()
+    }
+
+    /// Send the current lobby settings
+    ///
+    /// Send the current lobby settings via the control channel. This function
+    /// returns an error if `control` is not a `ControlSender::Lobby`.
+    ///
+    pub fn send_lobby_settings(&mut self) -> Result<(), WrappedErr> {
+        self.control
+            .as_lobby_sender()
+            .ok_or_else(|| error::WrappedErr::new("Not in lobby phase", error::NoneError))?
+            .send(self.settings.as_lobby_control())
+            .map_err(|e| error::WrappedErr::new("Could not send new settings", e))
+    }
+
+    /// Send the current game settings
+    ///
+    /// Send the current game settings via the control channel. This function
+    /// returns an error if `control` is not a `ControlSender::Regular`.
+    ///
+    pub fn send_game_settings(&mut self) -> Result<bool, error::WrappedErr> {
+        if let Some (sender) = self.control.as_regular_sender() {
+            sender
+                .send(self.settings.as_game_control())
+                .map(|_| true)
+                .map_err(|e| error::WrappedErr::new("Could not send new settings", e))
+        } else {
+            Ok(false)
+        }
+    }
+}
+
 
 /// Game settings
 ///

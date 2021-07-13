@@ -36,7 +36,10 @@ async fn serve(
             line = commands.next_line() => if let Some(line) = line.or_err("Could not get line").flatten() {
                 if match process_line(line.as_ref(), &mut out, &central, &phase, &roster).await {
                     Ok(()) => out.send("OK").await.or_err("Could not send msg to GM"),
-                    Err(e) => out.send(e.to_string()).await.or_err("Could not report error"),
+                    Err(e) => {
+                        let msg = e.to_string();
+                        out.send(msg).await.or_err("Could not report error")
+                    },
                 }.is_none() {
                     break
                 }

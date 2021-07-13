@@ -1,5 +1,7 @@
 //! Game master console
 
+use std::time::Duration;
+
 use tokio::sync::watch;
 
 use crate::error;
@@ -13,7 +15,7 @@ pub struct Settings {
     pub accept_players: bool,
     pub max_players: u8,
     pub virus_count: u8,
-    pub tick_duration: std::time::Duration,
+    pub tick_duration: Duration,
 }
 
 impl Settings {

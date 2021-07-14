@@ -309,7 +309,7 @@ pub struct Settings {
 
 impl Settings {
     /// Create a LobbyControl message reflecting the relevant settings
-    fn as_lobby_control(&self) -> game::LobbyControl {
+    pub fn as_lobby_control(&self) -> game::LobbyControl {
         game::LobbyControl::Settings{
             registration_acceptance: self.accept_players,
             max_players: self.max_players,

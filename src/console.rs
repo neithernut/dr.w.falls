@@ -36,7 +36,7 @@ pub async fn game_master(
     let mut sigusr1 = unix::signal(unix::SignalKind::user_defined1())
         .map_err(|e| E::new("Could not create SIGUSR1 listener", e))?;
 
-    while !phase.borrow().is_end_of_game() {
+    loop {
         tokio::select!{
             c = accept(listener.as_mut()) => if let Some(conn) = c.or_warn("Could not accept GM conn") {
                 let (reader, writer) = conn.into_split();
@@ -53,8 +53,6 @@ pub async fn game_master(
             },
         }
     }
-
-    Ok(())
 }
 
 

@@ -356,8 +356,3 @@ impl AsRef<SocketAddr> for ConnectionToken {
     }
 }
 
-
-/// Maximum allowed length for a name
-///
-const NAME_MAX_LEN: u16 = 16;
-

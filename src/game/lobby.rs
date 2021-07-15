@@ -308,7 +308,6 @@ enum DenialReason {
     AcceptanceClosed,
     MaxPlayers,
     NameTaken,
-    TemporaryFailure,
     PermanentFailure,
 }
 
@@ -318,7 +317,6 @@ impl fmt::Display for DenialReason {
             Self::AcceptanceClosed  => write!(f, "Registration is closed"),
             Self::MaxPlayers        => write!(f, "Max number of players reached"),
             Self::NameTaken         => write!(f, "Name is already taken"),
-            Self::TemporaryFailure  => write!(f, "Temporary registration failure"),
             Self::PermanentFailure  => write!(f, "Permanent registration failure"),
         }
     }

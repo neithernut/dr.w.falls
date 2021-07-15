@@ -651,7 +651,7 @@ impl display::ScoreBoardEntry for ScoreBoardEntry {
     }
 
     fn active(&self) -> bool {
-        self.state != PlayerState::Defeated
+        self.state() != PlayerState::Defeated
     }
 }
 

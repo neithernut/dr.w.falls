@@ -227,6 +227,9 @@ pub async fn control(
             Event::Score(score) => {
                 if let Some(entry) = scores.iter_mut().find(|e| *e.tag() == player) {
                     entry.set_score(score);
+                    if score == 0 {
+                        entry.set_state(PlayerState::Suceeded)
+                    }
                 } else {
                     log::warn!("Could not find entry for player tag");
                 }
@@ -237,7 +240,16 @@ pub async fn control(
                     break;
                 }
             },
-            Event::Defeat => { active.remove(&player).or_warn("Defeated player not active"); },
+            Event::Defeat => {
+                let entry = scores
+                    .iter_mut()
+                    .find(|e| *e.tag() == player)
+                    .or_warn("Defeated player not found in scores");
+                if let Some(entry) = entry {
+                    entry.set_state(PlayerState::Defeated);
+                }
+                active.remove(&player).or_warn("Defeated player not active");
+            },
         }
     }
 

@@ -189,7 +189,7 @@ pub async fn control(
 
     let mut scores: Vec<ScoreBoardEntry> = roster.read().await.clone().into_iter().map(Into::into).collect();
 
-    while !active.is_empty() {
+    while active.keys().any(|e| e.is_connected()) {
 
         scores.sort_by_key(|p| p.round_score());
         scores_sender.send(scores.clone()).or_warn("Could not send updates");

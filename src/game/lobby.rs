@@ -181,6 +181,7 @@ where F: Fn(net::TcpStream, watch::Receiver<P>, ConnectionToken) -> O + 'static 
                 LobbyControl::GameStart(c) => break Ok((c.clone(), player_notifications)),
             },
             registration = registrations.recv() => if let Some(r) = registration {
+                log::info!("Processing regstration for player name {}", r.name);
                 let mut roster = roster.write().await;
                 let res = if !accept {
                     DenialReason::AcceptanceClosed.into()

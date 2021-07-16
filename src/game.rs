@@ -39,6 +39,7 @@ where R: rand::Rng + rand::SeedableRng + Clone + Send + Sync + fmt::Debug + 'sta
     use error::WrappedErr as E;
     use util::Step;
 
+    log::info!("Starting lobby");
     let (ports, control) = lobby::ports();
     phase.send(GamePhase::Lobby{ports}).map_err(|e| E::new("Could not send phase updates", e))?;
     let (game_control, _disconnects) = lobby::control(
@@ -53,6 +54,7 @@ where R: rand::Rng + rand::SeedableRng + Clone + Send + Sync + fmt::Debug + 'sta
     let mut num = 1;
 
     while !game_control.borrow().is_end_of_game() {
+        log::info!("Beginning pre-round waiting");
         let (ports, control) = waiting::ports(roster.read().await.clone());
         phase.send(GamePhase::Waiting{ports}).map_err(|e| E::new("Could not send phase updates", e))?;
         waiting::control(control, game_control.clone(), roster.clone()).await;
@@ -67,6 +69,7 @@ where R: rand::Rng + rand::SeedableRng + Clone + Send + Sync + fmt::Debug + 'sta
             GameControl::EndOfGame => break,
         };
 
+        log::info!("Starting round {}", num);
         let (ports, control) = round::ports(roster.read().await.clone());
         phase
             .send(GamePhase::Round{ports, viruses, tick_duration, rng: rng.clone(), num})
@@ -76,6 +79,7 @@ where R: rand::Rng + rand::SeedableRng + Clone + Send + Sync + fmt::Debug + 'sta
         num = num + 1;
     }
 
+    log::info!("Ending game");
     phase.send(GamePhase::End).map_err(|e| E::new("Could not send final phase updates", e))
 }
 

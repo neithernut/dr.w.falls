@@ -101,6 +101,7 @@ pub async fn control(
     ports: ControlPorts,
     mut game_control: watch::Receiver<super::GameControl>,
     roster: Arc<RwLock<player::Roster>>,
+    disconnects: &mut mpsc::UnboundedReceiver<player::Tag>,
 ) -> () {
     use crate::error::TryExt;
     use display::ScoreBoardEntry as _;
@@ -133,6 +134,7 @@ pub async fn control(
                 log::warn!("Could not receive readiness");
                 break;
             },
+            _ = disconnects.recv() => (),
             _ = game_control.changed() => (),
         }
     }

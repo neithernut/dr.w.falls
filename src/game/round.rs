@@ -176,6 +176,7 @@ pub async fn serve<P>(
 pub async fn control(
     ports: ControlPorts,
     roster: Arc<RwLock<player::Roster>>,
+    disconnects: &mut mpsc::UnboundedReceiver<player::Tag>,
     rng: &mut impl rand::Rng,
 ) -> Result<(), error::WrappedErr> {
     use display::ScoreBoardEntry as _;
@@ -193,10 +194,11 @@ pub async fn control(
         scores.sort_by_key(|p| p.round_score());
         scores_sender.send(scores.clone()).or_warn("Could not send updates");
 
-        let (player, event) = events
-            .recv()
-            .await
-            .ok_or_else(|| E::new("could not receive events", error::NoneError))?;
+        let (player, event) = tokio::select!{
+            res = events.recv() => res.ok_or_else(|| E::new("could not receive events", error::NoneError))?,
+            _ = disconnects.recv() => continue,
+        };
+
         match event {
             Event::Capsules(elements) => {
                 use std::convert::TryInto;

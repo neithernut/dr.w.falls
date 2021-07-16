@@ -42,7 +42,7 @@ where R: rand::Rng + rand::SeedableRng + Clone + Send + Sync + fmt::Debug + 'sta
     log::info!("Starting lobby");
     let (ports, control) = lobby::ports();
     phase.send(GamePhase::Lobby{ports}).map_err(|e| E::new("Could not send phase updates", e))?;
-    let (game_control, _disconnects) = lobby::control(
+    let (game_control, mut disconnects) = lobby::control(
         control,
         lobby_control,
         phase_receiver,
@@ -57,7 +57,7 @@ where R: rand::Rng + rand::SeedableRng + Clone + Send + Sync + fmt::Debug + 'sta
         log::info!("Beginning pre-round waiting");
         let (ports, control) = waiting::ports(roster.read().await.clone());
         phase.send(GamePhase::Waiting{ports}).map_err(|e| E::new("Could not send phase updates", e))?;
-        waiting::control(control, game_control.clone(), roster.clone()).await;
+        waiting::control(control, game_control.clone(), roster.clone(), &mut disconnects).await;
 
         let mut rng = R::from_entropy();
         let (viruses, tick_duration) = match game_control.borrow().clone() {
@@ -74,7 +74,7 @@ where R: rand::Rng + rand::SeedableRng + Clone + Send + Sync + fmt::Debug + 'sta
         phase
             .send(GamePhase::Round{ports, viruses, tick_duration, rng: rng.clone(), num})
             .map_err(|e| E::new("Could not send phase updates", e))?;
-        round::control(control, roster.clone(), &mut rng).await?;
+        round::control(control, roster.clone(), &mut disconnects, &mut rng).await?;
 
         num = num + 1;
     }

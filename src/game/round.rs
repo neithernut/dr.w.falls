@@ -196,7 +196,12 @@ pub async fn control(
 
         let (player, event) = tokio::select!{
             res = events.recv() => res.ok_or_else(|| E::new("could not receive events", error::NoneError))?,
-            _ = disconnects.recv() => continue,
+            tag = disconnects.recv() => {
+                if let Some(tag) = tag {
+                    active.remove(&tag);
+                }
+                continue
+            },
         };
 
         match event {

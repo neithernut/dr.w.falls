@@ -106,6 +106,8 @@ pub async fn control(
     use crate::error::TryExt;
     use display::ScoreBoardEntry as _;
 
+    use ScoreBoardEntry as Entry;
+
     let scores = ports.scores;
     let countdown = ports.countdown;
     let mut ready = ports.ready;
@@ -113,10 +115,10 @@ pub async fn control(
     let mut value = WAITING_TIME;
     let mut timer = time::interval(std::time::Duration::from_secs(1));
 
-    let mut roster: Vec<ScoreBoardEntry> = roster.read().await.clone().into_iter().map(Into::into).collect();
+    let mut roster: Vec<Entry> = roster.read().await.clone().into_iter().map(Into::into).collect();
     roster.sort_by_key(|p| p.tag().score());
 
-    while value > 0 && roster.iter().any(|e| !e.ready()) && !game_control.borrow().is_end_of_game() {
+    while value > 0 && roster.iter().any(Entry::is_blocking) && !game_control.borrow().is_end_of_game() {
         scores.send(roster.clone()).or_warn("Could not send scores");
 
         tokio::select! {
@@ -200,6 +202,13 @@ impl ScoreBoardEntry {
     ///
     fn ready(&self) -> bool {
         self.ready
+    }
+
+    /// Check whether this player blocks overall readiness
+    ///
+    fn is_blocking(&self) -> bool {
+        use display::ScoreBoardEntry;
+        self.tag().is_connected() && !self.ready()
     }
 }
 

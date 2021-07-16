@@ -87,7 +87,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Run
     log::info!("Finished setup {}", addr);
     let gm = console::game_master(control_sender, settings, phase.clone(), Clone::clone(&roster), gm_sock);
-    let game = game::run_game(player_sock, control_receiver, roster, phase_sender, phase);
+    let game = game::run(player_sock, control_receiver, roster, phase_sender, phase);
     let sigint = tokio::signal::ctrl_c();
     tokio::select!{
         r = gm => r.map_err(Into::into),

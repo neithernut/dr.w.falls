@@ -26,7 +26,7 @@ pub use lobby::LobbyControl;
 /// phase, connections will be accepted via the given `listener` and new players
 /// are added to the `roster`.
 ///
-pub async fn run_game<R>(
+pub async fn run<R>(
     listener: net::TcpListener,
     lobby_control: watch::Receiver<lobby::LobbyControl>,
     roster: Arc<RwLock<player::Roster>>,

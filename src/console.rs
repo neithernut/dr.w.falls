@@ -39,6 +39,7 @@ pub async fn game_master(
     loop {
         tokio::select!{
             c = accept(listener.as_mut()) => if let Some(conn) = c.or_warn("Could not accept GM conn") {
+                log::info!("Spawning new GM console");
                 let (reader, writer) = conn.into_split();
                 let central = central.clone();
                 let phase = phase.clone();
@@ -47,6 +48,7 @@ pub async fn game_master(
             },
             r = phase.changed() => r.map_err(|e| E::new("Phase channel closed", e))?,
             s = sigusr1.recv() => if s.is_some() {
+                log::info!("Starting game");
                 let mut central = central.write().await;
                 let msg = central.settings.as_game_control();
                 central.control.send_regular(msg).await.or_err("Could not start game");
@@ -155,6 +157,7 @@ async fn process_line(
                 .next()
                 .and_then(|s| s.parse().ok())
                 .ok_or_else(|| E::new("Expected number", N))?;
+            log::info!("Kicking player");
             roster.read().await.get(num).map(|p| p.kick()); // TODO: check return value?
             Ok(())
         },
@@ -168,11 +171,15 @@ async fn process_line(
             out.send(status).await.map_err(|e| E::new("Could not report result", e))
         },
         Some("start") => {
+            log::info!("Starting game");
             let mut central = central.write().await;
             let msg = central.settings.as_game_control();
             central.control.send_regular(msg).await
         },
-        Some("end") => central.write().await.control.send_regular(game::GameControl::EndOfGame).await,
+        Some("end") => {
+            log::info!("Ending game");
+            central.write().await.control.send_regular(game::GameControl::EndOfGame).await
+        },
         Some("set") => {
             let updated = match words.next() {
                 Some("virs") => {

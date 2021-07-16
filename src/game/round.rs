@@ -562,6 +562,7 @@ enum ResumableInterval {
 pub fn ports(scores: impl IntoIterator<Item = player::Tag>) -> (Ports, ControlPorts) {
     let (capsules, scores): (HashMap<_, _>, Vec<_>) = scores
         .into_iter()
+        .filter(|p| p.is_connected())
         .map(|t| ((t.clone(), Default::default()), t.into()))
         .unzip();
     let player_num = scores.len();

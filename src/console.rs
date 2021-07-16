@@ -35,6 +35,8 @@ pub async fn game_master(
     let central = Arc::new(RwLock::new(Central {control: control.into(), settings}));
     let mut sigusr1 = unix::signal(unix::SignalKind::user_defined1())
         .map_err(|e| E::new("Could not create SIGUSR1 listener", e))?;
+    let mut sigterm = unix::signal(unix::SignalKind::terminate())
+        .map_err(|e| E::new("Could not create SIGTERM listener", e))?;
 
     loop {
         tokio::select!{
@@ -52,6 +54,16 @@ pub async fn game_master(
                 let mut central = central.write().await;
                 let msg = central.settings.as_game_control();
                 central.control.send_regular(msg).await.or_err("Could not start game");
+            },
+            s = sigterm.recv() => if s.is_some() {
+                log::info!("Ending game");
+                central
+                    .write()
+                    .await
+                    .control
+                    .send_regular(game::GameControl::EndOfGame)
+                    .await
+                    .or_err("Could not end game");
             },
         }
     }

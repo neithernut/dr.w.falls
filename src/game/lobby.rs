@@ -195,7 +195,7 @@ where F: Fn(net::TcpStream, watch::Receiver<P>, ConnectionToken) -> O + 'static 
                         player_notify.clone(),
                     );
                     roster.push(handle.tag());
-                    scores.send(roster.clone()).or_warn("Could not send updates");
+                    scores.send(roster.clone().into()).or_warn("Could not send updates");
                     RegistrationReply::Accepted(handle)
                 } else {
                     log::warn!("No connection token found for {}", r.token.data);
@@ -208,7 +208,7 @@ where F: Fn(net::TcpStream, watch::Receiver<P>, ConnectionToken) -> O + 'static 
                 let original_size = roster.len();
                 roster.retain(|p| p.is_connected());
                 if roster.len() < original_size {
-                    scores.send(roster.clone()).or_warn("Could not send updates");
+                    scores.send(roster.clone().into()).or_warn("Could not send updates");
                 }
             }
         }
@@ -222,7 +222,7 @@ where F: Fn(net::TcpStream, watch::Receiver<P>, ConnectionToken) -> O + 'static 
 /// the connection task and one for the control task.
 ///
 pub fn ports() -> (Ports, ControlPorts) {
-    let (score_sender, score_receiver) = watch::channel(Default::default());
+    let (score_sender, score_receiver) = watch::channel(Vec::new().into());
     let (registration_sender, registration_receiver) = mpsc::channel(20); // TODO: replace hard-coded value?
 
     let ports = Ports {scores: score_receiver, registration: registration_sender};
@@ -236,7 +236,7 @@ pub fn ports() -> (Ports, ControlPorts) {
 ///
 #[derive(Clone, Debug)]
 pub struct Ports {
-    scores: watch::Receiver<Vec<player::Tag>>,
+    scores: watch::Receiver<Arc<[player::Tag]>>,
     registration: mpsc::Sender<Registration>,
 }
 
@@ -245,7 +245,7 @@ pub struct Ports {
 ///
 #[derive(Debug)]
 pub struct ControlPorts {
-    scores: watch::Sender<Vec<player::Tag>>,
+    scores: watch::Sender<Arc<[player::Tag]>>,
     registration: mpsc::Receiver<Registration>,
 }
 

@@ -23,8 +23,8 @@ in the following phases:
 
 The program recognized the following command line options:
 
- * `-l <addr>`, `--listen <addr>`: address to listen on
- * `-p <num>`, `--port <num>`: port to listen on for players
+ * `-l <addr>`, `--listen <addr>`: address to listen on (defaults to any)
+ * `-p <num>`, `--port <num>`: port to listen on for players (defaults to 2020)
  * `--max-players <num>`: maximum number of players allowed
  * `--virs <num>`: number of viruses placed on the field at the beginning of a
    round

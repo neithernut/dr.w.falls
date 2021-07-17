@@ -192,7 +192,7 @@ pub async fn control(
     while active.keys().any(|e| e.is_connected()) {
 
         scores.sort_by_key(|p| p.round_score());
-        scores_sender.send(scores.clone()).or_warn("Could not send updates");
+        scores_sender.send(scores.clone().into()).or_warn("Could not send updates");
 
         let (player, event) = tokio::select!{
             res = events.recv() => res.ok_or_else(|| E::new("could not receive events", error::NoneError))?,
@@ -567,7 +567,7 @@ pub fn ports(scores: impl IntoIterator<Item = player::Tag>) -> (Ports, ControlPo
         .unzip();
     let player_num = scores.len();
 
-    let (score_sender, score_receiver) = watch::channel(scores);
+    let (score_sender, score_receiver) = watch::channel(scores.into());
     let (event_sender, event_receiver) = mpsc::channel(player_num);
 
     let ports = Ports {scores: score_receiver, events: event_sender, capsules: Arc::new(capsules.clone())};
@@ -581,7 +581,7 @@ pub fn ports(scores: impl IntoIterator<Item = player::Tag>) -> (Ports, ControlPo
 ///
 #[derive(Clone, Debug)]
 pub struct Ports {
-    scores: watch::Receiver<Vec<ScoreBoardEntry>>,
+    scores: watch::Receiver<Arc<[ScoreBoardEntry]>>,
     events: mpsc::Sender<(player::Tag, Event)>,
     capsules: Arc<HashMap<player::Tag, CapsulesQueue>>,
 }
@@ -591,7 +591,7 @@ pub struct Ports {
 ///
 #[derive(Debug)]
 pub struct ControlPorts {
-    scores: watch::Sender<Vec<ScoreBoardEntry>>,
+    scores: watch::Sender<Arc<[ScoreBoardEntry]>>,
     events: mpsc::Receiver<(player::Tag, Event)>,
     capsules: HashMap<player::Tag, CapsulesQueue>,
 }

@@ -20,8 +20,8 @@ mod util;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matches = clap_app!(dr_w_falls =>
-        (@arg listen: --listen +takes_value "Address to listen on")
-        (@arg port: --port +takes_value "Port to listen on")
+        (@arg listen: -l --listen +takes_value "Address to listen on")
+        (@arg port: -p --port +takes_value "Port to listen on")
         (@arg maxp: --max-players +takes_value "Maximum number of players allowed")
         (@arg virs: --virs +takes_value "number of viruses placed on the field at the beginning of a round")
         (@arg tick: --tick +takes_value "duration of a tick (the time a capsule moved down one tile) im ms")

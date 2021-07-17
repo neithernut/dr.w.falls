@@ -31,8 +31,8 @@ The program recognized the following command line options:
  * `--tick <num>`: duration of a tick (the time a capsule moved down one tile)
    in units of 100ms.
  * `--console`: spawn a game master console on standard input and output
- * `--console-sock <path>`: make a game master console accessible via the UNIX
-   domain socket at the given path
+ * `--gm-sock <path>`: make a game master console accessible via the UNIX domain
+   socket at the given path
 
 When started, connecting players will enter a lobby first. The game must be
 initiated by the game master or admin either via the game master console or by

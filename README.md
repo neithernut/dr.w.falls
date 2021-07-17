@@ -10,7 +10,7 @@ in the following phases:
  * [X] Software requirements: we define the game mechanics and user interface,
        as detailed as feasible.
  * [X] Analysis/Design: we define the modules and their scope.
- * [ ] Implementation: we implement each module. Compiling will be allowed, but
+ * [X] Implementation: we implement each module. Compiling will be allowed, but
        running the program or any other form of dynamic test will not.
  * [ ] Testing: we write unit tests for the individual modules, run them, and
        fix any defect we find. However, we do not run the program itself or

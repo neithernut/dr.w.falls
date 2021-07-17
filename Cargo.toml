@@ -1,6 +1,6 @@
 [package]
 name = "dr-w-falls"
-version = "0.2.1"
+version = "0.3"
 authors = ["Julian Ganz <neither@nut.email>"]
 edition = "2018"
 

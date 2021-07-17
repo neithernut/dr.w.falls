@@ -18,3 +18,40 @@ in the following phases:
  * [ ] Operation: we do what game publisher do nowadays and let our customers
        find any remaining issues.
 
+
+## Usage
+
+The program recognized the following command line options:
+
+ * `-l <addr>`, `--listen <addr>`: address to listen on
+ * `-p <num>`, `--port <num>`: port to listen on for players
+ * `--max-players <num>`: maximum number of players allowed
+ * `--virs <num>`: number of viruses placed on the field at the beginning of a
+   round
+ * `--tick <num>`: duration of a tick (the time a capsule moved down one tile)
+   in units of 100ms.
+ * `--console`: spawn a game master console on standard input and output
+ * `--console-sock <path>`: make a game master console accessible via the UNIX
+   domain socket at the given path
+
+When started, connecting players will enter a lobby first. The game must be
+initiated by the game master or admin either via the game master console or by
+sending SIGUSR1 to the process.
+
+
+### Players
+
+Players connect to the game via TCP, from an ANSI-capable terminal. As the game
+relies on timely input, users will need to disable line buffering. In addition,
+users are encouraged to turn off local echoing.
+
+For example, using `nc`, players may connect using the following commands (note
+that players may want to reset the TTY settings afterwards):
+
+    stty -icanon -iecho
+    nc <host> <port>
+
+Using `socat`, players can let `socat` itself handle the TTY settings:
+
+    socat TCP:<host>:<port> STDIO,icanon=0,echo=0
+

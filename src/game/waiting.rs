@@ -119,7 +119,7 @@ pub async fn control(
     roster.sort_by_key(|p| p.tag().score());
 
     while value > 0 && roster.iter().any(Entry::is_blocking) && !game_control.borrow().is_end_of_game() {
-        scores.send(roster.clone()).or_warn("Could not send scores");
+        scores.send(roster.clone().into()).or_warn("Could not send scores");
 
         tokio::select! {
             _ = timer.tick() => {
@@ -149,7 +149,7 @@ pub async fn control(
 /// the connection task and one for the control task.
 ///
 pub fn ports(scores: impl IntoIterator<Item = player::Tag>) -> (Ports, ControlPorts) {
-    let scores: Vec<_> = scores.into_iter().map(Into::into).collect();
+    let scores: Arc<_> = scores.into_iter().map(Into::into).collect();
     let player_num = scores.len();
 
     let (score_sender, score_receiver) = watch::channel(scores);
@@ -167,7 +167,7 @@ pub fn ports(scores: impl IntoIterator<Item = player::Tag>) -> (Ports, ControlPo
 ///
 #[derive(Clone, Debug)]
 pub struct Ports {
-    scores: watch::Receiver<Vec<ScoreBoardEntry>>,
+    scores: watch::Receiver<Arc<[ScoreBoardEntry]>>,
     countdown: watch::Receiver<u8>,
     ready: mpsc::Sender<player::Tag>,
 }
@@ -177,7 +177,7 @@ pub struct Ports {
 ///
 #[derive(Debug)]
 pub struct ControlPorts {
-    scores: watch::Sender<Vec<ScoreBoardEntry>>,
+    scores: watch::Sender<Arc<[ScoreBoardEntry]>>,
     countdown: watch::Sender<u8>,
     ready: mpsc::Receiver<player::Tag>,
 }

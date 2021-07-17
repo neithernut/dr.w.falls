@@ -30,7 +30,6 @@ The program recognized the following command line options:
    round
  * `--tick <num>`: duration of a tick (the time a capsule moved down one tile)
    in units of 100ms.
- * `--console`: spawn a game master console on standard input and output
  * `--gm-sock <path>`: make a game master console accessible via the UNIX domain
    socket at the given path
 

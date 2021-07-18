@@ -56,16 +56,16 @@ pub async fn serve<P>(
         move |t: &player::Tag| *t == tag
     };
     {
+        let mut display_handle = display.handle().await?;
+
         let scores = scores.borrow().clone();
-        score_board.update(&mut display.handle().await?, scores.iter(), &highlight).await?
-    }
+        score_board.update(&mut display_handle, scores.iter(), &highlight).await?;
 
-
-    {
         let countdown = *countdown.borrow();
-        num_display.update_single(&mut display.handle().await?, countdown).await?
+        num_display.update_single(&mut display_handle, countdown).await?;
+
+        inst.update_single(&mut display_handle, "Press any key when ready.").await?;
     }
-    inst.update_single(&mut display.handle().await?, "Press any key when ready.").await?;
 
     // Actual waiting display logic
     loop {

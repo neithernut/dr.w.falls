@@ -4,6 +4,10 @@ version = "0.3.0"
 authors = ["Julian Ganz <neither@nut.email>"]
 edition = "2018"
 
+[dev-dependencies]
+quickcheck = "1"
+quickcheck_macros = "1"
+
 [dependencies]
 bytes = "1.0"
 clap = "2.33"

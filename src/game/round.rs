@@ -80,43 +80,41 @@ pub async fn serve<P>(
     while !actor.is_defeated() && actor.virus_count() > 0{
         use field::Movement as M;
 
+        let mut display_handle = display.handle().await?;
+
         tokio::select! {
             res = input.next() => match res {
                 Some(Ok('p')) | Some(Ok('P')) | Some(Ok('\x1b')) if !tick_timer.is_paused() => {
                     tick_timer.pause();
-                    indicator.update_single(&mut display.handle().await?, "Game paused").await?
+                    indicator.update_single(&mut display_handle, "Game paused").await?
                 },
                 Some(Ok('s')) | Some(Ok('S')) if !tick_timer.is_paused() =>
-                    actor.r#move(&mut display.handle().await?, &field, M::Left).await?,
+                    actor.r#move(&mut display_handle, &field, M::Left).await?,
                 Some(Ok('d')) | Some(Ok('D')) if !tick_timer.is_paused() =>
-                    actor.r#move(&mut display.handle().await?, &field, M::Right).await?,
+                    actor.r#move(&mut display_handle, &field, M::Right).await?,
                 Some(Ok('k')) | Some(Ok('K')) if !tick_timer.is_paused() =>
-                    actor.r#move(&mut display.handle().await?, &field, M::RotateCCW).await?,
+                    actor.r#move(&mut display_handle, &field, M::RotateCCW).await?,
                 Some(Ok('l')) | Some(Ok('L')) if !tick_timer.is_paused() =>
-                    actor.r#move(&mut display.handle().await?, &field, M::RotateCW).await?,
+                    actor.r#move(&mut display_handle, &field, M::RotateCW).await?,
                 Some(Ok(' ')) if !tick_timer.is_paused() => if actor.is_controlled() {
-                    actor.tick(&mut display.handle().await?, &field, &mut rng).await?
+                    actor.tick(&mut display_handle, &field, &mut rng).await?
                 },
                 Some(Ok(c)) => if tick_timer.is_paused() && !c.is_ascii_control() {
                     tick_timer.resume();
-                    indicator.clear(&mut display.handle().await?).await?
+                    indicator.clear(&mut display_handle).await?
                 },
                 Some(Err(e)) if !e.is_would_block() => return Err(e.into()),
                 None => return Err(ConnTaskError::Terminated),
                 _ => (),
             },
-            _ = tick_timer.tick() => actor.tick(&mut display.handle().await?, &field, &mut rng).await?,
+            _ = tick_timer.tick() => actor.tick(&mut display_handle, &field, &mut rng).await?,
             _ = virs_timer.tick() => {
                 virus_sym = virus_sym.flipped();
-                field.place_viruses(
-                    &mut display.handle().await?,
-                    actor.remaining_viruses(),
-                    virus_sym,
-                ).await?
+                field.place_viruses(&mut display_handle, actor.remaining_viruses(), virus_sym).await?
             },
             _ = scores.changed() => {
                 let scores = scores.borrow().clone();
-                score_board.update(&mut display.handle().await?, scores.iter(), &highlight) .await?
+                score_board.update(&mut display_handle, scores.iter(), &highlight) .await?
             },
             t = phase.transition() => {
                 t?;
@@ -140,6 +138,8 @@ pub async fn serve<P>(
 
     // Let the defeated player do nothing until the round ended
     while !phase.transitioned() {
+        let mut display_handle = display.handle().await?;
+
         tokio::select! {
             res = input.next() => match res {
                 Some(Err(e)) if !e.is_would_block() => return Err(e.into()),
@@ -148,15 +148,11 @@ pub async fn serve<P>(
             },
             _ = virs_timer.tick() => {
                 virus_sym = virus_sym.flipped();
-                field.place_viruses(
-                    &mut display.handle().await?,
-                    actor.remaining_viruses(),
-                    virus_sym,
-                ).await?
+                field.place_viruses(&mut display_handle, actor.remaining_viruses(), virus_sym).await?
             },
             _ = scores.changed() => {
                 let scores = scores.borrow().clone();
-                score_board.update(&mut display.handle().await?, scores.iter(), &highlight) .await?
+                score_board.update(&mut display_handle, scores.iter(), &highlight).await?
             },
             t = phase.transition() => {
                 t?;

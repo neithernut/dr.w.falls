@@ -67,8 +67,12 @@ pub async fn serve<P>(
 
     let next_colours = rng.gen();
     let mut virus_sym = Default::default();
-    field.place_viruses(&mut display.handle().await?, viruses.clone().into_iter(), virus_sym).await?;
-    field.place_next_elements(&mut display.handle().await?, &next_colours).await?;
+    {
+        let mut display_handle = display.handle().await?;
+
+        field.place_viruses(&mut display_handle, viruses.clone().into_iter(), virus_sym).await?;
+        field.place_next_elements(&mut display_handle, &next_colours).await?;
+    }
     let mut actor = Actor::new(events, capsules, me.tag(), viruses, next_colours);
 
     // Let the player grasp the field for a bit before the game starts

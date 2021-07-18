@@ -64,10 +64,9 @@ pub async fn serve<P>(
         tokio::select!{
             res = input.next() => match res {
                 Some(Ok(c)) => {
-                    let name = name_input
-                        .update(&mut display.handle().await?, c)
-                        .await?
-                        .map(ToString::to_string);
+                    let mut display_handle = display.handle().await?;
+
+                    let name = name_input.update(&mut display_handle, c).await?.map(ToString::to_string);
                     if let Some(name) = name {
                         let (reply_sender, reply) = oneshot::channel();
                         registration
@@ -77,7 +76,7 @@ pub async fn serve<P>(
                         match reply.await.map_err(|_| io::Error::from(io::ErrorKind::Other))? {
                             RegistrationReply::Accepted(handle) => break handle,
                             RegistrationReply::Denied(reason)   => reply_text
-                                .update_single(&mut display.handle().await?, reason)
+                                .update_single(&mut display_handle, reason)
                                 .await?,
                         }
                     }

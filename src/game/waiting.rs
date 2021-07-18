@@ -69,11 +69,13 @@ pub async fn serve<P>(
 
     // Actual waiting display logic
     loop {
+        let mut display_handle = display.handle().await?;
+
         tokio::select! {
             res = input.next() => match res {
                 Some(Ok(_)) => {
                     ready.send(me.tag()).await.map_err(ConnTaskError::other)?;
-                    inst.update_single(&mut display.handle().await?, "Wait to the round to start.").await?;
+                    inst.update_single(&mut display_handle, "Wait to the round to start.").await?;
                 },
                 Some(Err(e)) if !e.is_would_block() => return Err(e.into()),
                 None => return Err(ConnTaskError::Terminated),
@@ -81,11 +83,11 @@ pub async fn serve<P>(
             },
             _ = scores.changed() => {
                 let scores = scores.borrow().clone();
-                score_board.update(&mut display.handle().await?, scores.iter(), &highlight).await?
+                score_board.update(&mut display_handle, scores.iter(), &highlight).await?
             },
             _ = countdown.changed() => {
                 let countdown = *countdown.borrow();
-                num_display.update_single(&mut display.handle().await?, countdown).await?
+                num_display.update_single(&mut display_handle, countdown).await?
             },
             t = phase.transition() => break t,
         }

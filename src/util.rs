@@ -5,6 +5,9 @@ use std::convert::{TryFrom, TryInto};
 use rand::Rng;
 use rand::distributions::{Distribution, Standard as StandardDist};
 
+#[cfg(test)]
+use quickcheck::{Arbitrary, Gen};
+
 
 pub const FIELD_WIDTH: u8 = 8;
 pub const FIELD_HEIGHT: u8 = 16;
@@ -309,6 +312,13 @@ impl Distribution<Colour> for StandardDist {
             1 => Colour::Yellow,
             _ => Colour::Blue,
         }
+    }
+}
+
+#[cfg(test)]
+impl Arbitrary for Colour {
+    fn arbitrary(g: &mut Gen) -> Self {
+        *g.choose(&[Self::Red, Self::Yellow, Self::Blue]).unwrap()
     }
 }
 

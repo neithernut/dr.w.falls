@@ -124,7 +124,7 @@ pub fn row_of_four<F>(
 ///
 /// This type is intended as an output type for the `row_of_four` function.
 ///
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum RowOfFour {
     Horizontal(util::RowIndex, util::RangeInclusive<util::ColumnIndex>),
     Vertical(util::RangeInclusive<util::RowIndex>, util::ColumnIndex),

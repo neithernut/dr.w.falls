@@ -3,6 +3,32 @@
 use super::*;
 
 
+#[quickcheck]
+fn rotation_idendity(dir: Direction) -> bool {
+    dir.rotated_cw().rotated_ccw() == dir
+}
+
+
+#[quickcheck]
+fn cw_rotation(dir: Direction) -> bool {
+    let d1 = dir.rotated_cw();
+    let d2 = d1.rotated_cw();
+    let d3 = d2.rotated_cw();
+    let d4 = d3.rotated_cw();
+    d1 != dir && d2 != dir && d3 != dir && d4 == dir
+}
+
+
+#[quickcheck]
+fn ccw_rotation(dir: Direction) -> bool {
+    let d1 = dir.rotated_ccw();
+    let d2 = d1.rotated_ccw();
+    let d3 = d2.rotated_ccw();
+    let d4 = d3.rotated_ccw();
+    d1 != dir && d2 != dir && d3 != dir && d4 == dir
+}
+
+
 #[test]
 fn rows_len() {
     assert_eq!(ROWS.len(), FIELD_HEIGHT as usize);

@@ -117,6 +117,17 @@ impl TryFrom<usize> for RowIndex {
     }
 }
 
+#[cfg(test)]
+impl Arbitrary for RowIndex {
+    fn arbitrary(g: &mut Gen) -> Self {
+        Self {data: u8::arbitrary(g) % FIELD_HEIGHT}
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        Box::new(self.data.shrink().filter_map(|d| (d as usize).try_into().ok()))
+    }
+}
+
 
 /// Range including all rows
 ///
@@ -154,6 +165,17 @@ impl TryFrom<usize> for ColumnIndex {
     type Error = usize;
     fn try_from(value: usize) -> Result<Self, Self::Error> {
         value.try_into().ok().filter(|i| *i < FIELD_WIDTH).map(|data| Self {data}).ok_or(value)
+    }
+}
+
+#[cfg(test)]
+impl Arbitrary for ColumnIndex {
+    fn arbitrary(g: &mut Gen) -> Self {
+        Self {data: u8::arbitrary(g) % FIELD_WIDTH}
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        Box::new(self.data.shrink().filter_map(|d| (d as usize).try_into().ok()))
     }
 }
 

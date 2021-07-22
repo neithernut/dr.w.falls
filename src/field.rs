@@ -8,6 +8,9 @@ mod row;
 mod static_field;
 mod tick;
 
+#[cfg(test)]
+mod tests;
+
 
 pub use items::Update;
 pub use static_field::{StaticField, defeated};

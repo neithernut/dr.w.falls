@@ -3,6 +3,9 @@
 use crate::util;
 use util::{Colour, Direction};
 
+#[cfg(test)]
+use quickcheck::{Arbitrary, Gen};
+
 
 /// Representation of a virus
 ///
@@ -145,6 +148,30 @@ impl Iterator for RowOfFour {
             Self::Horizontal(_, range)  => range.size_hint(),
             Self::Vertical(range, _)    => range.size_hint(),
         }
+    }
+}
+
+#[cfg(test)]
+impl Arbitrary for RowOfFour {
+    fn arbitrary(g: &mut Gen) -> Self {
+        fn horizontal(g: &mut Gen) -> RowOfFour {
+            let a = Arbitrary::arbitrary(g);
+            let b = Arbitrary::arbitrary(g);
+            let min = std::cmp::min(a, b);
+            let max = std::cmp::max(a, b);
+            RowOfFour::Horizontal(Arbitrary::arbitrary(g), util::RangeInclusive::new(min, max))
+        }
+
+        fn vertical(g: &mut Gen) -> RowOfFour {
+            let a = Arbitrary::arbitrary(g);
+            let b = Arbitrary::arbitrary(g);
+            let min = std::cmp::min(a, b);
+            let max = std::cmp::max(a, b);
+            RowOfFour::Vertical(util::RangeInclusive::new(min, max), Arbitrary::arbitrary(g))
+        }
+
+        let opts = [horizontal, vertical];
+        g.choose(&opts).unwrap()(g)
     }
 }
 

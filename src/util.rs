@@ -76,6 +76,13 @@ impl Direction {
     }
 }
 
+#[cfg(test)]
+impl Arbitrary for Direction {
+    fn arbitrary(g: &mut Gen) -> Self {
+        *g.choose(&[Self::Left, Self::Right, Self::Above, Self::Below]).unwrap()
+    }
+}
+
 
 /// Row index type
 ///

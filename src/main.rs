@@ -7,6 +7,7 @@ use tokio::{net, sync::watch};
 #[macro_use]
 extern crate clap;
 
+#[cfg(test)]
 #[macro_use]
 extern crate quickcheck_macros;
 

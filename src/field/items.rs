@@ -133,6 +133,8 @@ pub enum RowOfFour {
     Vertical(util::RangeInclusive<util::RowIndex>, util::ColumnIndex),
 }
 
+impl ExactSizeIterator for RowOfFour {}
+
 impl Iterator for RowOfFour {
     type Item = util::Position;
 

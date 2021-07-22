@@ -1,6 +1,19 @@
 //! Utility tests
 
+use quickcheck::TestResult;
+
 use super::*;
+
+
+#[quickcheck]
+fn position_idendity(pos: Position, dir: Direction) -> TestResult {
+    (pos + dir + dir.rotated_cw().rotated_cw())
+        .map(|p| if pos == p {
+            TestResult::passed()
+        } else {
+            TestResult::error(format!("Difference: {:?}, {:?}", pos, p))
+        }).unwrap_or(TestResult::discard())
+}
 
 
 #[quickcheck]

@@ -9,6 +9,10 @@ use rand::distributions::{Distribution, Standard as StandardDist};
 use quickcheck::{Arbitrary, Gen};
 
 
+#[cfg(test)]
+mod tests;
+
+
 pub const FIELD_WIDTH: u8 = 8;
 pub const FIELD_HEIGHT: u8 = 16;
 

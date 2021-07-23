@@ -66,3 +66,10 @@ fn colour_rotation(colour: Colour, dir: bool) -> bool {
     c1 != colour && c2 != colour && c3 == colour
 }
 
+#[quickcheck]
+fn colour_dirot(colour: Colour) -> bool {
+    let c1 = colour.rotate(true);
+    let c2 = colour.rotate(false);
+    colour != c1 && colour != c2 && c1 != c2
+}
+

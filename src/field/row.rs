@@ -8,7 +8,7 @@ use crate::util;
 /// This type is indended as an internal convenience utility for construcing
 /// fields.
 ///
-#[derive(Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Row<T>
     where T: Default
 {

@@ -13,6 +13,20 @@ fn row_of_four_len(row: items::RowOfFour) -> bool {
 }
 
 
+#[quickcheck]
+fn find_row_of_four(original: items::RowOfFour, mut field: TwoColouredField, pick: u8) -> bool {
+    original.for_each(|p| field[p] = Some(field.omitted));
+    let hint = original.cycle().nth(pick as usize).expect("Could not pick hint");
+
+    let expected = if original.len() >= 4 {
+        Some((field.omitted, original))
+    } else {
+        None
+    };
+    items::row_of_four(&field, hint) == expected
+}
+
+
 /// Field initialized with only two colours
 ///
 #[derive(Clone, Debug)]

@@ -304,6 +304,19 @@ impl<I> Iterator for RangeInclusive<I>
     }
 }
 
+#[cfg(test)]
+impl<I> Arbitrary for RangeInclusive<I>
+    where I: Step + Ord + Clone + Arbitrary
+{
+    fn arbitrary(g: &mut Gen) -> Self {
+        let a = Arbitrary::arbitrary(g);
+        let b = Arbitrary::arbitrary(g);
+        let min = Clone::clone(std::cmp::min(&a, &b));
+        let max = std::cmp::max(a, b);
+        Self::new(min, max)
+    }
+}
+
 
 /// Create an iterator over all positions in the given row
 ///

@@ -28,6 +28,20 @@ fn moving_capsule(
 
 
 #[quickcheck]
+fn moving_index(column: util::ColumnIndex, colour: util::Colour, ticks: u8, pre_ticks: u8) -> bool {
+    let mut field = moving_field::MovingField::default();
+    (0..pre_ticks).for_each(|_| field.tick().fold((), |_, _| ()));
+    field.spawn_single_capsules(std::iter::once((column, colour))).fold((), |_, _| ());
+
+    let row = field.moving_row_index(util::RowIndex::TOP_ROW);
+    (0..ticks).for_each(|_| field.tick().fold((), |_, _| ()));
+
+    let row = field.row_index_from_moving(row);
+    field[(row, column)] == Some(items::CapsuleElement::new_single(colour))
+}
+
+
+#[quickcheck]
 fn row_of_four_len(row: items::RowOfFour) -> bool {
     row.len() == row.count()
 }

@@ -30,6 +30,7 @@ impl Virus {
 
 /// Representation of a capsule element
 ///
+#[derive(PartialEq)]
 pub struct CapsuleElement {
     colour: Colour,
     /// Direction of any capsule element bound to this one

@@ -8,6 +8,26 @@ use super::*;
 
 
 #[quickcheck]
+fn moving_capsule(
+    column: util::ColumnIndex,
+    target_row: util::RowIndex,
+    colour: util::Colour,
+    pre_ticks: u8,
+) -> bool {
+    use util::Step;
+
+    let mut field = moving_field::MovingField::default();
+    (0..pre_ticks).for_each(|_| field.tick().fold((), |_, _| ()));
+    field.spawn_single_capsules(std::iter::once((column, colour))).fold((), |_, _| ());
+
+    let ticks = Step::steps_between(&util::RowIndex::TOP_ROW, &target_row).expect("Invalid target row");
+    (0..ticks).for_each(|_| field.tick().fold((), |_, _| ()));
+
+    field[(target_row, column)] == Some(items::CapsuleElement::new_single(colour))
+}
+
+
+#[quickcheck]
 fn row_of_four_len(row: items::RowOfFour) -> bool {
     row.len() == row.count()
 }

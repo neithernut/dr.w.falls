@@ -8,7 +8,7 @@ use super::*;
 
 
 #[quickcheck]
-fn moving_capsule(
+fn moving_single_capsule(
     column: util::ColumnIndex,
     target_row: util::RowIndex,
     colour: util::Colour,

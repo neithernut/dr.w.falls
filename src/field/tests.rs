@@ -106,3 +106,23 @@ impl Arbitrary for TwoColouredField {
     }
 }
 
+
+/// Check consistency in capsule element partnership
+///
+/// Check that, in the given field, if a capsule element refers to a partner,
+/// that element refers back to the original element.
+///
+fn check_element_partnership<F>(field: &F) -> bool
+where F: std::ops::Index<util::Position>,
+      F::Output: items::AsCapsuleElement
+{
+    use items::AsCapsuleElement;
+
+    util::ROWS
+        .flat_map(util::complete_row)
+        .filter_map(|p| field[p].as_element().and_then(|c| c.partner).map(|d| (p, d)))
+        .all(|(p, d)| (p + d)
+            .and_then(|p| field[p].as_element())
+            .and_then(|c| c.partner) == Some(d.rotated_cw().rotated_cw()))
+}
+

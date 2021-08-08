@@ -221,12 +221,19 @@ impl ControlledCapsule {
 }
 
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Movement {
     Left,
     Right,
     RotateCW,
     RotateCCW,
+}
+
+#[cfg(test)]
+impl quickcheck::Arbitrary for Movement {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        *g.choose(&[Self::Left, Self::Right, Self::RotateCW, Self::RotateCCW]).unwrap()
+    }
 }
 
 

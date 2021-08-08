@@ -60,10 +60,28 @@ impl CapsuleElement {
     }
 }
 
+impl AsCapsuleElement for Option<CapsuleElement> {
+    fn as_element(&self) -> Option<&CapsuleElement> {
+        self.as_ref()
+    }
+}
+
 impl util::PotentiallyColoured for Option<CapsuleElement> {
     fn colour(&self) -> Option<Colour> {
         self.as_ref().map(|e| e.colour())
     }
+}
+
+
+/// Item which may represent a capsule element
+///
+pub trait AsCapsuleElement {
+    /// Retrieve a reference to this item as a capsule elemnt
+    ///
+    /// If the item holds a capsule element, this function will return a
+    /// reference to that element. Otherwise, this function returns `None`.
+    ///
+    fn as_element(&self) -> Option<&CapsuleElement>;
 }
 
 

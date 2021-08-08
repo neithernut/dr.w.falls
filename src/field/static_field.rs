@@ -2,7 +2,7 @@
 
 use crate::util;
 
-use super::items::{CapsuleElement, Virus};
+use super::items::{self, CapsuleElement, Virus};
 use super::row::Row;
 
 
@@ -132,6 +132,15 @@ impl From<CapsuleElement> for TileContents {
 impl From<Virus> for TileContents {
     fn from(v: Virus) -> Self {
         Self::Virus(v)
+    }
+}
+
+impl items::AsCapsuleElement for TileContents {
+    fn as_element(&self) -> Option<&CapsuleElement> {
+        match self {
+            Self::CapsuleElement(e) => Some(e),
+            _ => None
+        }
     }
 }
 

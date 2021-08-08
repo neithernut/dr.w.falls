@@ -8,6 +8,40 @@ use super::*;
 
 
 #[quickcheck]
+fn single_capsule_consitency(
+    moves: Vec<movement::Movement>,
+    a: util::Colour,
+    b: util::Colour,
+    row: util::RowIndex,
+    mut virs: std::collections::HashMap<util::Position, util::Colour>,
+) -> bool {
+    use std::iter::FromIterator;
+
+    use util::Step;
+
+    {
+        let rmid = util::ColumnIndex::LEFTMOST_COLUMN.forward_checked((util::FIELD_WIDTH/2).into())
+            .expect("Failed to compute right target position for capsule");
+        let lmid = rmid.backward_checked(1)
+            .expect("Failed to compute left target position for capsule");
+        virs.remove(&(row, lmid));
+        virs.remove(&(row, rmid));
+    }
+
+    let mut moving_field = moving_field::MovingField::default();
+    let static_field = static_field::StaticField::from_iter(virs);
+
+    let (mut capsule, _) = movement::ControlledCapsule::spawn_capsule(&mut moving_field, &[a, b]);
+    let ticks = Step::steps_between(&util::RowIndex::TOP_ROW, &row).expect("Invalid row");
+    (0..ticks).for_each(|_| moving_field.tick().fold((), |_, _| ()));
+
+    moves.into_iter().for_each(|m| { capsule.apply_move(&mut moving_field, &static_field, m); });
+
+    check_element_partnership(&moving_field)
+}
+
+
+#[quickcheck]
 fn moving_single_capsule(
     column: util::ColumnIndex,
     target_row: util::RowIndex,

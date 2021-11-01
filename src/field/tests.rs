@@ -37,7 +37,9 @@ fn single_capsule_consitency(
 
     moves.into_iter().for_each(|m| { capsule.apply_move(&mut moving_field, &static_field, m); });
 
-    check_element_partnership(&moving_field)
+    check_element_partnership(&moving_field) && !util::ROWS
+        .flat_map(util::complete_row)
+        .any(|p| moving_field[p].is_some() && static_field[p].is_occupied())
 }
 
 

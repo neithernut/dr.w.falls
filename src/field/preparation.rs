@@ -27,9 +27,10 @@ pub fn prepare_field(
 
     (0..number_of_virs).filter_map(move |virus_count| {
         // Select a colour. If colouring the tile would result in a row of four,
-        // we'll select another colour through rotation. Since we only have two
-        // dimensitons but three colours, we are guranteed to reach a solution.
-        let mut colour: util::Colour = rng.gen();
+        // we'll select another colour through rotation. If we can't find a
+        // suitable colour, we'll give up but leave the tile occupied in the
+        // internal preparation field so that it won't be picked again.
+        let colour: util::Colour = rng.gen();
         let rotation_dir = rng.gen();
 
         // Select an unoccupied position and fill it with a colour
@@ -38,13 +39,14 @@ pub fn prepare_field(
             .flat_map(util::complete_row)
             .filter(|p| field[*p].is_none())
             .nth(rng.gen_range(0..unfilled))
-            .map(|pos| loop {
-                field[pos] = Some(colour);
-                if super::items::row_of_four(&field, pos).is_none() {
-                    break (pos, colour)
-                }
-                colour = colour.rotate(rotation_dir);
-            })
+            .and_then(|pos| [colour, colour.rotate(rotation_dir), colour.rotate(!rotation_dir)]
+                .iter()
+                .cloned()
+                .find(|c| {
+                    field[pos] = Some(*c);
+                    super::items::row_of_four(&field, pos).is_none()
+                }).map(|c| (pos, c))
+            )
     })
 }
 

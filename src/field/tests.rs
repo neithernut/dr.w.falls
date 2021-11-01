@@ -1,10 +1,64 @@
 //! Field tests
 
-use quickcheck::{Arbitrary, Gen};
+use quickcheck::{Arbitrary, Gen, TestResult};
 
 use crate::util;
 
 use super::*;
+
+
+#[quickcheck]
+fn preparation_vir_count(seed: u64, top_row: util::RowIndex, vir_count: u8) -> TestResult {
+    use rand::SeedableRng;
+
+    let area = util::RangeInclusive::new(top_row, util::RowIndex::BOTTOM_ROW).len() *
+        (util::FIELD_WIDTH as usize);
+    if area >= vir_count as usize {
+        TestResult::from_bool(
+            preparation::prepare_field(&mut rand_pcg::Pcg64Mcg::seed_from_u64(seed), top_row, vir_count)
+                .count() <= vir_count.into()
+        )
+    } else {
+        TestResult::discard()
+    }
+}
+
+
+#[quickcheck]
+fn preparation_unique_pos(seed: u64, top_row: util::RowIndex, vir_count: u8) -> TestResult {
+    use rand::SeedableRng;
+
+    let area = util::RangeInclusive::new(top_row, util::RowIndex::BOTTOM_ROW).len() *
+        (util::FIELD_WIDTH as usize);
+    if area >= vir_count as usize {
+        let mut pos: Vec<_> = preparation::prepare_field(
+            &mut rand_pcg::Pcg64Mcg::seed_from_u64(seed),
+            top_row,
+            vir_count,
+        ).map(|(p, _)| p).collect();
+        pos.sort();
+        TestResult::from_bool(pos.windows(2).all(|p| p[0] != p[1]))
+    } else {
+        TestResult::discard()
+    }
+}
+
+
+#[quickcheck]
+fn preparation_empty_rows(seed: u64, top_row: util::RowIndex, vir_count: u8) -> TestResult {
+    use rand::SeedableRng;
+
+    let area = util::RangeInclusive::new(top_row, util::RowIndex::BOTTOM_ROW).len() *
+        (util::FIELD_WIDTH as usize);
+    if area >= vir_count as usize {
+        TestResult::from_bool(
+            preparation::prepare_field(&mut rand_pcg::Pcg64Mcg::seed_from_u64(seed), top_row, vir_count)
+                .all(|((r, _), _)| r >= top_row)
+        )
+    } else {
+        TestResult::discard()
+    }
+}
 
 
 #[quickcheck]

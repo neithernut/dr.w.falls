@@ -151,6 +151,13 @@ fn find_row_of_four(original: items::RowOfFour, mut field: TwoColouredField, pic
 }
 
 
+#[quickcheck]
+fn find_no_row_of_four(mut field: TwoColouredField, pos: util::Position) -> bool {
+    field[pos] = None;
+    items::row_of_four(&field, pos).is_none()
+}
+
+
 /// Field initialized with only two colours
 ///
 #[derive(Clone, Debug)]

@@ -60,7 +60,7 @@ where R: rand::Rng + rand::SeedableRng + Clone + Send + Sync + fmt::Debug + 'sta
         waiting::control(control, game_control.clone(), roster.clone(), &mut disconnects).await;
 
         let mut rng = R::from_entropy();
-        let (viruses, tick_duration) = match game_control.borrow().clone() {
+        let (viruses, tick_duration): (HashMap<_, _>, _) = match game_control.borrow().clone() {
             GameControl::Settings{viruses, tick} => {
                 let first_row = util::RowIndex::TOP_ROW.forward_checked(FREE_ROWS)
                     .expect("Not enough rows to keep free");
@@ -70,11 +70,12 @@ where R: rand::Rng + rand::SeedableRng + Clone + Send + Sync + fmt::Debug + 'sta
         };
 
         log::info!("Starting round {}", num);
-        let (ports, control) = round::ports(roster.read().await.clone());
+        let virus_count = viruses.len() as u32;
+        let (ports, control) = round::ports(roster.read().await.clone(), virus_count);
         phase
             .send(GamePhase::Round{ports, viruses, tick_duration, rng: rng.clone(), num})
             .map_err(|e| E::new("Could not send phase updates", e))?;
-        round::control(control, roster.clone(), &mut disconnects, &mut rng).await?;
+        round::control(control, roster.clone(), virus_count, &mut disconnects, &mut rng).await?;
 
         num = num + 1;
     }

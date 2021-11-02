@@ -176,6 +176,7 @@ pub async fn serve<P>(
 pub async fn control(
     ports: ControlPorts,
     roster: Arc<RwLock<player::Roster>>,
+    virus_count: u32,
     disconnects: &mut mpsc::UnboundedReceiver<player::Tag>,
     rng: &mut impl rand::Rng,
 ) -> Result<(), error::WrappedErr> {
@@ -187,7 +188,12 @@ pub async fn control(
     let mut events = ports.events;
     let mut active = ports.capsules;
 
-    let mut scores: Vec<ScoreBoardEntry> = roster.read().await.clone().into_iter().map(Into::into).collect();
+    let mut scores: Vec<_> = roster
+        .read()
+        .await
+        .iter()
+        .map(|t| ScoreBoardEntry::new(t.clone(), virus_count))
+        .collect();
 
     while active.keys().any(|e| e.is_connected()) {
 
@@ -561,11 +567,11 @@ enum ResumableInterval {
 /// This function returns a pair of ports specific to the round phase, one for
 /// the connection task and one for the control task.
 ///
-pub fn ports(scores: impl IntoIterator<Item = player::Tag>) -> (Ports, ControlPorts) {
+pub fn ports(scores: impl IntoIterator<Item = player::Tag>, virus_count: u32) -> (Ports, ControlPorts) {
     let (capsules, scores): (HashMap<_, _>, Vec<_>) = scores
         .into_iter()
         .filter(|p| p.is_connected())
-        .map(|t| ((t.clone(), Default::default()), t.into()))
+        .map(|t| ((t.clone(), Default::default()), ScoreBoardEntry::new(t.clone(), virus_count)))
         .unzip();
     let player_num = scores.len();
 
@@ -632,6 +638,15 @@ struct ScoreBoardEntry {
 }
 
 impl ScoreBoardEntry {
+    /// Create a new score board entry
+    ///
+    /// Create a new `ScoreBoardEntry` for the player given by `tag`, with an
+    /// initial `round_score`.
+    ///
+    pub fn new(tag: player::Tag, round_score: u32) -> Self {
+        ScoreBoardEntry {tag, round_score, state: Default::default()}
+    }
+
     /// Set the player's round score
     ///
     pub fn set_score(&mut self, score: u32) {
@@ -646,12 +661,6 @@ impl ScoreBoardEntry {
     /// Set the player's state
     pub fn set_state(&mut self, state: PlayerState) {
         self.state = state
-    }
-}
-
-impl From<player::Tag> for ScoreBoardEntry {
-    fn from(tag: player::Tag) -> Self {
-        ScoreBoardEntry {tag, round_score: 0, state: Default::default()}
     }
 }
 

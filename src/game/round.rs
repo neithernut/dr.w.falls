@@ -359,7 +359,9 @@ impl Actor {
                 lowest
             );
 
-            if eliminated.positions().fold(false, |c, p| c || self.viruses.remove(&p).is_some()) {
+            // We use need to remove _all_ viruses at eliminated positions, i.e.
+            // make sure we don't fall into a short-circuiting trap.
+            if eliminated.positions().filter_map(|p| self.viruses.remove(&p)).count() > 0 {
                 self.send_event(Event::Score(self.viruses.len() as u32)).await?;
             }
             if eliminated.row_count() > MIN_CAPSULES_SEND {

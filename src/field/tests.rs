@@ -67,23 +67,22 @@ fn single_capsule_consitency(
     a: util::Colour,
     b: util::Colour,
     row: util::RowIndex,
-    mut virs: std::collections::HashMap<util::Position, util::Colour>,
-) -> bool {
-    use std::iter::FromIterator;
-
+    static_field: StaticField,
+) -> TestResult {
     use util::Step;
+
+    let mut moving_field = moving_field::MovingField::default();
+    let static_field: static_field::StaticField = static_field.into();
 
     {
         let rmid = util::ColumnIndex::LEFTMOST_COLUMN.forward_checked((util::FIELD_WIDTH/2).into())
             .expect("Failed to compute right target position for capsule");
         let lmid = rmid.backward_checked(1)
             .expect("Failed to compute left target position for capsule");
-        virs.remove(&(row, lmid));
-        virs.remove(&(row, rmid));
+        if static_field[(row, lmid)].is_occupied() || static_field[(row, rmid)].is_occupied() {
+            return TestResult::discard()
+        }
     }
-
-    let mut moving_field = moving_field::MovingField::default();
-    let static_field = static_field::StaticField::from_iter(virs);
 
     let (mut capsule, _) = movement::ControlledCapsule::spawn_capsule(&mut moving_field, &[a, b]);
     let ticks = Step::steps_between(&util::RowIndex::TOP_ROW, &row).expect("Invalid row");
@@ -91,9 +90,10 @@ fn single_capsule_consitency(
 
     moves.into_iter().for_each(|m| { capsule.apply_move(&mut moving_field, &static_field, m); });
 
-    check_element_partnership(&moving_field) && !util::ROWS
+    let res = check_element_partnership(&moving_field) && !util::ROWS
         .flat_map(util::complete_row)
-        .any(|p| moving_field[p].is_some() && static_field[p].is_occupied())
+        .any(|p| moving_field[p].is_some() && static_field[p].is_occupied());
+    TestResult::from_bool(res)
 }
 
 

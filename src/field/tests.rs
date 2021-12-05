@@ -204,6 +204,74 @@ impl Arbitrary for TwoColouredField {
 }
 
 
+/// A random capsule or single capsule element
+///
+#[derive(Copy, Clone, Debug)]
+struct RandomCapsule {
+    pos: util::Position,
+    colour: util::Colour,
+    partner: Option<(util::Direction, util::Colour)>,
+}
+
+impl RandomCapsule {
+    /// Try to place this capsule on the given field
+    ///
+    /// Capsule lements will only be placed if the respective positions are not
+    /// already occupied (i.e. coloured).
+    ///
+    pub fn try_place_on<F>(&self, field: &mut F)
+        where F: std::ops::IndexMut<util::Position>,
+              F::Output: From<items::CapsuleElement> + util::PotentiallyColoured,
+    {
+        self.try_place_on_masked(field, |_| true)
+    }
+
+    /// Try to place this capsule on the given field
+    ///
+    /// Capsule lements will only be placed if the supplied `mask` returns
+    /// `false` for the respective positions and they are not already occupied
+    /// (i.e. coloured).
+    ///
+    pub fn try_place_on_masked<F>(&self, field: &mut F, mask: impl Fn(util::Position) -> bool)
+        where F: std::ops::IndexMut<util::Position>,
+              F::Output: From<items::CapsuleElement> + util::PotentiallyColoured,
+    {
+        use util::PotentiallyColoured;
+
+        if field[self.pos].colour().is_some() || !mask(self.pos) {
+            return
+        }
+
+        let partner = self
+            .partner
+            .and_then(|(d, c)| (self.pos + d).map(|p| (d, c, p)))
+            .filter(|(.., p)| field[*p].colour().is_none() && mask(*p));
+
+        field[self.pos] = items::CapsuleElement::new(self.colour, partner.map(|(d, ..)| d)).into();
+        if let Some((d, c, p)) = partner {
+            field[p] = items::CapsuleElement::new(c, Some(d.rotated_cw().rotated_cw())).into();
+        }
+    }
+}
+
+impl Arbitrary for RandomCapsule {
+    fn arbitrary(g: &mut Gen) -> Self {
+        Self {
+            pos: Arbitrary::arbitrary(g),
+            colour: Arbitrary::arbitrary(g),
+            partner: Arbitrary::arbitrary(g),
+        }
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        let res = (self.pos, self.colour, self.partner)
+            .shrink()
+            .map(|(pos, colour, partner)| Self{pos, colour, partner});
+        Box::new(res)
+    }
+}
+
+
 /// Check consistency in capsule element partnership
 ///
 /// Check that, in the given field, if a capsule element refers to a partner,

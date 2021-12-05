@@ -234,6 +234,12 @@ impl Arbitrary for StaticField {
 }
 
 
+#[quickcheck]
+fn random_capsule_placement(field: StaticField) -> bool {
+    check_element_partnership(&static_field::StaticField::from(field))
+}
+
+
 /// A random capsule or single capsule element
 ///
 #[derive(Copy, Clone, Debug)]

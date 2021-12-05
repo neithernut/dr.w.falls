@@ -204,6 +204,36 @@ impl Arbitrary for TwoColouredField {
 }
 
 
+/// Static field construction helper
+///
+#[derive(Clone, Debug)]
+struct StaticField {
+    viruses: std::collections::HashMap<util::Position, util::Colour>,
+    capsules: Vec<RandomCapsule>,
+}
+
+impl From<StaticField> for static_field::StaticField {
+    fn from(field: StaticField) -> Self {
+        let mut res: Self = std::iter::FromIterator::from_iter(field.viruses);
+        field.capsules.into_iter().for_each(|c| c.try_place_on(&mut res));
+        res
+    }
+}
+
+impl Arbitrary for StaticField {
+    fn arbitrary(g: &mut Gen) -> Self {
+        Self {viruses: Arbitrary::arbitrary(g), capsules: Arbitrary::arbitrary(g)}
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        let res = (self.viruses.clone(), self.capsules.clone())
+            .shrink()
+            .map(|(viruses, capsules)| StaticField{viruses, capsules});
+        Box::new(res)
+    }
+}
+
+
 /// A random capsule or single capsule element
 ///
 #[derive(Copy, Clone, Debug)]

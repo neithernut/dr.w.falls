@@ -90,10 +90,9 @@ fn single_capsule_consitency(
 
     moves.into_iter().for_each(|m| { capsule.apply_move(&mut moving_field, &static_field, m); });
 
-    let res = check_element_partnership(&moving_field) && !util::ROWS
-        .flat_map(util::complete_row)
-        .any(|p| moving_field[p].is_some() && static_field[p].is_occupied());
-    TestResult::from_bool(res)
+    TestResult::from_bool(
+        check_element_partnership(&moving_field) && check_overlaps(&static_field, &moving_field)
+    )
 }
 
 

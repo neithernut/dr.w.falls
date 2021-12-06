@@ -59,6 +59,32 @@ fn columns_len() {
 
 
 #[quickcheck]
+fn rows_forward(first: RowIndex, last: RowIndex) -> TestResult {
+    if let Some(steps) = Step::steps_between(&first, &last) {
+        let range = RangeInclusive::new(first, last);
+        TestResult::from_bool(
+            range.clone().nth(0) == Some(first) && range.clone().nth(steps) == Some(last)
+        )
+    } else {
+        TestResult::discard()
+    }
+}
+
+
+#[quickcheck]
+fn rows_backward(first: RowIndex, last: RowIndex) -> TestResult {
+    if let Some(steps) = Step::steps_between(&first, &last) {
+        let range = RangeInclusive::new(first, last).rev();
+        TestResult::from_bool(
+            range.clone().nth(0) == Some(last) && range.clone().nth(steps) == Some(first)
+        )
+    } else {
+        TestResult::discard()
+    }
+}
+
+
+#[quickcheck]
 fn colour_rotation(colour: Colour, dir: bool) -> bool {
     let c1 = colour.rotate(dir);
     let c2 = c1.rotate(dir);

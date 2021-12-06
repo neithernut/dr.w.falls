@@ -272,6 +272,14 @@ impl Arbitrary for MovingField {
 }
 
 
+#[quickcheck]
+fn random_moving_capsule_placement(static_field: StaticField, moving_field: MovingField) -> bool {
+    let static_field: static_field::StaticField = static_field.into();
+    let moving_field = moving_field.instantiate_for(&static_field);
+    check_overlaps(&static_field, &moving_field) && check_element_partnership(&moving_field)
+}
+
+
 /// A random capsule or single capsule element
 ///
 #[derive(Copy, Clone, Debug)]

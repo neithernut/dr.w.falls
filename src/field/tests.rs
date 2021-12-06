@@ -327,3 +327,15 @@ where F: std::ops::Index<util::Position>,
             .and_then(|c| c.partner) == Some(d.rotated_cw().rotated_cw()))
 }
 
+
+/// Check that a position is only occupied in one of the fields
+///
+fn check_overlaps(
+    static_field: &static_field::StaticField,
+    moving_field: &moving_field::MovingField,
+) -> bool {
+    !util::ROWS
+        .flat_map(util::complete_row)
+        .any(|p| moving_field[p].is_some() && static_field[p].is_occupied())
+}
+

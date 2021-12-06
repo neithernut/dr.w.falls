@@ -269,7 +269,7 @@ impl<I> DoubleEndedIterator for RangeInclusive<I>
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.data.take().map(|(first, last)| {
-            let res = first.clone();
+            let res = last.clone();
             if first < last {
                 self.data = last.backward_checked(1).map(|last| (first, last))
             }

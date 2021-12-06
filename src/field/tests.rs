@@ -239,6 +239,39 @@ fn random_capsule_placement(field: StaticField) -> bool {
 }
 
 
+/// Moving field construction helper
+///
+#[derive(Clone, Debug)]
+struct MovingField {
+    capsules: Vec<RandomCapsule>,
+}
+
+impl MovingField {
+    /// Fill a moving field with capsules honouring occupied positions in a moving field
+    ///
+    pub fn instantiate_for(&self, field: &static_field::StaticField) -> moving_field::MovingField {
+        use util::PotentiallyColoured;
+
+        let mut res: moving_field::MovingField = Default::default();
+        self.capsules
+            .iter()
+            .cloned()
+            .for_each(|c| c.try_place_on_masked(&mut res, |p| field[p].colour().is_none()));
+        res
+    }
+}
+
+impl Arbitrary for MovingField {
+    fn arbitrary(g: &mut Gen) -> Self {
+        Self {capsules: Arbitrary::arbitrary(g)}
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        Box::new(self.capsules.shrink().map(|capsules| Self{capsules}))
+    }
+}
+
+
 /// A random capsule or single capsule element
 ///
 #[derive(Copy, Clone, Debug)]

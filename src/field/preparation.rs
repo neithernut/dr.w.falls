@@ -33,7 +33,7 @@ pub fn prepare_field(
         let rotation_dir = rng.gen();
 
         // Select an unoccupied position and fill it with a colour
-        let unfilled = area - (virus_count as usize);
+        let unfilled = area.checked_sub(virus_count as usize)?;
         rows.clone()
             .flat_map(util::complete_row)
             .filter(|p| field[*p].is_none())

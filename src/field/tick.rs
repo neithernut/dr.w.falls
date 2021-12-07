@@ -83,6 +83,13 @@ impl IntoIterator for Settled {
     }
 }
 
+#[cfg(test)]
+impl From<Vec<util::Position>> for Settled {
+    fn from(elements: Vec<util::Position>) -> Self {
+        Self {elements}
+    }
+}
+
 
 /// Eliminate elements
 ///

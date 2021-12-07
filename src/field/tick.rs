@@ -145,6 +145,13 @@ impl Eliminated {
     }
 }
 
+#[cfg(test)]
+impl From<HashSet<(util::Colour, RowOfFour)>> for Eliminated {
+    fn from(rows: HashSet<(util::Colour, RowOfFour)>) -> Self {
+        Self {rows}
+    }
+}
+
 
 /// Unsettle elements
 ///

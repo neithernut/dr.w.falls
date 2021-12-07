@@ -66,6 +66,23 @@ fn settlement_tick(static_field: StaticField, moving_field: MovingField) -> bool
 
 
 #[quickcheck]
+fn elimination_result(field: StaticField, settled: Vec<util::Position>) -> bool {
+    let mut field: static_field::StaticField = field.into();
+    tick::eliminate_elements(&mut field, &settled.into())
+        .positions()
+        .all(|p| !field[p].is_occupied())
+}
+
+
+#[quickcheck]
+fn elimination_element_partnership(field: StaticField, settled: Vec<util::Position>) -> bool {
+    let mut field: static_field::StaticField = field.into();
+    tick::eliminate_elements(&mut field, &settled.into());
+    check_element_partnership(&field)
+}
+
+
+#[quickcheck]
 fn preparation_vir_count(seed: u64, top_row: util::RowIndex, vir_count: u8) -> TestResult {
     use rand::SeedableRng;
 

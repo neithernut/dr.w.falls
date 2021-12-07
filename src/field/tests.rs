@@ -8,6 +8,64 @@ use super::*;
 
 
 #[quickcheck]
+fn settlement_settled_positions(
+    static_field: StaticField,
+    moving_field: MovingField,
+    bottom: util::RowIndex,
+) -> bool {
+    let mut static_field: static_field::StaticField = static_field.into();
+    let mut moving_field = moving_field.instantiate_for(&static_field);
+    tick::settle_elements(&mut moving_field, &mut static_field, bottom)
+        .0
+        .into_iter()
+        .all(|p| static_field[p].is_occupied() && moving_field[p].is_none())
+}
+
+
+#[quickcheck]
+fn settlement_lowest_unsettled(
+    static_field: StaticField,
+    moving_field: MovingField,
+    bottom: util::RowIndex,
+) -> bool {
+    use util::Step;
+
+    let mut static_field: static_field::StaticField = static_field.into();
+    let mut moving_field = moving_field.instantiate_for(&static_field);
+    let (_, lowest) = tick::settle_elements(&mut moving_field, &mut static_field, bottom);
+
+    let is_empty_to_bottom = |top| util::RangeInclusive::new(top, bottom)
+        .flat_map(util::complete_row)
+        .all(|p| moving_field[p].is_none());
+
+    if let Some(lowest) = lowest {
+        lowest.forward_checked(1).filter(|l| *l <= bottom).map(is_empty_to_bottom).unwrap_or(true)
+    } else {
+        is_empty_to_bottom(util::RowIndex::TOP_ROW)
+    }
+}
+
+
+#[quickcheck]
+fn settlement_element_partnership(static_field: StaticField, moving_field: MovingField) -> bool {
+    let mut static_field: static_field::StaticField = static_field.into();
+    let mut moving_field = moving_field.instantiate_for(&static_field);
+    tick::settle_elements(&mut moving_field, &mut static_field, util::RowIndex::BOTTOM_ROW);
+    check_element_partnership(&static_field) && check_element_partnership(&moving_field)
+}
+
+
+#[quickcheck]
+fn settlement_tick(static_field: StaticField, moving_field: MovingField) -> bool {
+    let mut static_field: static_field::StaticField = static_field.into();
+    let mut moving_field = moving_field.instantiate_for(&static_field);
+    tick::settle_elements(&mut moving_field, &mut static_field, util::RowIndex::BOTTOM_ROW);
+    moving_field.tick().fold((), |_, _| ());
+    check_overlaps(&static_field, &moving_field) && check_element_partnership(&moving_field)
+}
+
+
+#[quickcheck]
 fn preparation_vir_count(seed: u64, top_row: util::RowIndex, vir_count: u8) -> TestResult {
     use rand::SeedableRng;
 

@@ -83,6 +83,46 @@ fn elimination_element_partnership(field: StaticField, settled: Vec<util::Positi
 
 
 #[quickcheck]
+fn unsettlement_consistency(
+    static_field: StaticField,
+    rows: std::collections::HashSet<(util::Colour, items::RowOfFour)>,
+) -> bool {
+    let mut static_field: static_field::StaticField = static_field.into();
+    let mut moving_field = Default::default();
+    tick::unsettle_elements(&mut moving_field, &mut static_field, &rows.into());
+    check_overlaps(&static_field, &moving_field) &&
+        check_element_partnership(&static_field) &&
+        check_element_partnership(&moving_field)
+}
+
+
+#[quickcheck]
+fn unsettlement_tick(
+    static_field: StaticField,
+    rows: std::collections::HashSet<(util::Colour, items::RowOfFour)>,
+) -> bool {
+    let mut static_field: static_field::StaticField = static_field.into();
+    let mut moving_field = Default::default();
+
+    let eliminated: tick::Eliminated = rows.into();
+    // Taken from `eliminate_elements`
+    eliminated.positions().for_each(|p| static_field[p]
+        .take()
+        .into_element()
+        .and_then(|e| e.partner)
+        .and_then(|d| p + d)
+        .and_then(|p| static_field[p].as_element_mut())
+        .map(|e| e.partner = None)
+        .unwrap_or_default()
+    );
+
+    tick::unsettle_elements(&mut moving_field, &mut static_field, &eliminated);
+    moving_field.tick().fold((), |_, _| ());
+    check_overlaps(&static_field, &moving_field) && check_element_partnership(&moving_field)
+}
+
+
+#[quickcheck]
 fn preparation_vir_count(seed: u64, top_row: util::RowIndex, vir_count: u8) -> TestResult {
     use rand::SeedableRng;
 

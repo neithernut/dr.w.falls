@@ -8,6 +8,26 @@ use super::*;
 
 
 #[quickcheck]
+fn full_tick_consistency(static_field: StaticField, moving_field: MovingField) -> bool {
+    let mut static_field: static_field::StaticField = static_field.into();
+    let mut moving_field = moving_field.instantiate_for(&static_field);
+
+    let (settled, _) = tick::settle_elements(
+        &mut moving_field,
+        &mut static_field,
+        util::RowIndex::BOTTOM_ROW
+    );
+    let eliminated = tick::eliminate_elements(&mut static_field, &settled);
+    tick::unsettle_elements(&mut moving_field, &mut static_field, &eliminated);
+    moving_field.tick().fold((), |_, _| ());
+
+    check_overlaps(&static_field, &moving_field) &&
+        check_element_partnership(&static_field) &&
+        check_element_partnership(&moving_field)
+}
+
+
+#[quickcheck]
 fn settlement_settled_positions(
     static_field: StaticField,
     moving_field: MovingField,

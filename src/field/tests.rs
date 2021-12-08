@@ -304,6 +304,16 @@ fn moving_index(column: util::ColumnIndex, colour: util::Colour, ticks: u8, pre_
 
 
 #[quickcheck]
+fn tick_output(field: MovingField) -> bool {
+    use util::PotentiallyColoured;
+
+    let mut field = field.instantiate_for(&Default::default());
+    let updates: Vec<_> = field.tick().collect();
+    updates.into_iter().all(|(p, c)| field[p].colour() == c)
+}
+
+
+#[quickcheck]
 fn row_of_four_len(row: items::RowOfFour) -> bool {
     row.len() == row.count()
 }

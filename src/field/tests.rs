@@ -232,6 +232,44 @@ fn single_capsule_consitency(
 
 
 #[quickcheck]
+fn single_capsule_output(
+    movement: movement::Movement,
+    a: util::Colour,
+    b: util::Colour,
+    row: util::RowIndex,
+    static_field: StaticField,
+) -> TestResult {
+    use util::{PotentiallyColoured, Step};
+
+    let mut moving_field = moving_field::MovingField::default();
+    let static_field: static_field::StaticField = static_field.into();
+
+    let rmid = util::ColumnIndex::LEFTMOST_COLUMN.forward_checked((util::FIELD_WIDTH/2).into())
+        .expect("Failed to compute right target position for capsule");
+    let lmid = rmid.backward_checked(1)
+        .expect("Failed to compute left target position for capsule");
+    if static_field[(row, lmid)].is_occupied() || static_field[(row, rmid)].is_occupied() {
+        return TestResult::discard()
+    }
+
+    let (mut capsule, _) = movement::ControlledCapsule::spawn_capsule(&mut moving_field, &[a, b]);
+    let ticks = Step::steps_between(&util::RowIndex::TOP_ROW, &row).expect("Invalid row");
+    (0..ticks).for_each(|_| moving_field.tick().fold((), |_, _| ()));
+
+    let res = if let Some(updates) = capsule.apply_move(&mut moving_field, &static_field, movement) {
+        // Later updates overwrite earlier ones. Here we assume that later
+        // values will also overwrite earlier values for the same key when
+        // collecting into a `HashMap`.
+        let updates: std::collections::HashMap<_, _> = updates.iter().cloned().collect();
+        updates.into_iter().all(|(p, c)| moving_field[p].colour() == c)
+    } else {
+        moving_field[(row, lmid)].colour() == Some(a) && moving_field[(row, rmid)].colour() == Some(b)
+    };
+    TestResult::from_bool(res)
+}
+
+
+#[quickcheck]
 fn moving_single_capsule(
     column: util::ColumnIndex,
     target_row: util::RowIndex,

@@ -9,6 +9,10 @@ use tokio::task::JoinHandle;
 use tokio::sync::mpsc;
 
 
+#[cfg(test)]
+mod tests;
+
+
 /// Convenience type for player roster
 ///
 pub type Roster = Vec<Tag>;

@@ -1,8 +1,35 @@
 //! Player tests
 
-use quickcheck::{Arbitrary, Gen};
+use quickcheck::{Arbitrary, Gen, TestResult};
 
 use super::*;
+
+
+#[quickcheck]
+fn data_score(name: Name, addr: std::net::SocketAddr, add: Vec<u32>) -> std::io::Result<TestResult> {
+    if let Some(expected) = add.iter().try_fold(0, |a: u32, v| a.checked_add(*v)) {
+        let rt = tokio::runtime::Runtime::new()?;
+
+        let name: String = name.into();
+        let task = rt.spawn(std::future::pending());
+        let data = Data::new(name.clone(), addr, task);
+        add.into_iter().for_each(|v| { data.add_score(v); });
+        Ok(TestResult::from_bool(expected == data.score()))
+    } else {
+        Ok(TestResult::discard())
+    }
+}
+
+
+#[quickcheck]
+fn data_init(name: Name, addr: std::net::SocketAddr) -> std::io::Result<bool> {
+    let rt = tokio::runtime::Runtime::new()?;
+
+    let name: String = name.into();
+    let task = rt.spawn(std::future::pending());
+    let data = Data::new(name.clone(), addr, task);
+    Ok(data.name() == name && data.addr() == &addr && data.score() == 0 && data.is_connected())
+}
 
 
 /// Utility for generting a valid player name

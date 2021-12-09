@@ -35,3 +35,11 @@ impl Arbitrary for Name {
     }
 }
 
+
+#[quickcheck]
+fn name_gen(name: Name) -> bool {
+    name.0.chars().all(|c| c.is_ascii() && !c.is_ascii_control()) &&
+        name.0.len() > 0 &&
+        name.0.len() <= MAX_PLAYER_NAME_LEN
+}
+

@@ -6,6 +6,20 @@ use super::*;
 
 
 #[quickcheck]
+fn handle_drop(name: Name, addr: std::net::SocketAddr) -> std::io::Result<bool> {
+    let rt = tokio::runtime::Runtime::new()?;
+
+    let (notifier, mut receiver) = tokio::sync::mpsc::unbounded_channel();
+    let task = rt.spawn(std::future::pending());
+    let handle = Handle::new(Arc::new(Data::new(name.into(), addr, task)), notifier);
+
+    let tag = handle.tag();
+    drop(handle);
+    Ok(!tag.is_connected() && rt.block_on(receiver.recv()) == Some(tag))
+}
+
+
+#[quickcheck]
 fn tag_eq(name: Name, addr: std::net::SocketAddr) -> std::io::Result<bool> {
     let rt = tokio::runtime::Runtime::new()?;
 

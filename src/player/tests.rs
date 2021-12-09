@@ -6,6 +6,42 @@ use super::*;
 
 
 #[quickcheck]
+fn tag_eq(name: Name, addr: std::net::SocketAddr) -> std::io::Result<bool> {
+    let rt = tokio::runtime::Runtime::new()?;
+
+    let (notifier, _) = tokio::sync::mpsc::unbounded_channel();
+    let task = rt.spawn(std::future::pending());
+    let handle = Handle::new(Arc::new(Data::new(name.into(), addr, task)), notifier);
+
+    let tag1 = handle.tag();
+    let tag2 = handle.tag();
+    Ok(handle == tag1 && tag1 == tag2)
+}
+
+
+#[quickcheck]
+fn tag_neq(name: Name, addr: std::net::SocketAddr) -> std::io::Result<bool> {
+    let rt = tokio::runtime::Runtime::new()?;
+
+    let name: String = name.into();
+    let (notifier, _) = tokio::sync::mpsc::unbounded_channel();
+    let handle1 = {
+        let task = rt.spawn(std::future::pending());
+        Handle::new(Arc::new(Data::new(name.clone(), addr, task)), notifier.clone())
+    };
+
+    let handle2 = {
+        let task = rt.spawn(std::future::pending());
+        Handle::new(Arc::new(Data::new(name.clone(), addr, task)), notifier.clone())
+    };
+
+    let tag1 = handle1.tag();
+    let tag2 = handle2.tag();
+    Ok(tag1 != tag2)
+}
+
+
+#[quickcheck]
 fn data_score(name: Name, addr: std::net::SocketAddr, add: Vec<u32>) -> std::io::Result<TestResult> {
     if let Some(expected) = add.iter().try_fold(0, |a: u32, v| a.checked_add(*v)) {
         let rt = tokio::runtime::Runtime::new()?;

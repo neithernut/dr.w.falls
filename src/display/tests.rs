@@ -3,6 +3,16 @@
 use super::*;
 
 
+/// Decode all `DrawCommand`s from a given input
+///
+fn draw_commands_from(mut src: &[u8]) -> impl Iterator<Item = std::io::Result<commands::DrawCommand<'static>>> + '_ {
+    std::iter::from_fn(move || match decode_ansi(src) {
+        Ok((res, rem))  => { src = rem; res.map(Ok) },
+        Err(e)          => Some(Err(e))
+    })
+}
+
+
 /// Decode a `DrawCommand`
 ///
 /// Decode a single [commands::DrawCommand] from encoded ANSI provided as a

@@ -9,6 +9,9 @@ mod input;
 mod scores;
 mod static_text;
 
+#[cfg(test)]
+mod tests;
+
 
 pub use area::Area;
 pub use commands::DrawHandle;

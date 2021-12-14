@@ -113,7 +113,7 @@ impl codec::Encoder<DrawCommand<'_>> for ANSIEncoder {
 /// Representation of a draw command
 ///
 #[allow(dead_code)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum DrawCommand<'s> {
     /// Clear the entire screen
     ClearScreen,
@@ -203,7 +203,7 @@ impl Arbitrary for DrawCommand<'static> {
 /// Representation of some selected "Select Graphic Rendition" parameters
 ///
 #[allow(dead_code)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum SGR {
     /// Reset to default formatting
     Reset,
@@ -313,7 +313,7 @@ impl Arbitrary for SGR {
 
 /// Representation of intensity
 ///
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 #[allow(dead_code)]
 pub enum Intensity {
     Bold,
@@ -330,7 +330,7 @@ impl Arbitrary for Intensity {
 
 /// Representation of the basic colour supported by terminals
 ///
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 #[allow(dead_code)]
 pub enum Colour {
     Black,
@@ -390,7 +390,7 @@ impl Arbitrary for Colour {
 
 /// Representation of brightness
 ///
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 #[allow(dead_code)]
 pub enum Brightness {
     Dark,

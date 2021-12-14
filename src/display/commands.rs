@@ -7,6 +7,9 @@ use tokio_util::codec;
 
 use crate::util;
 
+#[cfg(test)]
+use quickcheck::{Arbitrary, Gen};
+
 
 /// Handle for drawing
 ///
@@ -159,6 +162,43 @@ impl<'s> From<Cow<'s, str>> for DrawCommand<'s> {
     }
 }
 
+#[cfg(test)]
+impl Arbitrary for DrawCommand<'static> {
+    fn arbitrary(g: &mut Gen) -> Self {
+        let opts: [&dyn Fn(&mut Gen) -> Self; 5] = [
+            &|_| Self::ClearScreen,
+            &|g| Self::SetPos(u8::arbitrary(g).into(), u8::arbitrary(g).into()),
+            &|g| Self::Format(Arbitrary::arbitrary(g)),
+            &|g| {
+                let len = u8::arbitrary(g) as usize + 1;
+                std::iter::from_fn(|| char::from_u32(u32::arbitrary(g) % (0x7F - 0x20) + 0x20))
+                    .take(len)
+                    .collect::<String>()
+                    .into()
+            },
+            &|g| Self::ShowCursor(Arbitrary::arbitrary(g)),
+        ];
+        g.choose(&opts).unwrap()(g)
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        match self {
+            Self::SetPos(n, m)  => Box::new((*n, *m).shrink().map(|(n, m)| Self::SetPos(n, m))),
+            Self::Format(v)     => Box::new(v.shrink().map(Self::Format)),
+            Self::Text(v)       => {
+                let res = v
+                    .to_string()
+                    .shrink()
+                    .filter(|n| n.len() > 0 && n.chars().all(|c| c.is_ascii() && !c.is_ascii_control()))
+                    .map(Into::into);
+                Box::new(res)
+            },
+            Self::ShowCursor(v) => Box::new(v.shrink().map(Self::ShowCursor)),
+            _ => Box::new(std::iter::empty()),
+        }
+    }
+}
+
 
 /// Representation of some selected "Select Graphic Rendition" parameters
 ///
@@ -242,6 +282,34 @@ impl From<Option<(Colour, Brightness)>> for SGR {
     }
 }
 
+#[cfg(test)]
+impl Arbitrary for SGR {
+    fn arbitrary(g: &mut Gen) -> Self {
+        let opts = [
+            Self::Reset,
+            Self::Intensity(Arbitrary::arbitrary(g)),
+            Self::Underline(Arbitrary::arbitrary(g)),
+            Self::Blink(Arbitrary::arbitrary(g)),
+            Self::Strike(Arbitrary::arbitrary(g)),
+            Self::FGColour(Arbitrary::arbitrary(g)),
+            Self::BGColour(Arbitrary::arbitrary(g)),
+        ];
+        *g.choose(&opts).unwrap()
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        match self {
+            Self::Intensity(v)  => Box::new(v.shrink().map(Self::Intensity)),
+            Self::Underline(v)  => Box::new(v.shrink().map(Self::Underline)),
+            Self::Blink(v)      => Box::new(v.shrink().map(Self::Blink)),
+            Self::Strike(v)     => Box::new(v.shrink().map(Self::Strike)),
+            Self::FGColour(v)   => Box::new(v.shrink().map(Self::FGColour)),
+            Self::BGColour(v)   => Box::new(v.shrink().map(Self::BGColour)),
+            _ => Box::new(std::iter::empty()),
+        }
+    }
+}
+
 
 /// Representation of intensity
 ///
@@ -250,6 +318,13 @@ impl From<Option<(Colour, Brightness)>> for SGR {
 pub enum Intensity {
     Bold,
     Faint,
+}
+
+#[cfg(test)]
+impl Arbitrary for Intensity {
+    fn arbitrary(g: &mut Gen) -> Self {
+        *g.choose(&[Self::Bold, Self::Faint]).unwrap()
+    }
 }
 
 
@@ -295,6 +370,23 @@ impl From<util::Colour> for Colour {
     }
 }
 
+#[cfg(test)]
+impl Arbitrary for Colour {
+    fn arbitrary(g: &mut Gen) -> Self {
+        *g.choose(&[
+            Self::Black,
+            Self::Red,
+            Self::Green,
+            Self::Yellow,
+            Self::Blue,
+            Self::Magenta,
+            Self::Cyan,
+            Self::White,
+        ]).unwrap()
+    }
+}
+
+
 
 /// Representation of brightness
 ///
@@ -319,6 +411,13 @@ impl Brightness {
 impl Default for Brightness {
     fn default() -> Self {
         Self::Dark
+    }
+}
+
+#[cfg(test)]
+impl Arbitrary for Brightness {
+    fn arbitrary(g: &mut Gen) -> Self {
+        *g.choose(&[Self::Dark, Self::Light]).unwrap()
     }
 }
 

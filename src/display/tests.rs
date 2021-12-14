@@ -1,6 +1,32 @@
 //! Display tests
 
+use quickcheck::TestResult;
+
 use super::*;
+
+
+#[quickcheck]
+fn ansi_encode_decode(orig: Vec<commands::DrawCommand<'static>>) -> std::io::Result<TestResult> {
+    use futures::SinkExt;
+
+    use commands::DrawCommand as DC;
+
+    if orig.windows(2).any(|w| if let [DC::Text(_), DC::Text(_)] = w { true } else { false }) {
+        return Ok(TestResult::discard())
+    }
+
+    let rt = tokio::runtime::Runtime::new()?;
+
+    let mut buf = Vec::new();
+
+    let mut write = tokio_util::codec::FramedWrite::new(&mut buf, super::commands::ANSIEncoder::new());
+    rt.block_on(write.send_all(&mut futures::stream::iter(orig.iter().cloned().map(Ok))))?;
+
+    let res = draw_commands_from(buf.as_ref())
+        .try_fold(Vec::new(), |mut a, c| { a.push(c?); Ok(a) })
+        .map(|r| TestResult::from_bool(orig == r));
+    res
+}
 
 
 /// Decode all `DrawCommand`s from a given input

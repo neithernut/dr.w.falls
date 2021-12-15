@@ -6,6 +6,34 @@ use super::*;
 
 
 #[quickcheck]
+fn draw_handle_drop(
+    mut data: Vec<commands::DrawCommand<'static>>,
+    term: Vec<commands::DrawCommand<'static>>,
+) -> std::io::Result<TestResult> {
+    use futures::SinkExt;
+
+    use commands::{DrawCommand as DC, SinkProxy};
+
+    let rt = tokio::runtime::Runtime::new()?;
+
+    let mut buf = Vec::new();
+
+    let mut handle = commands::draw_handle(&mut buf, term.as_ref());
+    rt.block_on(handle.as_sink().send_all(&mut futures::stream::iter(data.iter().cloned().map(Ok))))?;
+    drop(handle);
+
+    data.extend(term);
+    if data.windows(2).any(|w| if let [DC::Text(_), DC::Text(_)] = w { true } else { false }) {
+        Ok(TestResult::discard())
+    } else {
+        draw_commands_from(buf.as_ref())
+            .try_fold(Vec::new(), |mut a, c| { a.push(c?); Ok(a) })
+            .map(|r| TestResult::from_bool(data == r))
+    }
+}
+
+
+#[quickcheck]
 fn ansi_encode_decode(orig: Vec<commands::DrawCommand<'static>>) -> std::io::Result<TestResult> {
     use futures::SinkExt;
 

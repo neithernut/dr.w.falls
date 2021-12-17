@@ -111,12 +111,13 @@ where H: BorrowMut<DrawHandle<'a, W>>,
     /// will be taken from the area on which the function is called.
     ///
     pub fn split_top(&mut self, rows: u16) -> Area<'a, &'_ mut DrawHandle<'a, W>, W> {
+        let row_a = self.row_a;
         let row_b = std::cmp::min(self.row_a.saturating_add(rows), self.row_b);
         self.row_a = std::cmp::min(row_b, self.row_b);
 
         Area {
             handle: self.handle.borrow_mut(),
-            row_a: self.row_a,
+            row_a,
             col_a: self.col_a,
             row_b,
             col_b: self.col_b,
@@ -130,13 +131,14 @@ where H: BorrowMut<DrawHandle<'a, W>>,
     /// columns will be taken from the area on which the function is called.
     ///
     pub fn split_left(&mut self, cols: u16) -> Area<'a, &'_ mut DrawHandle<'a, W>, W> {
+        let col_a = self.col_a;
         let col_b = std::cmp::min(self.col_a.saturating_add(cols), self.col_b);
         self.col_a = std::cmp::min(col_b, self.col_b);
 
         Area {
             handle: self.handle.borrow_mut(),
             row_a: self.row_a,
-            col_a: self.col_a,
+            col_a,
             row_b: self.row_b,
             col_b,
             phantom: Default::default(),

@@ -6,6 +6,36 @@ use super::*;
 
 
 #[quickcheck]
+fn area_split_top(area: Area, split_rows: u16) -> bool {
+    let mut area = area.instantiate(commands::draw_handle(tokio::io::sink(), &[]));
+    let rows = area.rows();
+
+    let sub = area.split_top(split_rows);
+    let sub_rows = sub.rows();
+    let sub_cols = sub.cols();
+
+    sub_rows == std::cmp::min(rows, split_rows) &&
+        area.rows() + sub_rows == rows &&
+        area.cols() == sub_cols
+}
+
+
+#[quickcheck]
+fn area_split_left(area: Area, split_cols: u16) -> bool {
+    let mut area = area.instantiate(commands::draw_handle(tokio::io::sink(), &[]));
+    let cols = area.cols();
+
+    let sub = area.split_left(split_cols);
+    let sub_rows = sub.rows();
+    let sub_cols = sub.cols();
+
+    sub_cols == std::cmp::min(cols, split_cols) &&
+        area.cols() + sub_cols == cols &&
+        area.rows() == sub_rows
+}
+
+
+#[quickcheck]
 fn draw_handle_drop(
     mut data: Vec<commands::DrawCommand<'static>>,
     term: Vec<commands::DrawCommand<'static>>,

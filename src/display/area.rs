@@ -148,7 +148,7 @@ where H: BorrowMut<DrawHandle<'a, W>>,
     /// Remove the given number of rows from the top
     ///
     pub fn pad_top(self, rows: u16) -> Self {
-        Self {row_a: std::cmp::max(self.row_a.saturating_add(rows), self.row_b), ..self}
+        Self {row_a: std::cmp::min(self.row_a.saturating_add(rows), self.row_b), ..self}
     }
 
     /// Remove the given number of rows from the bottom
@@ -160,7 +160,7 @@ where H: BorrowMut<DrawHandle<'a, W>>,
     /// Remove the given number of columns from the left
     ///
     pub fn pad_left(self, cols: u16) -> Self {
-        Self {col_a: std::cmp::max(self.col_a.saturating_add(cols), self.col_b), ..self}
+        Self {col_a: std::cmp::min(self.col_a.saturating_add(cols), self.col_b), ..self}
     }
 
     /// Remove the given number of columns from the right

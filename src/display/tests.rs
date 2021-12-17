@@ -36,6 +36,54 @@ fn area_split_left(area: Area, split_cols: u16) -> bool {
 
 
 #[quickcheck]
+fn area_pad_top(area: Area, padding: u16) -> bool {
+    let area = area.instantiate(commands::draw_handle(tokio::io::sink(), &[]));
+    let rows = area.rows();
+    let cols = area.cols();
+
+    let area = area.pad_top(padding);
+
+    area.rows() == rows.saturating_sub(padding) && cols == area.cols()
+}
+
+
+#[quickcheck]
+fn area_pad_bottom(area: Area, padding: u16) -> bool {
+    let area = area.instantiate(commands::draw_handle(tokio::io::sink(), &[]));
+    let rows = area.rows();
+    let cols = area.cols();
+
+    let area = area.pad_bottom(padding);
+
+    area.rows() == rows.saturating_sub(padding) && cols == area.cols()
+}
+
+
+#[quickcheck]
+fn area_pad_left(area: Area, padding: u16) -> bool {
+    let area = area.instantiate(commands::draw_handle(tokio::io::sink(), &[]));
+    let rows = area.rows();
+    let cols = area.cols();
+
+    let area = area.pad_left(padding);
+
+    area.cols() == cols.saturating_sub(padding) && rows == area.rows()
+}
+
+
+#[quickcheck]
+fn area_pad_right(area: Area, padding: u16) -> bool {
+    let area = area.instantiate(commands::draw_handle(tokio::io::sink(), &[]));
+    let rows = area.rows();
+    let cols = area.cols();
+
+    let area = area.pad_right(padding);
+
+    area.cols() == cols.saturating_sub(padding) && rows == area.rows()
+}
+
+
+#[quickcheck]
 fn draw_handle_drop(
     mut data: Vec<commands::DrawCommand<'static>>,
     term: Vec<commands::DrawCommand<'static>>,

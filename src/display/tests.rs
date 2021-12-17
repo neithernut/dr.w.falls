@@ -101,6 +101,54 @@ impl Arbitrary for Area {
 }
 
 
+/// Dummy [area::Entity] for testing entity placement
+///
+#[derive(Copy, Clone, Debug)]
+struct DummyEntity {
+    rows: u16,
+    cols: u16,
+}
+
+impl area::Entity for DummyEntity {
+    type PlacedEntity = DummyPlaced;
+
+    fn rows(&self) -> u16 {
+        self.rows
+    }
+
+    fn cols(&self) -> u16 {
+        self.cols
+    }
+
+    fn init(&self, _pos: (u16, u16)) -> area::PlacedInit {
+        Vec::new().into()
+    }
+
+    fn place(self, pos: (u16, u16)) -> Self::PlacedEntity {
+        let (base_row, base_col) = pos;
+        DummyPlaced {base_row, base_col, rows: self.rows, cols: self.cols}
+    }
+}
+
+impl Arbitrary for DummyEntity {
+    fn arbitrary(g: &mut Gen) -> Self {
+        Self {rows: Arbitrary::arbitrary(g), cols: Arbitrary::arbitrary(g)}
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        Box::new((self.rows, self.cols).shrink().map(|(rows, cols)| Self{rows, cols}))
+    }
+}
+
+
+struct DummyPlaced {
+    pub base_row: u16,
+    pub base_col: u16,
+    pub rows: u16,
+    pub cols: u16,
+}
+
+
 /// Decode all `DrawCommand`s from a given input
 ///
 fn draw_commands_from(mut src: &[u8]) -> impl Iterator<Item = std::io::Result<commands::DrawCommand<'static>>> + '_ {

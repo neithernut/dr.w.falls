@@ -1,6 +1,6 @@
 //! Display tests
 
-use quickcheck::TestResult;
+use quickcheck::{Arbitrary, Gen, TestResult};
 
 use super::*;
 
@@ -54,6 +54,50 @@ fn ansi_encode_decode(orig: Vec<commands::DrawCommand<'static>>) -> std::io::Res
         .try_fold(Vec::new(), |mut a, c| { a.push(c?); Ok(a) })
         .map(|r| TestResult::from_bool(orig == r));
     res
+}
+
+
+/// Utility for generating random [area::Area]s
+///
+#[derive(Copy, Clone, Debug)]
+struct Area {
+    row_a: u16,
+    col_a: u16,
+    row_b: u16,
+    col_b: u16,
+}
+
+impl Area {
+    pub fn instantiate<W: tokio::io::AsyncWrite + Unpin>(
+        self,
+        handle: DrawHandle<'static, W>,
+    ) -> area::Area<'static, DrawHandle<'static, W>, W> {
+        area::create_area_full(handle, self.row_a, self.col_a, self.row_b, self.col_b)
+    }
+}
+
+impl Arbitrary for Area {
+    fn arbitrary(g: &mut Gen) -> Self {
+        let row_x = Arbitrary::arbitrary(g);
+        let row_y = Arbitrary::arbitrary(g);
+        let col_x = Arbitrary::arbitrary(g);
+        let col_y = Arbitrary::arbitrary(g);
+
+        Self {
+            row_a: std::cmp::min(row_x, row_y),
+            col_a: std::cmp::min(col_x, col_y),
+            row_b: std::cmp::max(row_x, row_y),
+            col_b: std::cmp::max(col_x, col_y),
+        }
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        let res = (self.row_a, self.col_a, self.row_b, self.col_b)
+            .shrink()
+            .filter(|(row_a, col_a, row_b, col_b)| row_a <= row_b && col_a <= col_b)
+            .map(|(row_a, col_a, row_b, col_b)| Self{row_a, col_a, row_b, col_b});
+        Box::new(res)
+    }
 }
 
 

@@ -70,6 +70,20 @@ pub fn create_area<'a, W: AsyncWrite + Unpin>(
 }
 
 
+/// Create an area
+///
+#[cfg(test)]
+pub fn create_area_full<'a, W: AsyncWrite + Unpin>(
+    handle: DrawHandle<'a, W>,
+    row_a: u16,
+    col_a: u16,
+    row_b: u16,
+    col_b: u16,
+) -> Area<'a, DrawHandle<'a, W>, W> {
+    Area {handle, row_a, col_a, row_b, col_b, phantom: Default::default()}
+}
+
+
 /// Representation of an area
 ///
 pub struct Area<'a, H, W>

@@ -69,12 +69,6 @@ impl<W: AsyncWrite + Send + Unpin> Display<W> {
         handle.as_sink().send(DrawCommand::ShowCursor(false)).await.map(|_| handle)
     }
 
-    /// Retrieve the inner writer
-    ///
-    pub fn into_writer(self) -> W {
-        self.write
-    }
-
     /// Retrieve the number of rows
     ///
     /// This includes the two reserved rows at the bottom of the display.

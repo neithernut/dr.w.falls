@@ -17,12 +17,12 @@ use quickcheck::{Arbitrary, Gen};
 /// performing predefined operations when dropped. It is intended to be opaque
 /// to code outside the `display` module.
 ///
-pub struct DrawHandle<'a, W: AsyncWrite + Unpin> {
+pub struct DrawHandle<'a, W: AsyncWrite + Send + Unpin> {
     write: codec::FramedWrite<W, ANSIEncoder>,
     termination_seq: &'a [DrawCommand<'a>],
 }
 
-impl<'a, W: AsyncWrite + Unpin> Drop for DrawHandle<'a, W> {
+impl<'a, W: AsyncWrite + Send + Unpin> Drop for DrawHandle<'a, W> {
     fn drop(&mut self) {
         use futures::SinkExt;
         use futures::stream::iter;
@@ -43,7 +43,7 @@ impl<'a, W: AsyncWrite + Unpin> Drop for DrawHandle<'a, W> {
 /// The handle will write encoded commands via the given `write`. When dropped,
 /// it will issue the given termination sequence.
 ///
-pub fn draw_handle<'a, W: AsyncWrite + Unpin>(
+pub fn draw_handle<'a, W: AsyncWrite + Send + Unpin>(
     write: W,
     termination_seq: &'a [DrawCommand<'static>],
 ) -> DrawHandle<'a, W> {
@@ -66,7 +66,7 @@ pub trait SinkProxy {
     fn as_sink(&mut self) -> &mut Self::Sink;
 }
 
-impl<'a, W: AsyncWrite + Unpin> SinkProxy for DrawHandle<'a, W> {
+impl<'a, W: AsyncWrite + Send + Unpin> SinkProxy for DrawHandle<'a, W> {
     type Sink = codec::FramedWrite<W, ANSIEncoder>;
 
     fn as_sink(&mut self) -> &mut Self::Sink {

@@ -11,14 +11,14 @@ use super::commands::{self, DrawCommand, DrawHandle, SGR};
 /// Instances of this type represent the output component of a (possibly remote)
 /// terminal.
 ///
-pub struct Display<W: AsyncWrite + Unpin> {
+pub struct Display<W: AsyncWrite + Send + Unpin> {
     write: W,
     rows: u16,
     cols: u16,
     termination_seq: [DrawCommand<'static>; 3],
 }
 
-impl<W: AsyncWrite + Unpin> Display<W> {
+impl<W: AsyncWrite + Send + Unpin> Display<W> {
     /// Create a new display
     ///
     /// Create a new display using the given writer, with the given geometry.

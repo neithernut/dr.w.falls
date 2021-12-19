@@ -70,7 +70,7 @@ impl InputUpdater {
     ///
     pub async fn update(
         &mut self,
-        draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Unpin>,
+        draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Send + Unpin>,
         input: char,
     ) -> std::io::Result<Option<&str>> {
         use futures::SinkExt;
@@ -122,7 +122,7 @@ impl InputUpdater {
     ///
     pub async fn clear(
         &mut self,
-        draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Unpin>,
+        draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Send + Unpin>,
     ) -> std::io::Result<String> {
 
         use futures::SinkExt;

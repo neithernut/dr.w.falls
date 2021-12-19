@@ -45,7 +45,7 @@ impl<'a, W: AsyncWrite + Unpin> Drop for DrawHandle<'a, W> {
 ///
 pub fn draw_handle<'a, W: AsyncWrite + Unpin>(
     write: W,
-    termination_seq: &'a [DrawCommand<'a>],
+    termination_seq: &'a [DrawCommand<'static>],
 ) -> DrawHandle<'a, W> {
     DrawHandle {write: codec::FramedWrite::new(write, ANSIEncoder::new()), termination_seq}
 }

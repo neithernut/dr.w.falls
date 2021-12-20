@@ -98,6 +98,62 @@ fn area_pad_right(area: Area, padding: u16) -> std::io::Result<bool> {
 
 
 #[quickcheck]
+fn area_place_top(area: Area, entity: DummyEntity) -> std::io::Result<bool> {
+    let res = tokio::runtime::Runtime::new()?.block_on(async {
+        let mut area = area.instantiate(handle_from_bare(tokio::io::sink(), &[]).await);
+        area.place_top(entity).await
+    });
+
+    match res {
+        Ok(placed) => Ok(
+            placed.base_row == area.row_a &&
+            placed.base_col >= area.col_a &&
+            placed.rows <= area.row_b - area.row_a &&
+            placed.cols <= area.col_b - area.col_a
+        ),
+        Err(_) => Ok(entity.rows >= area.row_b - area.row_a || entity.cols >= area.col_b - area.col_a),
+    }
+}
+
+
+#[quickcheck]
+fn area_place_left(area: Area, entity: DummyEntity) -> std::io::Result<bool> {
+    let res = tokio::runtime::Runtime::new()?.block_on(async {
+        let mut area = area.instantiate(handle_from_bare(tokio::io::sink(), &[]).await);
+        area.place_left(entity).await
+    });
+
+    match res {
+        Ok(placed) => Ok(
+            placed.base_row >= area.row_a &&
+            placed.base_col == area.col_a &&
+            placed.rows <= area.row_b - area.row_a &&
+            placed.cols <= area.col_b - area.col_a
+        ),
+        Err(_) => Ok(entity.rows >= area.row_b - area.row_a || entity.cols >= area.col_b - area.col_a),
+    }
+}
+
+
+#[quickcheck]
+fn area_place_center(area: Area, entity: DummyEntity) -> std::io::Result<bool> {
+    let res = tokio::runtime::Runtime::new()?.block_on(async {
+        area.instantiate(handle_from_bare(tokio::io::sink(), &[]).await).place_center(entity).await
+    });
+
+    match res {
+        Ok(placed) => Ok(
+            placed.base_row >= area.row_a &&
+            placed.base_col >= area.col_a &&
+            placed.rows <= area.row_b - area.row_a &&
+            placed.cols <= area.col_b - area.col_a
+        ),
+        Err(_) => Ok(entity.rows >= area.row_b - area.row_a || entity.cols >= area.col_b - area.col_a),
+    }
+}
+
+
+#[quickcheck]
 fn draw_handle_drop(
     mut data: Vec<commands::DrawCommand<'static>>,
     term: Vec<commands::DrawCommand<'static>>,

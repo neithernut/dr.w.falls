@@ -66,7 +66,7 @@ impl TextUpdater {
     ///
     pub async fn clear(
         &self,
-        draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Unpin>,
+        draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Send + Unpin>,
     ) -> std::io::Result<()> {
         self.update(draw_handle, std::iter::empty::<&'static str>()).await
     }
@@ -81,7 +81,7 @@ impl TextUpdater {
     ///
     pub async fn update(
         &self,
-        draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Unpin>,
+        draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Send + Unpin>,
         lines: impl IntoIterator<Item = impl std::fmt::Display>,
     ) -> std::io::Result<()> {
         use std::iter::once;
@@ -113,7 +113,7 @@ impl TextUpdater {
     ///
     pub async fn update_single(
         &self,
-        draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Unpin>,
+        draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Send + Unpin>,
         line: impl std::fmt::Display,
     ) -> std::io::Result<()> {
         self.update(draw_handle, std::iter::once(line)).await

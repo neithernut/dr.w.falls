@@ -99,7 +99,7 @@ impl FieldUpdater {
     ///
     pub async fn place_viruses(
         &self,
-        draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Unpin>,
+        draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Send + Unpin>,
         viruses: impl IntoIterator<Item=(util::Position, util::Colour)>,
         vir_sym: VirusSym,
     ) -> std::io::Result<()> {
@@ -119,7 +119,7 @@ impl FieldUpdater {
     ///
     pub async fn place_next_elements(
         &self,
-        draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Unpin>,
+        draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Send + Unpin>,
         capsule: &[util::Colour; 2],
     ) -> std::io::Result<()> {
         let row = self.base_row + 1;
@@ -143,7 +143,7 @@ impl FieldUpdater {
     ///
     pub async fn update(
         &self,
-        draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Unpin>,
+        draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Send + Unpin>,
         updates: impl IntoIterator<Item=crate::field::Update>,
     ) -> std::io::Result<()> {
         use std::iter::once;

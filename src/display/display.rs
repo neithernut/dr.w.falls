@@ -1,6 +1,10 @@
 //! Display type
 
+use std::sync::Arc;
+
 use tokio::io::AsyncWrite;
+use tokio::sync::Mutex;
+use tokio_util::codec::FramedWrite;
 
 use super::area;
 use super::commands::{self, DrawCommand, DrawHandle, SGR};
@@ -11,14 +15,14 @@ use super::commands::{self, DrawCommand, DrawHandle, SGR};
 /// Instances of this type represent the output component of a (possibly remote)
 /// terminal.
 ///
-pub struct Display<W: AsyncWrite + Unpin> {
-    write: W,
+pub struct Display<W: AsyncWrite + Send + Unpin + 'static> {
+    write: Arc<Mutex<FramedWrite<W, commands::ANSIEncoder>>>,
     rows: u16,
     cols: u16,
     termination_seq: [DrawCommand<'static>; 3],
 }
 
-impl<W: AsyncWrite + Unpin> Display<W> {
+impl<W: AsyncWrite + Send + Unpin + 'static> Display<W> {
     /// Create a new display
     ///
     /// Create a new display using the given writer, with the given geometry.
@@ -27,6 +31,7 @@ impl<W: AsyncWrite + Unpin> Display<W> {
     /// second to last row will host the resting position.
     ///
     pub fn new(write: W, rows: u16, cols: u16) -> Self {
+        let write = Arc::new(FramedWrite::new(write, commands::ANSIEncoder::new()).into());
         let termination_seq = [
             SGR::Reset.into(),
             DrawCommand::SetPos(rows.saturating_sub(2), 0),
@@ -43,7 +48,7 @@ impl<W: AsyncWrite + Unpin> Display<W> {
     ///
     /// Prior to returning the area, this function will clear the entire screen.
     ///
-    pub async fn area(&mut self) -> std::io::Result<area::Area<'_, DrawHandle<'_, &mut W>, &mut W>> {
+    pub async fn area(&mut self) -> std::io::Result<area::Area<'_, DrawHandle<'_, W>, W>> {
         use futures::SinkExt;
 
         use commands::SinkProxy;
@@ -60,19 +65,16 @@ impl<W: AsyncWrite + Unpin> Display<W> {
     /// The returned handle may be used to update items placed on a previously
     /// retrieved area for the same display.
     ///
-    pub async fn handle(&mut self) -> std::io::Result<DrawHandle<'_, &mut W>> {
+    pub async fn handle(&mut self) -> std::io::Result<DrawHandle<'_, W>> {
         use futures::SinkExt;
 
         use commands::SinkProxy;
 
-        let mut handle = commands::draw_handle(&mut self.write, self.termination_seq.as_ref());
+        let mut handle = commands::draw_handle(
+            self.write.clone().lock_owned().await,
+            self.termination_seq.as_ref(),
+        );
         handle.as_sink().send(DrawCommand::ShowCursor(false)).await.map(|_| handle)
-    }
-
-    /// Retrieve the inner writer
-    ///
-    pub fn into_writer(self) -> W {
-        self.write
     }
 
     /// Retrieve the number of rows

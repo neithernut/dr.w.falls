@@ -61,7 +61,7 @@ impl<'a> From<Vec<DrawCommand<'a>>> for PlacedInit<'a> {
 
 /// Create an area
 ///
-pub fn create_area<'a, W: AsyncWrite + Unpin>(
+pub fn create_area<'a, W: AsyncWrite + Send + Unpin>(
     handle: DrawHandle<'a, W>,
     rows: u16,
     cols: u16
@@ -73,7 +73,7 @@ pub fn create_area<'a, W: AsyncWrite + Unpin>(
 /// Create an area
 ///
 #[cfg(test)]
-pub fn create_area_full<'a, W: AsyncWrite + Unpin>(
+pub fn create_area_full<'a, W: AsyncWrite + Send + Unpin>(
     handle: DrawHandle<'a, W>,
     row_a: u16,
     col_a: u16,
@@ -88,7 +88,7 @@ pub fn create_area_full<'a, W: AsyncWrite + Unpin>(
 ///
 pub struct Area<'a, H, W>
 where H: BorrowMut<DrawHandle<'a, W>>,
-      W: AsyncWrite + Unpin,
+      W: AsyncWrite + Send + Unpin + 'static,
 {
     /// Handle used for drawing initial entites
     handle: H,
@@ -105,7 +105,7 @@ where H: BorrowMut<DrawHandle<'a, W>>,
 
 impl<'a, H, W> Area<'a, H, W>
 where H: BorrowMut<DrawHandle<'a, W>>,
-      W: AsyncWrite + Unpin,
+      W: AsyncWrite + Send + Unpin + 'static,
 {
     /// Retrieve the number of rows covered by the area
     ///

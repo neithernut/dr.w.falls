@@ -17,7 +17,7 @@ use crate::player;
 ///
 pub async fn serve<P>(
     control: Ports,
-    display: &mut display::Display<impl io::AsyncWrite + Unpin>,
+    display: &mut display::Display<impl io::AsyncWrite + Send + Unpin>,
     mut input: impl futures::stream::Stream<Item = Result<char, super::ConnTaskError>> + Unpin,
     mut phase: super::TransitionWatcher<P, impl Fn(&P) -> bool>,
     me: &player::Handle,

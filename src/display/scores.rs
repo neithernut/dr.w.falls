@@ -95,7 +95,7 @@ impl BoardUpdater {
     ///
     pub async fn update<'e, E: Entry + 'e>(
         &mut self,
-        draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Unpin>,
+        draw_handle: &mut DrawHandle<'_, impl AsyncWrite + Send + Unpin>,
         entries: impl IntoIterator<Item = &'e E>,
         highlight: impl Fn (&player::Tag) -> bool,
     ) -> std::io::Result<()> {

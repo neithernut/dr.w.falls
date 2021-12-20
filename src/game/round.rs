@@ -21,7 +21,7 @@ use crate::util;
 ///
 pub async fn serve<P>(
     control: Ports,
-    display: &mut display::Display<impl io::AsyncWrite + Unpin>,
+    display: &mut display::Display<impl io::AsyncWrite + Send + Unpin>,
     mut input: impl futures::stream::Stream<Item = Result<char, super::ConnTaskError>> + Unpin,
     mut phase: super::TransitionWatcher<P, impl Fn(&P) -> bool>,
     me: &player::Handle,
@@ -318,7 +318,7 @@ impl Actor {
     ///
     pub async fn r#move(
         &mut self,
-        display_handle: &mut display::DrawHandle<'_, impl io::AsyncWrite + Unpin>,
+        display_handle: &mut display::DrawHandle<'_, impl io::AsyncWrite + Send + Unpin>,
         field: &display::FieldUpdater,
         movement: field::Movement,
     ) -> Result<(), super::ConnTaskError> {
@@ -349,7 +349,7 @@ impl Actor {
     ///
     pub async fn tick(
         &mut self,
-        display_handle: &mut display::DrawHandle<'_, impl io::AsyncWrite + Unpin>,
+        display_handle: &mut display::DrawHandle<'_, impl io::AsyncWrite + Send + Unpin>,
         field: &display::FieldUpdater,
         rng: &mut impl rand::Rng,
     ) -> Result<(), super::ConnTaskError> {

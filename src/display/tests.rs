@@ -1,85 +1,99 @@
 //! Display tests
 
+use std::sync::Arc;
+
 use quickcheck::{Arbitrary, Gen, TestResult};
 
 use super::*;
 
 
 #[quickcheck]
-fn area_split_top(area: Area, split_rows: u16) -> bool {
-    let mut area = area.instantiate(commands::draw_handle(tokio::io::sink(), &[]));
-    let rows = area.rows();
+fn area_split_top(area: Area, split_rows: u16) -> std::io::Result<bool> {
+    Ok(tokio::runtime::Runtime::new()?.block_on(async {
+        let mut area = area.instantiate(handle_from_bare(tokio::io::sink(), &[]).await);
+        let rows = area.rows();
 
-    let sub = area.split_top(split_rows);
-    let sub_rows = sub.rows();
-    let sub_cols = sub.cols();
+        let sub = area.split_top(split_rows);
+        let sub_rows = sub.rows();
+        let sub_cols = sub.cols();
 
-    sub_rows == std::cmp::min(rows, split_rows) &&
-        area.rows() + sub_rows == rows &&
-        area.cols() == sub_cols
+        sub_rows == std::cmp::min(rows, split_rows) &&
+            area.rows() + sub_rows == rows &&
+            area.cols() == sub_cols
+    }))
 }
 
 
 #[quickcheck]
-fn area_split_left(area: Area, split_cols: u16) -> bool {
-    let mut area = area.instantiate(commands::draw_handle(tokio::io::sink(), &[]));
-    let cols = area.cols();
+fn area_split_left(area: Area, split_cols: u16) -> std::io::Result<bool> {
+    Ok(tokio::runtime::Runtime::new()?.block_on(async {
+        let mut area = area.instantiate(handle_from_bare(tokio::io::sink(), &[]).await);
+        let cols = area.cols();
 
-    let sub = area.split_left(split_cols);
-    let sub_rows = sub.rows();
-    let sub_cols = sub.cols();
+        let sub = area.split_left(split_cols);
+        let sub_rows = sub.rows();
+        let sub_cols = sub.cols();
 
-    sub_cols == std::cmp::min(cols, split_cols) &&
-        area.cols() + sub_cols == cols &&
-        area.rows() == sub_rows
+        sub_cols == std::cmp::min(cols, split_cols) &&
+            area.cols() + sub_cols == cols &&
+            area.rows() == sub_rows
+    }))
 }
 
 
 #[quickcheck]
-fn area_pad_top(area: Area, padding: u16) -> bool {
-    let area = area.instantiate(commands::draw_handle(tokio::io::sink(), &[]));
-    let rows = area.rows();
-    let cols = area.cols();
+fn area_pad_top(area: Area, padding: u16) -> std::io::Result<bool> {
+    Ok(tokio::runtime::Runtime::new()?.block_on(async {
+        let area = area.instantiate(handle_from_bare(tokio::io::sink(), &[]).await);
+        let rows = area.rows();
+        let cols = area.cols();
 
-    let area = area.pad_top(padding);
+        let area = area.pad_top(padding);
 
-    area.rows() == rows.saturating_sub(padding) && cols == area.cols()
+        area.rows() == rows.saturating_sub(padding) && cols == area.cols()
+    }))
 }
 
 
 #[quickcheck]
-fn area_pad_bottom(area: Area, padding: u16) -> bool {
-    let area = area.instantiate(commands::draw_handle(tokio::io::sink(), &[]));
-    let rows = area.rows();
-    let cols = area.cols();
+fn area_pad_bottom(area: Area, padding: u16) -> std::io::Result<bool> {
+    Ok(tokio::runtime::Runtime::new()?.block_on(async {
+        let area = area.instantiate(handle_from_bare(tokio::io::sink(), &[]).await);
+        let rows = area.rows();
+        let cols = area.cols();
 
-    let area = area.pad_bottom(padding);
+        let area = area.pad_bottom(padding);
 
-    area.rows() == rows.saturating_sub(padding) && cols == area.cols()
+        area.rows() == rows.saturating_sub(padding) && cols == area.cols()
+    }))
 }
 
 
 #[quickcheck]
-fn area_pad_left(area: Area, padding: u16) -> bool {
-    let area = area.instantiate(commands::draw_handle(tokio::io::sink(), &[]));
-    let rows = area.rows();
-    let cols = area.cols();
+fn area_pad_left(area: Area, padding: u16) -> std::io::Result<bool> {
+    Ok(tokio::runtime::Runtime::new()?.block_on(async {
+        let area = area.instantiate(handle_from_bare(tokio::io::sink(), &[]).await);
+        let rows = area.rows();
+        let cols = area.cols();
 
-    let area = area.pad_left(padding);
+        let area = area.pad_left(padding);
 
-    area.cols() == cols.saturating_sub(padding) && rows == area.rows()
+        area.cols() == cols.saturating_sub(padding) && rows == area.rows()
+    }))
 }
 
 
 #[quickcheck]
-fn area_pad_right(area: Area, padding: u16) -> bool {
-    let area = area.instantiate(commands::draw_handle(tokio::io::sink(), &[]));
-    let rows = area.rows();
-    let cols = area.cols();
+fn area_pad_right(area: Area, padding: u16) -> std::io::Result<bool> {
+    Ok(tokio::runtime::Runtime::new()?.block_on(async {
+        let area = area.instantiate(handle_from_bare(tokio::io::sink(), &[]).await);
+        let rows = area.rows();
+        let cols = area.cols();
 
-    let area = area.pad_right(padding);
+        let area = area.pad_right(padding);
 
-    area.cols() == cols.saturating_sub(padding) && rows == area.rows()
+        area.cols() == cols.saturating_sub(padding) && rows == area.rows()
+    }))
 }
 
 
@@ -94,19 +108,26 @@ fn draw_handle_drop(
 
     let rt = tokio::runtime::Runtime::new()?;
 
-    let mut buf = Vec::new();
+    let inner: Arc<tokio::sync::Mutex<_>> = Arc::new(
+        tokio_util::codec::FramedWrite::new(Vec::new(), commands::ANSIEncoder::new()).into()
+    );
 
-    let mut handle = commands::draw_handle(&mut buf, term.as_ref());
-    rt.block_on(handle.as_sink().send_all(&mut futures::stream::iter(data.iter().cloned().map(Ok))))?;
-    drop(handle);
+    rt.block_on(async {
+        let mut handle = commands::draw_handle(inner.clone().lock_owned().await, term.as_ref());
+        let res = handle.as_sink().send_all(&mut futures::stream::iter(data.iter().cloned().map(Ok))).await;
+        drop(handle);
+        res
+    })?;
 
     data.extend(term);
     if data.windows(2).any(|w| if let [DC::Text(_), DC::Text(_)] = w { true } else { false }) {
         Ok(TestResult::discard())
     } else {
-        draw_commands_from(buf.as_ref())
+        let buf = inner.blocking_lock();
+        let res = draw_commands_from(buf.get_ref().as_ref())
             .try_fold(Vec::new(), |mut a, c| { a.push(c?); Ok(a) })
-            .map(|r| TestResult::from_bool(data == r))
+            .map(|r| TestResult::from_bool(data == r));
+        res
     }
 }
 
@@ -224,6 +245,19 @@ struct DummyPlaced {
     pub base_col: u16,
     pub rows: u16,
     pub cols: u16,
+}
+
+
+/// Create a DrawHandle from some bare parts
+///
+async fn handle_from_bare<'a, W: tokio::io::AsyncWrite + Send + Unpin + 'static>(
+    write: W,
+    termination_seq: &'a [commands::DrawCommand<'static>],
+) -> DrawHandle<'a, W> {
+    let inner: Arc<tokio::sync::Mutex<_>> = Arc::new(
+        tokio_util::codec::FramedWrite::new(write, commands::ANSIEncoder::new()).into()
+    );
+    commands::draw_handle(inner.lock_owned().await, termination_seq)
 }
 
 

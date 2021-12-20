@@ -3,6 +3,7 @@
 use std::borrow::Cow;
 
 use tokio::io::AsyncWrite;
+use tokio::sync::OwnedMutexGuard;
 use tokio_util::codec;
 
 use crate::util;
@@ -17,23 +18,23 @@ use quickcheck::{Arbitrary, Gen};
 /// performing predefined operations when dropped. It is intended to be opaque
 /// to code outside the `display` module.
 ///
-pub struct DrawHandle<'a, W: AsyncWrite + Send + Unpin> {
-    write: codec::FramedWrite<W, ANSIEncoder>,
-    termination_seq: &'a [DrawCommand<'a>],
+pub struct DrawHandle<'a, W: AsyncWrite + Send + Unpin + 'static> {
+    write: Option<OwnedMutexGuard<codec::FramedWrite<W, ANSIEncoder>>>,
+    termination_seq: &'a [DrawCommand<'static>],
 }
 
-impl<'a, W: AsyncWrite + Send + Unpin> Drop for DrawHandle<'a, W> {
+impl<'a, W: AsyncWrite + Send + Unpin + 'static> Drop for DrawHandle<'a, W> {
     fn drop(&mut self) {
         use futures::SinkExt;
         use futures::stream::iter;
 
         use crate::error::TryExt;
 
-        let cmds = self.termination_seq.iter().cloned().map(Ok);
-        tokio::runtime::Runtime::new()
-            .and_then(|r| r.block_on(self.write.send_all(&mut iter(cmds))))
-            .or_warn("Failed to send termination sequence")
-            .unwrap_or_default()
+        let cmds: Vec<_> = self.termination_seq.iter().cloned().map(Ok).collect();
+        let mut write = self.write.take().expect("Write in DrawHandle must not be None");
+        tokio::runtime::Handle::current().spawn(async move {
+            write.send_all(&mut iter(cmds)).await.or_warn("Failed to send termination sequence")
+        });
     }
 }
 
@@ -44,10 +45,10 @@ impl<'a, W: AsyncWrite + Send + Unpin> Drop for DrawHandle<'a, W> {
 /// it will issue the given termination sequence.
 ///
 pub fn draw_handle<'a, W: AsyncWrite + Send + Unpin>(
-    write: W,
+    write: OwnedMutexGuard<codec::FramedWrite<W, ANSIEncoder>>,
     termination_seq: &'a [DrawCommand<'static>],
 ) -> DrawHandle<'a, W> {
-    DrawHandle {write: codec::FramedWrite::new(write, ANSIEncoder::new()), termination_seq}
+    DrawHandle {write: Some(write), termination_seq}
 }
 
 
@@ -70,7 +71,7 @@ impl<'a, W: AsyncWrite + Send + Unpin> SinkProxy for DrawHandle<'a, W> {
     type Sink = codec::FramedWrite<W, ANSIEncoder>;
 
     fn as_sink(&mut self) -> &mut Self::Sink {
-        &mut self.write
+        self.write.as_mut().expect("Write in DrawHandle must not be None")
     }
 }
 

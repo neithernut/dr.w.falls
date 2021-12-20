@@ -88,7 +88,7 @@ pub fn create_area_full<'a, W: AsyncWrite + Send + Unpin>(
 ///
 pub struct Area<'a, H, W>
 where H: BorrowMut<DrawHandle<'a, W>>,
-      W: AsyncWrite + Send + Unpin,
+      W: AsyncWrite + Send + Unpin + 'static,
 {
     /// Handle used for drawing initial entites
     handle: H,
@@ -105,7 +105,7 @@ where H: BorrowMut<DrawHandle<'a, W>>,
 
 impl<'a, H, W> Area<'a, H, W>
 where H: BorrowMut<DrawHandle<'a, W>>,
-      W: AsyncWrite + Send + Unpin,
+      W: AsyncWrite + Send + Unpin + 'static,
 {
     /// Retrieve the number of rows covered by the area
     ///

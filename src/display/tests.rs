@@ -146,7 +146,7 @@ struct Area {
 }
 
 impl Area {
-    pub fn instantiate<W: tokio::io::AsyncWrite + Unpin>(
+    pub fn instantiate<W: tokio::io::AsyncWrite + Send + Unpin>(
         self,
         handle: DrawHandle<'static, W>,
     ) -> area::Area<'static, DrawHandle<'static, W>, W> {

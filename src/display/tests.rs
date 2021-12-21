@@ -101,15 +101,16 @@ fn area_pad_right(area: Area, padding: u16) -> std::io::Result<bool> {
 fn area_place_top(area: Area, entity: DummyEntity) -> std::io::Result<bool> {
     let res = tokio::runtime::Runtime::new()?.block_on(async {
         let mut area = area.instantiate(handle_from_bare(tokio::io::sink(), &[]).await);
-        area.place_top(entity).await
+        area.place_top(entity).await.map(|p| (p, area.rows(), area.cols()))
     });
 
     match res {
-        Ok(placed) => Ok(
+        Ok((placed, new_rows, new_cols)) => Ok(
             placed.base_row == area.row_a &&
             placed.base_col >= area.col_a &&
-            placed.rows <= area.rows() &&
-            placed.cols <= area.cols()
+            placed.rows + new_rows == area.rows() &&
+            placed.cols <= area.cols() &&
+            new_cols == area.cols()
         ),
         Err(_) => Ok(entity.rows >= area.rows() || entity.cols >= area.cols()),
     }
@@ -120,15 +121,16 @@ fn area_place_top(area: Area, entity: DummyEntity) -> std::io::Result<bool> {
 fn area_place_left(area: Area, entity: DummyEntity) -> std::io::Result<bool> {
     let res = tokio::runtime::Runtime::new()?.block_on(async {
         let mut area = area.instantiate(handle_from_bare(tokio::io::sink(), &[]).await);
-        area.place_left(entity).await
+        area.place_left(entity).await.map(|p| (p, area.rows(), area.cols()))
     });
 
     match res {
-        Ok(placed) => Ok(
+        Ok((placed, new_rows, new_cols)) => Ok(
             placed.base_row >= area.row_a &&
             placed.base_col == area.col_a &&
             placed.rows <= area.rows() &&
-            placed.cols <= area.cols()
+            placed.cols + new_cols == area.cols() &&
+            new_rows == area.rows()
         ),
         Err(_) => Ok(entity.rows >= area.rows() || entity.cols >= area.cols()),
     }

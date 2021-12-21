@@ -108,10 +108,10 @@ fn area_place_top(area: Area, entity: DummyEntity) -> std::io::Result<bool> {
         Ok(placed) => Ok(
             placed.base_row == area.row_a &&
             placed.base_col >= area.col_a &&
-            placed.rows <= area.row_b - area.row_a &&
-            placed.cols <= area.col_b - area.col_a
+            placed.rows <= area.rows() &&
+            placed.cols <= area.cols()
         ),
-        Err(_) => Ok(entity.rows >= area.row_b - area.row_a || entity.cols >= area.col_b - area.col_a),
+        Err(_) => Ok(entity.rows >= area.rows() || entity.cols >= area.cols()),
     }
 }
 
@@ -127,10 +127,10 @@ fn area_place_left(area: Area, entity: DummyEntity) -> std::io::Result<bool> {
         Ok(placed) => Ok(
             placed.base_row >= area.row_a &&
             placed.base_col == area.col_a &&
-            placed.rows <= area.row_b - area.row_a &&
-            placed.cols <= area.col_b - area.col_a
+            placed.rows <= area.rows() &&
+            placed.cols <= area.cols()
         ),
-        Err(_) => Ok(entity.rows >= area.row_b - area.row_a || entity.cols >= area.col_b - area.col_a),
+        Err(_) => Ok(entity.rows >= area.rows() || entity.cols >= area.cols()),
     }
 }
 
@@ -145,10 +145,10 @@ fn area_place_center(area: Area, entity: DummyEntity) -> std::io::Result<bool> {
         Ok(placed) => Ok(
             placed.base_row >= area.row_a &&
             placed.base_col >= area.col_a &&
-            placed.rows <= area.row_b - area.row_a &&
-            placed.cols <= area.col_b - area.col_a
+            placed.rows <= area.rows() &&
+            placed.cols <= area.cols()
         ),
-        Err(_) => Ok(entity.rows >= area.row_b - area.row_a || entity.cols >= area.col_b - area.col_a),
+        Err(_) => Ok(entity.rows >= area.rows() || entity.cols >= area.cols()),
     }
 }
 
@@ -228,6 +228,14 @@ impl Area {
         handle: DrawHandle<'static, W>,
     ) -> area::Area<'static, DrawHandle<'static, W>, W> {
         area::create_area_full(handle, self.row_a, self.col_a, self.row_b, self.col_b)
+    }
+
+    pub fn rows(&self) -> u16 {
+        self.row_b - self.row_a
+    }
+
+    pub fn cols(&self) -> u16 {
+        self.col_b - self.col_a
     }
 }
 

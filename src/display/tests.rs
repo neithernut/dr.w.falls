@@ -112,7 +112,7 @@ fn area_place_top(area: Area, entity: DummyEntity) -> std::io::Result<bool> {
             placed.cols <= area.cols() &&
             new_cols == area.cols()
         ),
-        Err(_) => Ok(entity.rows >= area.rows() || entity.cols >= area.cols()),
+        Err(_) => Ok(entity.rows > area.rows() || entity.cols > area.cols()),
     }
 }
 
@@ -132,7 +132,7 @@ fn area_place_left(area: Area, entity: DummyEntity) -> std::io::Result<bool> {
             placed.cols + new_cols == area.cols() &&
             new_rows == area.rows()
         ),
-        Err(_) => Ok(entity.rows >= area.rows() || entity.cols >= area.cols()),
+        Err(_) => Ok(entity.rows > area.rows() || entity.cols > area.cols()),
     }
 }
 
@@ -150,7 +150,7 @@ fn area_place_center(area: Area, entity: DummyEntity) -> std::io::Result<bool> {
             placed.rows <= area.rows() &&
             placed.cols <= area.cols()
         ),
-        Err(_) => Ok(entity.rows >= area.rows() || entity.cols >= area.cols()),
+        Err(_) => Ok(entity.rows > area.rows() || entity.cols > area.cols()),
     }
 }
 

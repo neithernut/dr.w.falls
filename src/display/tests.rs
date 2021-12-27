@@ -314,6 +314,105 @@ struct DummyPlaced {
 }
 
 
+/// Simplified model of a virtual terminal
+///
+#[derive(Clone, Debug, PartialEq)]
+pub struct VT {
+    cursor_row: u16,
+    cursor_col: u16,
+    rendition: GraphicRendition,
+    show_cursor: bool,
+    data: Vec<Vec<FormattedChar>>,
+}
+
+impl VT {
+    /// Create a new VT with the given number of rows and columns
+    ///
+    pub fn new(rows: u16, cols: u16) -> Self {
+        let mut row = Vec::new();
+        row.resize(cols as usize, Default::default());
+
+        let mut res: Self = Default::default();
+        res.data.resize(rows as usize, row);
+        res
+    }
+
+    /// Clear the "screen"
+    ///
+    pub fn clear(&mut self) {
+        self.data.iter_mut().for_each(|r| r.fill(Default::default()))
+    }
+
+    /// Apply a [commands::DrawCommand] to the VT
+    ///
+    pub fn apply(&mut self, command: commands::DrawCommand) -> std::io::Result<()> {
+        use commands::DrawCommand as DC;
+
+        match command {
+            DC::ClearScreen     => Ok(self.clear()),
+            DC::SetPos(r, c)    => if (r as usize) < self.data.len() && (c as usize) < self.data[0].len() {
+                self.cursor_row = r;
+                self.cursor_col = c;
+                Ok(())
+            } else {
+                Err(std::io::ErrorKind::Other.into())
+            },
+            DC::Format(sgr)     => Ok(self.rendition.apply(sgr)),
+            DC::Text(txt)       => txt.chars().try_for_each(|c| {
+                self.data
+                    .get_mut(self.cursor_row as usize)
+                    .ok_or(std::io::ErrorKind::Other)?
+                    .get_mut(self.cursor_col as usize)
+                    .ok_or(std::io::ErrorKind::Other)?
+                    .set_from_char(c, self.rendition)?;
+                self.cursor_col = self.cursor_col.checked_add(1).ok_or(std::io::ErrorKind::Other)?;
+                Ok(())
+            }),
+            DC::ShowCursor(v)   => Ok(self.show_cursor = v),
+        }
+    }
+}
+
+impl Default for VT {
+    fn default() -> Self {
+        Self {
+            cursor_row: 0,
+            cursor_col: 0,
+            rendition: Default::default(),
+            show_cursor: true,
+            data: Default::default(),
+        }
+    }
+}
+
+
+/// Representation of a formatted character on a [VT]
+///
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct FormattedChar {
+    pub data: u8,
+    pub format: GraphicRendition,
+}
+
+impl FormattedChar {
+    pub fn set_from_char(&mut self, data: char, format: GraphicRendition) -> std::io::Result<()> {
+        if data.is_ascii_graphic() || data == '\x20' {
+            self.data = data as u8;
+            self.format = format;
+            Ok(())
+        } else {
+            Err(std::io::ErrorKind::Other.into())
+        }
+    }
+}
+
+impl Default for FormattedChar {
+    fn default() -> Self {
+        Self {data: 0x20, format: Default::default()}
+    }
+}
+
+
 /// Representation of a graphic rendition
 ///
 #[derive(Copy, Clone, Debug, PartialEq)]

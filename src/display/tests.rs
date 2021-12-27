@@ -10,6 +10,57 @@ use super::*;
 
 
 #[quickcheck]
+fn display_handle_init(rows: std::num::NonZeroU8, cols: std::num::NonZeroU8) -> std::io::Result<bool> {
+    let rows = rows.get().into();
+    let cols = cols.get().into();
+    tokio::runtime::Runtime::new()?.block_on(async {
+        let (writer, mut vt_state) = tokio::sync::watch::channel(VT::new(rows, cols));
+        let mut display = display::Display::new(VTWriter::from(writer), rows, cols);
+        let h = display.handle().await?;
+        let res = vt_state.borrow_and_update().show_cursor == false;
+        drop(h);
+        Ok(res)
+    })
+}
+
+
+#[quickcheck]
+fn display_handle_drop(
+    rows: std::num::NonZeroU8,
+    cols: std::num::NonZeroU8,
+    commands: Vec<commands::DrawCommand<'static>>,
+) -> std::io::Result<TestResult> {
+    use futures::SinkExt;
+
+    use crate::display::commands::SinkProxy;
+
+    let rows = rows.get().into();
+    let cols = cols.get().into();
+    tokio::runtime::Runtime::new()?.block_on(async {
+        let (writer, mut vt_state) = tokio::sync::watch::channel(VT::new(rows, cols));
+        let mut display = display::Display::new(VTWriter::from(writer), rows, cols);
+        let mut handle = display.handle().await?;
+        let res = handle
+            .as_sink()
+            .send_all(&mut futures::stream::iter(commands.iter().cloned().map(Ok)))
+            .await;
+        if res.is_ok() {
+            vt_state.borrow_and_update();
+            drop(handle);
+            vt_state.changed().await.map_err(|_| std::io::ErrorKind::Other)?;
+            let state = vt_state.borrow();
+            let res = state.show_cursor &&
+                state.cursor_row == rows.saturating_sub(2) &&
+                state.cursor_col == 0;
+            Ok(TestResult::from_bool(res))
+        } else {
+            Ok(TestResult::discard())
+        }
+    })
+}
+
+
+#[quickcheck]
 fn area_split_top(area: Area, split_rows: u16) -> std::io::Result<bool> {
     Ok(tokio::runtime::Runtime::new()?.block_on(async {
         let mut area = area.instantiate(handle_from_bare(tokio::io::sink(), &[]).await);

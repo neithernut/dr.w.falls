@@ -1,6 +1,8 @@
 //! Display tests
 
+use std::pin::Pin;
 use std::sync::Arc;
+use std::task;
 
 use quickcheck::{Arbitrary, Gen, TestResult};
 
@@ -311,6 +313,44 @@ struct DummyPlaced {
     pub base_col: u16,
     pub rows: u16,
     pub cols: u16,
+}
+
+
+/// [AsyncWrite] modelling an VT
+///
+pub struct VTWriter(tokio::sync::watch::Sender<VT>);
+
+impl From<tokio::sync::watch::Sender<VT>> for VTWriter {
+    fn from(sender: tokio::sync::watch::Sender<VT>) -> Self {
+        Self(sender)
+    }
+}
+
+impl tokio::io::AsyncWrite for VTWriter {
+    fn poll_write(
+        self: Pin<&mut Self>,
+        _cx: &mut task::Context<'_>,
+        buf: &[u8],
+    ) -> task::Poll<std::io::Result<usize>> {
+        let mut current: VT = self.0.borrow().clone();
+        draw_commands_from(buf).try_for_each(|c| current.apply(c?))?;
+        self.0.send(current).map_err(|_| std::io::Error::from(std::io::ErrorKind::Other))?;
+        Ok(buf.len()).into()
+    }
+
+    fn poll_flush(
+        self: Pin<&mut Self>,
+        _cx: &mut task::Context<'_>,
+    ) -> task::Poll<std::io::Result<()>> {
+        Ok(()).into()
+    }
+
+    fn poll_shutdown(
+        self: Pin<&mut Self>,
+        _cx: &mut task::Context<'_>,
+    ) -> task::Poll<std::io::Result<()>> {
+        Ok(()).into()
+    }
 }
 
 

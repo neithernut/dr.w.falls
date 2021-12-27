@@ -170,13 +170,7 @@ impl Arbitrary for DrawCommand<'static> {
             &|_| Self::ClearScreen,
             &|g| Self::SetPos(u8::arbitrary(g).into(), u8::arbitrary(g).into()),
             &|g| Self::Format(Arbitrary::arbitrary(g)),
-            &|g| {
-                let len = u8::arbitrary(g) as usize + 1;
-                std::iter::from_fn(|| char::from_u32(u32::arbitrary(g) % (0x7F - 0x20) + 0x20))
-                    .take(len)
-                    .collect::<String>()
-                    .into()
-            },
+            &|g| String::from(crate::tests::ASCIIString::arbitrary(g)).into(),
             &|g| Self::ShowCursor(Arbitrary::arbitrary(g)),
         ];
         g.choose(&opts).unwrap()(g)
@@ -186,14 +180,9 @@ impl Arbitrary for DrawCommand<'static> {
         match self {
             Self::SetPos(n, m)  => Box::new((*n, *m).shrink().map(|(n, m)| Self::SetPos(n, m))),
             Self::Format(v)     => Box::new(v.shrink().map(Self::Format)),
-            Self::Text(v)       => {
-                let res = v
-                    .to_string()
-                    .shrink()
-                    .filter(|n| n.len() > 0 && n.chars().all(|c| c.is_ascii() && !c.is_ascii_control()))
-                    .map(Into::into);
-                Box::new(res)
-            },
+            Self::Text(v)       => Box::new(
+                crate::tests::ASCIIString::from(v.to_string()).shrink().map(|s| String::from(s).into())
+            ),
             Self::ShowCursor(v) => Box::new(v.shrink().map(Self::ShowCursor)),
             _ => Box::new(std::iter::empty()),
         }

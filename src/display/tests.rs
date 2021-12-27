@@ -314,6 +314,50 @@ struct DummyPlaced {
 }
 
 
+/// Representation of a graphic rendition
+///
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct GraphicRendition {
+    pub intensity: Option<commands::Intensity>,
+    pub underline: bool,
+    pub blink: bool,
+    pub strike: bool,
+    pub fg_colour: Option<(commands::Colour, commands::Brightness)>,
+    pub bg_colour: Option<(commands::Colour, commands::Brightness)>,
+}
+
+impl GraphicRendition {
+    /// Apply a change in the form of an SGR to this rendition
+    ///
+    pub fn apply(&mut self, sgr: commands::SGR) {
+        use commands::SGR;
+
+        match sgr {
+            SGR::Reset          => *self = Default::default(),
+            SGR::Intensity(v)   => self.intensity = v,
+            SGR::Underline(v)   => self.underline = v,
+            SGR::Blink(v)       => self.blink = v,
+            SGR::Strike(v)      => self.strike = v,
+            SGR::FGColour(v)    => self.fg_colour = v,
+            SGR::BGColour(v)    => self.bg_colour = v,
+        }
+    }
+}
+
+impl Default for GraphicRendition {
+    fn default() -> Self {
+        Self {
+            intensity: None,
+            underline: false,
+            blink: false,
+            strike: false,
+            fg_colour: None,
+            bg_colour: None,
+        }
+    }
+}
+
+
 /// Create a DrawHandle from some bare parts
 ///
 async fn handle_from_bare<'a, W: tokio::io::AsyncWrite + Send + Unpin + 'static>(

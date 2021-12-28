@@ -368,6 +368,36 @@ fn ansi_encode_decode(orig: Vec<commands::DrawCommand<'static>>) -> std::io::Res
 }
 
 
+/// Utility function for retrieving all non-empty tiles in a field from a VT
+///
+/// This function retrieves the tile contents of a play field given via its
+/// placement `area` on the given `vt`
+///
+fn tile_contents(
+    vt: &VT,
+    area: Area,
+) -> std::collections::HashMap<crate::util::Position, [FormattedChar; 2]> {
+    use std::convert::TryFrom;
+
+    use crate::util;
+
+    let base_row = area.row_a + 2;
+    (base_row..(area.row_b - 1)).flat_map(|r| vt
+        .data[r as usize]
+        .split_at((area.col_a + 1).into())
+        .1
+        .chunks_exact(2)
+        .enumerate()
+        .filter_map(|(c, v)| if let [a, b] = v { Some((c, [*a, *b])) } else { None })
+        .filter(|(_, [a, b])| a.data != 0x20 || b.data != 0x20)
+        .filter_map(move |(c, s)| Some(((
+            util::RowIndex::try_from((r - base_row) as usize).ok()?,
+            util::ColumnIndex::try_from(c as usize).ok()?,
+        ), s)))
+    ).collect()
+}
+
+
 /// Utility for generating random [area::Area]s
 ///
 #[derive(Copy, Clone, Debug)]

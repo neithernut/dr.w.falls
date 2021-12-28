@@ -360,6 +360,19 @@ impl From<util::Colour> for Colour {
     }
 }
 
+impl std::convert::TryFrom<Colour> for util::Colour {
+    type Error = Colour;
+
+    fn try_from(colour: Colour) -> Result<Self, Self::Error> {
+        match colour {
+            Colour::Red     => Ok(Self::Red),
+            Colour::Yellow  => Ok(Self::Yellow),
+            Colour::Blue    => Ok(Self::Blue),
+            c               => Err(c),
+        }
+    }
+}
+
 #[cfg(test)]
 impl Arbitrary for Colour {
     fn arbitrary(g: &mut Gen) -> Self {

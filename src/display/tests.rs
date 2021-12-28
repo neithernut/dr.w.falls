@@ -214,6 +214,69 @@ fn play_field_next(
 
 
 #[quickcheck]
+fn play_field_update(
+    rows: u8,
+    cols: u8,
+    base_row: u8,
+    base_col: u8,
+    updates: Vec<crate::field::Update>,
+) -> std::io::Result<TestResult> {
+    use std::convert::TryInto;
+
+    use area::Entity;
+
+    let rows: u16 = rows.into();
+    let cols: u16 = cols.into();
+    let base_row: u16 = base_row.into();
+    let base_col: u16 = base_col.into();
+
+    let field = field::PlayField::new();
+    let area = Area {
+        row_a: base_row,
+        col_a: base_col,
+        row_b: base_row.saturating_add(field.rows()),
+        col_b: base_col.saturating_add(field.cols()),
+    };
+
+    if area.row_b <= rows && area.col_b <= cols {
+        tokio::runtime::Runtime::new()?.block_on(async {
+            let (writer, vt_state) = tokio::sync::watch::channel(VT::new(rows, cols));
+            let mut handle = handle_from_bare(VTWriter::from(writer), &[]).await;
+            area.instantiate(&mut handle)
+                .place_center(field)
+                .await?
+                .update(&mut handle, updates.clone())
+                .await?;
+
+            let elements: std::collections::HashMap<_, _> = updates
+                .into_iter()
+                .fold(Default::default(), |mut a, (p, c)| {
+                    if let Some(c) = c {
+                        a.insert(p, c);
+                    } else {
+                        a.remove(&p);
+                    }
+                    a
+                });
+
+            let tiles = tile_contents(&vt_state.borrow(), area);
+
+            let correct_syms = tiles
+                .values()
+                .all(|[a, b]| a.data == 0x28 && b.data == 0x29 && a.format == b.format);
+            let element_match = elements == tiles
+                .into_iter()
+                .filter_map(|(p, [a, ..])| a.format.fg_colour.and_then(|(c, _)| c.try_into().ok()).map(|c| (p, c)))
+                .collect();
+            Ok(TestResult::from_bool(correct_syms && element_match))
+        })
+    } else {
+        Ok(TestResult::discard())
+    }
+}
+
+
+#[quickcheck]
 fn display_handle_init(rows: NonZeroU8, cols: NonZeroU8) -> std::io::Result<bool> {
     let rows = rows.get().into();
     let cols = cols.get().into();

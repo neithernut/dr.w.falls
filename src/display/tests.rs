@@ -52,6 +52,65 @@ fn dynamic_text(
 
 
 #[quickcheck]
+fn play_field_init(rows: u8, cols: u8, base_row: u8, base_col: u8) -> std::io::Result<TestResult> {
+    use area::Entity;
+
+    let rows: u16 = rows.into();
+    let cols: u16 = cols.into();
+    let base_row: u16 = base_row.into();
+    let base_col: u16 = base_col.into();
+
+    let field = field::PlayField::new();
+    let area = Area {
+        row_a: base_row,
+        col_a: base_col,
+        row_b: base_row.saturating_add(field.rows()),
+        col_b: base_col.saturating_add(field.cols()),
+    };
+
+    if area.row_b <= rows && area.col_b <= cols {
+        tokio::runtime::Runtime::new()?.block_on(async {
+            let (writer, vt_state) = tokio::sync::watch::channel(VT::new(rows, cols));
+            area.instantiate(handle_from_bare(VTWriter::from(writer), &[]).await)
+                .place_center(field)
+                .await?;
+            let res = (area.row_a..area.row_b)
+                .map(|r| vt_state
+                    .borrow()
+                    .chars_at(r, area.col_a)
+                    .take(area.cols().into())
+                    .collect::<String>()
+                )
+                .eq(vec![
+                    "      \\    /      ".to_owned(),
+                    " _____/    \\_____ ".to_owned(),
+                    "/                \\".to_owned(),
+                    "|                |".to_owned(),
+                    "|                |".to_owned(),
+                    "|                |".to_owned(),
+                    "|                |".to_owned(),
+                    "|                |".to_owned(),
+                    "|                |".to_owned(),
+                    "|                |".to_owned(),
+                    "|                |".to_owned(),
+                    "|                |".to_owned(),
+                    "|                |".to_owned(),
+                    "|                |".to_owned(),
+                    "|                |".to_owned(),
+                    "|                |".to_owned(),
+                    "|                |".to_owned(),
+                    "|                |".to_owned(),
+                    "\\________________/".to_owned(),
+                ]);
+            Ok(TestResult::from_bool(res))
+        })
+    } else {
+        Ok(TestResult::discard())
+    }
+}
+
+
+#[quickcheck]
 fn display_handle_init(rows: NonZeroU8, cols: NonZeroU8) -> std::io::Result<bool> {
     let rows = rows.get().into();
     let cols = cols.get().into();

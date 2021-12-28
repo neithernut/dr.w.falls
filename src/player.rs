@@ -127,6 +127,29 @@ impl Deref for Tag {
     }
 }
 
+#[cfg(test)]
+impl quickcheck::Arbitrary for Tag {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        use quickcheck::Arbitrary;
+
+        Tag {data: Arc::new(Data {
+            name: tests::Name::arbitrary(g).into(),
+            addr: Arbitrary::arbitrary(g),
+            score: u32::arbitrary(g).into(),
+            conn_state: None.into(),
+        })}
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        let res = (tests::Name(self.name.clone()), self.addr, self.score.load(Ordering::Relaxed))
+            .shrink()
+            .map(|(n, addr, s)| Tag {
+                data: Arc::new(Data {name: n.into(), addr, score: s.into(), conn_state: None.into()}),
+            });
+        Box::new(res)
+    }
+}
+
 
 /// Data associated to a player
 ///

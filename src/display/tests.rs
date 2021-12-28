@@ -277,6 +277,63 @@ fn play_field_update(
 
 
 #[quickcheck]
+fn line_input_update(
+    rows: u8,
+    cols: u8,
+    base_row: u8,
+    base_col: u8,
+    input_len: NonZeroU8,
+    inputs: Vec<u8>,
+) -> std::io::Result<TestResult> {
+    use area::Entity;
+
+    let rows: u16 = rows.into();
+    let cols: u16 = cols.into();
+    let base_row: u16 = base_row.into();
+    let base_col: u16 = base_col.into();
+
+    let line_input = input::LineInput::new(input_len.into());
+    let area = Area {
+        row_a: base_row,
+        col_a: base_col,
+        row_b: base_row.saturating_add(line_input.rows()),
+        col_b: base_col.saturating_add(line_input.cols()),
+    };
+
+    if area.row_b <= rows && area.col_b <= cols {
+        tokio::runtime::Runtime::new()?.block_on(async {
+            let (writer, vt_state) = tokio::sync::watch::channel(VT::new(rows, cols));
+            let mut handle = handle_from_bare(VTWriter::from(writer), &[]).await;
+            let mut placed = area.instantiate(&mut handle).place_center(line_input).await?;
+
+            for i in inputs.iter() {
+                let is_commit = placed.update(&mut handle, *i as char).await?.is_some();
+
+                let val: String = vt_state.borrow().chars_at(area.row_a, area.col_a).collect();
+                let val = val.trim_end();
+
+                let internal_len = placed.value().len();
+
+                let failure = (is_commit && (*i != 0x0A && *i != 0x0D)) ||
+                    val.len() > area.cols() as usize ||
+                    internal_len > area.cols() as usize ||
+                    !val.starts_with(placed.value().trim_end()) ||
+                    (internal_len < area.cols() as usize &&
+                        val.chars().nth(internal_len).map(|c| c != '_').unwrap_or(true));
+                if failure {
+                    return Ok(TestResult::failed())
+                }
+            }
+
+            Ok(TestResult::passed())
+        })
+    } else {
+        Ok(TestResult::discard())
+    }
+}
+
+
+#[quickcheck]
 fn display_handle_init(rows: NonZeroU8, cols: NonZeroU8) -> std::io::Result<bool> {
     let rows = rows.get().into();
     let cols = cols.get().into();

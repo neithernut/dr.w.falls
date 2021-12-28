@@ -297,6 +297,13 @@ impl Area {
     pub fn is_empty(&self) -> bool {
         self.rows() <= 0 || self.cols() <= 0
     }
+
+    pub fn constrain(&mut self, rows: u16, cols: u16) {
+        self.row_b = std::cmp::min(self.row_b, rows);
+        self.col_b = std::cmp::min(self.col_b, cols);
+        self.row_a = std::cmp::min(self.row_a, self.row_b);
+        self.col_a = std::cmp::min(self.col_a, self.col_b);
+    }
 }
 
 impl Arbitrary for Area {

@@ -111,6 +111,62 @@ fn play_field_init(rows: u8, cols: u8, base_row: u8, base_col: u8) -> std::io::R
 
 
 #[quickcheck]
+fn play_field_virs(
+    rows: u8,
+    cols: u8,
+    base_row: u8,
+    base_col: u8,
+    viruses: std::collections::HashMap<crate::util::Position, crate::util::Colour>,
+    vir_sym: field::VirusSym,
+) -> std::io::Result<TestResult> {
+    use std::convert::TryInto;
+
+    use area::Entity;
+
+    let rows: u16 = rows.into();
+    let cols: u16 = cols.into();
+    let base_row: u16 = base_row.into();
+    let base_col: u16 = base_col.into();
+
+    let field = field::PlayField::new();
+    let area = Area {
+        row_a: base_row,
+        col_a: base_col,
+        row_b: base_row.saturating_add(field.rows()),
+        col_b: base_col.saturating_add(field.cols()),
+    };
+
+    if area.row_b <= rows && area.col_b <= cols {
+        tokio::runtime::Runtime::new()?.block_on(async {
+            let (writer, vt_state) = tokio::sync::watch::channel(VT::new(rows, cols));
+            let mut handle = handle_from_bare(VTWriter::from(writer), &[]).await;
+            area.instantiate(&mut handle)
+                .place_center(field)
+                .await?
+                .place_viruses(&mut handle, viruses.clone(), vir_sym)
+                .await?;
+
+            // Read back viruses into a map of positions
+            let tiles = tile_contents(&vt_state.borrow(), area);
+
+            let correct_syms = tiles
+                .values()
+                .all(|[a, b]| vir_sym.symbol().chars().eq([a.data as char, b.data as char]) &&
+                    a.format == b.format
+                );
+            let virus_match = viruses == tiles
+                .into_iter()
+                .filter_map(|(p, [a, ..])| a.format.fg_colour.and_then(|(c, _)| c.try_into().ok()).map(|c| (p, c)))
+                .collect();
+            Ok(TestResult::from_bool(correct_syms && virus_match))
+        })
+    } else {
+        Ok(TestResult::discard())
+    }
+}
+
+
+#[quickcheck]
 fn display_handle_init(rows: NonZeroU8, cols: NonZeroU8) -> std::io::Result<bool> {
     let rows = rows.get().into();
     let cols = cols.get().into();

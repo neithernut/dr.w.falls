@@ -262,7 +262,7 @@ impl From<Colour> for SGR {
 
 impl From<(Colour, Brightness)> for SGR {
     fn from((colour, brightness): (Colour, Brightness)) -> Self {
-        (colour, brightness).into()
+        Some((colour, brightness)).into()
     }
 }
 

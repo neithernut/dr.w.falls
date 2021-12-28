@@ -11,6 +11,47 @@ use super::*;
 
 
 #[quickcheck]
+fn dynamic_text(
+    rows: NonZeroU8,
+    cols: NonZeroU8,
+    mut area: Area,
+    mut orig: Vec<crate::tests::ASCIIString>,
+) -> std::io::Result<TestResult> {
+    use std::convert::TryInto;
+
+    let rows = rows.get().into();
+    let cols = cols.get().into();
+
+    area.constrain(rows, cols);
+    if !area.is_empty() {
+        // make the text fit into the area
+        orig.truncate(area.rows() as usize);
+        orig.iter_mut().for_each(|r| r.0.truncate(area.cols() as usize));
+
+        tokio::runtime::Runtime::new()?.block_on(async {
+            let (writer, vt_state) = tokio::sync::watch::channel(VT::new(rows, cols));
+            let mut handle = handle_from_bare(VTWriter::from(writer), &[]).await;
+            let text = area.instantiate(&mut handle).place_center(
+                dynamic_text::DynamicText::new(
+                    area.rows().try_into().unwrap(),
+                    area.cols().try_into().unwrap(),
+                ),
+            ).await?;
+            text.update(&mut handle, orig.iter()).await?;
+            let state: Vec<_> = (area.row_a..area.row_b)
+                .take(orig.len())
+                .map(|r| vt_state.borrow().chars_at(r, area.col_a).collect::<String>())
+                .collect();
+            let res = Iterator::eq(orig.iter().map(|r| r.0.trim()), state.iter().map(|r| r.trim()));
+            Ok(TestResult::from_bool(res))
+        })
+    } else {
+        Ok(TestResult::discard())
+    }
+}
+
+
+#[quickcheck]
 fn display_handle_init(rows: NonZeroU8, cols: NonZeroU8) -> std::io::Result<bool> {
     let rows = rows.get().into();
     let cols = cols.get().into();

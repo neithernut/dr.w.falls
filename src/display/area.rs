@@ -73,13 +73,13 @@ pub fn create_area<'a, W: AsyncWrite + Send + Unpin>(
 /// Create an area
 ///
 #[cfg(test)]
-pub fn create_area_full<'a, W: AsyncWrite + Send + Unpin>(
-    handle: DrawHandle<'a, W>,
+pub fn create_area_full<'a, H: BorrowMut<DrawHandle<'a, W>>, W: AsyncWrite + Send + Unpin>(
+    handle: H,
     row_a: u16,
     col_a: u16,
     row_b: u16,
     col_b: u16,
-) -> Area<'a, DrawHandle<'a, W>, W> {
+) -> Area<'a, H, W> {
     Area {handle, row_a, col_a, row_b, col_b, phantom: Default::default()}
 }
 

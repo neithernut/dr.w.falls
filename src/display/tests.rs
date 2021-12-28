@@ -278,10 +278,10 @@ struct Area {
 }
 
 impl Area {
-    pub fn instantiate<W: tokio::io::AsyncWrite + Send + Unpin>(
+    pub fn instantiate<H: std::borrow::BorrowMut<DrawHandle<'static, W>>, W: tokio::io::AsyncWrite + Send + Unpin>(
         self,
-        handle: DrawHandle<'static, W>,
-    ) -> area::Area<'static, DrawHandle<'static, W>, W> {
+        handle: H,
+    ) -> area::Area<'static, H, W> {
         area::create_area_full(handle, self.row_a, self.col_a, self.row_b, self.col_b)
     }
 

@@ -292,6 +292,10 @@ impl Area {
     pub fn cols(&self) -> u16 {
         self.col_b - self.col_a
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.rows() <= 0 || self.cols() <= 0
+    }
 }
 
 impl Arbitrary for Area {

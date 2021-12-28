@@ -204,3 +204,10 @@ impl Default for VirusSym {
     }
 }
 
+#[cfg(test)]
+impl quickcheck::Arbitrary for VirusSym {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        *g.choose(&[Self::A, Self::B]).unwrap()
+    }
+}
+

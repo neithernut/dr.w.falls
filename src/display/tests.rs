@@ -462,6 +462,18 @@ impl VT {
             DC::ShowCursor(v)   => Ok(self.show_cursor = v),
         }
     }
+
+    /// View the data displayed at a given position as characters
+    ///
+    pub fn chars_at(&self, row: u16, col: u16) -> impl Iterator<Item = char> + '_ {
+        self.data
+            .get(row as usize)
+            .map(|r| r.split_at(col as usize).1)
+            .unwrap_or_default()
+            .into_iter()
+            .cloned()
+            .map(Into::into)
+    }
 }
 
 impl Default for VT {
@@ -494,6 +506,12 @@ impl FormattedChar {
         } else {
             Err(std::io::ErrorKind::Other.into())
         }
+    }
+}
+
+impl From<FormattedChar> for char {
+    fn from(c: FormattedChar) -> Self {
+        c.data.into()
     }
 }
 

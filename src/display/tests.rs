@@ -1,5 +1,6 @@
 //! Display tests
 
+use std::num::NonZeroU8;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task;
@@ -10,7 +11,7 @@ use super::*;
 
 
 #[quickcheck]
-fn display_handle_init(rows: std::num::NonZeroU8, cols: std::num::NonZeroU8) -> std::io::Result<bool> {
+fn display_handle_init(rows: NonZeroU8, cols: NonZeroU8) -> std::io::Result<bool> {
     let rows = rows.get().into();
     let cols = cols.get().into();
     tokio::runtime::Runtime::new()?.block_on(async {
@@ -26,8 +27,8 @@ fn display_handle_init(rows: std::num::NonZeroU8, cols: std::num::NonZeroU8) -> 
 
 #[quickcheck]
 fn display_handle_drop(
-    rows: std::num::NonZeroU8,
-    cols: std::num::NonZeroU8,
+    rows: NonZeroU8,
+    cols: NonZeroU8,
     commands: Vec<commands::DrawCommand<'static>>,
 ) -> std::io::Result<TestResult> {
     use futures::SinkExt;

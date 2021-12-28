@@ -125,13 +125,14 @@ impl FieldUpdater {
         let row = self.base_row + 1;
         let col = self.base_col + 1 + util::FIELD_WIDTH as u16 - 2;
 
-        let sink = draw_handle.as_sink();
-
-        sink.feed(DC::SetPos(row, col)).await?;
-        sink.feed(Colour::from(capsule[0]).into()).await?;
-        sink.feed("()".into()).await?;
-        sink.feed(Colour::from(capsule[1]).into()).await?;
-        sink.feed("()".into()).await
+        let cmds = [
+            Ok(DC::SetPos(row, col)),
+            Ok(Colour::from(capsule[0]).into()),
+            Ok("()".into()),
+            Ok(Colour::from(capsule[1]).into()),
+            Ok("()".into()),
+        ];
+        draw_handle.as_sink().send_all(&mut futures::stream::iter(cmds)).await
     }
 
     /// Process field updates

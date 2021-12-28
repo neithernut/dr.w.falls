@@ -621,6 +621,47 @@ fn tile_contents(
 }
 
 
+/// A mock up score board entry
+///
+#[derive(Clone, Debug)]
+struct ScoreBoardEntry {
+    pub tag: crate::player::Tag,
+    pub round_score: u32,
+    pub active: bool,
+}
+
+impl scores::Entry for ScoreBoardEntry {
+    fn tag(&self) -> &crate::player::Tag {
+        &self.tag
+    }
+
+    fn round_score(&self) -> u32 {
+        self.round_score
+    }
+
+    fn active(&self) -> bool {
+        self.active
+    }
+}
+
+impl Arbitrary for ScoreBoardEntry {
+    fn arbitrary(g: &mut Gen) -> Self {
+        Self {
+            tag: Arbitrary::arbitrary(g),
+            round_score: Arbitrary::arbitrary(g),
+            active: Arbitrary::arbitrary(g),
+        }
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        let res = (self.tag.clone(), self.round_score, self.active)
+            .shrink()
+            .map(|(tag, round_score, active)| Self {tag, round_score, active});
+        Box::new(res)
+    }
+}
+
+
 /// Utility for generating random [area::Area]s
 ///
 #[derive(Copy, Clone, Debug)]

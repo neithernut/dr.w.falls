@@ -630,6 +630,16 @@ struct ScoreBoardEntry {
     pub active: bool,
 }
 
+impl ScoreBoardEntry {
+    /// Check whether the entry is usable for (relatively simple) tests
+    ///
+    pub fn acceptable_for_tests(&self) -> bool {
+        !self.tag.name().trim().is_empty() &&
+            self.tag.score() < 10000000 &&
+            self.round_score < 10000000
+    }
+}
+
 impl scores::Entry for ScoreBoardEntry {
     fn tag(&self) -> &crate::player::Tag {
         &self.tag

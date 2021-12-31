@@ -11,6 +11,72 @@ use super::*;
 
 
 #[quickcheck]
+fn score_board_initial_content(
+    rows: u8,
+    cols: u8,
+    base_row: u8,
+    base_col: u8,
+    orig: Vec<ScoreBoardEntry>,
+    max_rows: u8,
+    show_scores: bool,
+) -> std::io::Result<TestResult> {
+    use area::Entity;
+    use scores::Entry;
+
+    let rows: u16 = rows.into();
+    let cols: u16 = cols.into();
+    let base_row: u16 = base_row.into();
+    let base_col: u16 = base_col.into();
+
+    let board = scores::ScoreBoard::new(max_rows.into()).show_scores(show_scores);
+    let area = Area {
+        row_a: base_row,
+        col_a: base_col,
+        row_b: base_row.saturating_add(board.rows()),
+        col_b: base_col.saturating_add(board.cols()),
+    };
+
+    if area.row_b <= rows && area.col_b <= cols && orig.iter().all(ScoreBoardEntry::acceptable_for_tests) {
+        tokio::runtime::Runtime::new()?.block_on(async {
+            let (writer, vt_state) = tokio::sync::watch::channel(VT::new(rows, cols));
+            let mut handle = handle_from_bare(VTWriter::from(writer), &[]).await;
+            area.instantiate(&mut handle)
+                .place_center(board)
+                .await?
+                .update(&mut handle, orig.iter(), |_| false)
+                .await?;
+            let state = ((area.row_a + 1)..area.row_b)
+                .map(|r| vt_state.borrow().chars_at(r, area.col_a).collect::<String>())
+                .filter_map(|r| {
+                    let mut parts = r.split_whitespace();
+                    let num: usize = parts.next()?.parse().ok()?;
+                    let name: String = parts.next()?.to_owned();
+                    let total_score: Option<u32> = parts.next().and_then(|s| s.parse().ok());
+                    let round_score: Option<u32> = parts.next().and_then(|s| s.parse().ok());
+                    Some((num, name, total_score, round_score))
+                });
+            let res = orig
+                .iter()
+                .take(max_rows.into())
+                .enumerate()
+                .map(|(n, e)| {
+                    let (total_score, round_score) = if show_scores {
+                        (Some(e.tag().score()), Some(e.round_score()))
+                    } else {
+                        (None, None)
+                    };
+                    (n + 1, e.tag().name().trim().to_owned(), total_score, round_score)
+                })
+                .eq(state);
+            Ok(TestResult::from_bool(res))
+        })
+    } else {
+        Ok(TestResult::discard())
+    }
+}
+
+
+#[quickcheck]
 fn dynamic_text(
     rows: NonZeroU8,
     cols: NonZeroU8,

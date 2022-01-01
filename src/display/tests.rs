@@ -20,21 +20,13 @@ fn score_board_initial_content(
     max_rows: u8,
     show_scores: bool,
 ) -> std::io::Result<TestResult> {
-    use area::Entity;
     use scores::Entry;
 
     let rows: u16 = rows.into();
     let cols: u16 = cols.into();
-    let base_row: u16 = base_row.into();
-    let base_col: u16 = base_col.into();
 
     let board = scores::ScoreBoard::new(max_rows.into()).show_scores(show_scores);
-    let area = Area {
-        row_a: base_row,
-        col_a: base_col,
-        row_b: base_row.saturating_add(board.rows()),
-        col_b: base_col.saturating_add(board.cols()),
-    };
+    let area = Area::new_for_placement(base_row, base_col, &board);
 
     if area.row_b <= rows && area.col_b <= cols && orig.iter().all(ScoreBoardEntry::acceptable_for_tests) {
         tokio::runtime::Runtime::new()?.block_on(async {
@@ -87,21 +79,13 @@ fn score_board_updated_content(
     max_rows: u8,
     show_scores: bool,
 ) -> std::io::Result<TestResult> {
-    use area::Entity;
     use scores::Entry;
 
     let rows: u16 = rows.into();
     let cols: u16 = cols.into();
-    let base_row: u16 = base_row.into();
-    let base_col: u16 = base_col.into();
 
     let board = scores::ScoreBoard::new(max_rows.into()).show_scores(show_scores);
-    let area = Area {
-        row_a: base_row,
-        col_a: base_col,
-        row_b: base_row.saturating_add(board.rows()),
-        col_b: base_col.saturating_add(board.cols()),
-    };
+    let area = Area::new_for_placement(base_row, base_col, &board);
 
     let acceptable = orig1.iter().all(ScoreBoardEntry::acceptable_for_tests) &&
         orig2.iter().all(ScoreBoardEntry::acceptable_for_tests);
@@ -186,20 +170,11 @@ fn dynamic_text(
 
 #[quickcheck]
 fn play_field_init(rows: u8, cols: u8, base_row: u8, base_col: u8) -> std::io::Result<TestResult> {
-    use area::Entity;
-
     let rows: u16 = rows.into();
     let cols: u16 = cols.into();
-    let base_row: u16 = base_row.into();
-    let base_col: u16 = base_col.into();
 
     let field = field::PlayField::new();
-    let area = Area {
-        row_a: base_row,
-        col_a: base_col,
-        row_b: base_row.saturating_add(field.rows()),
-        col_b: base_col.saturating_add(field.cols()),
-    };
+    let area = Area::new_for_placement(base_row, base_col, &field);
 
     if area.row_b <= rows && area.col_b <= cols {
         tokio::runtime::Runtime::new()?.block_on(async {
@@ -254,20 +229,11 @@ fn play_field_virs(
 ) -> std::io::Result<TestResult> {
     use std::convert::TryInto;
 
-    use area::Entity;
-
     let rows: u16 = rows.into();
     let cols: u16 = cols.into();
-    let base_row: u16 = base_row.into();
-    let base_col: u16 = base_col.into();
 
     let field = field::PlayField::new();
-    let area = Area {
-        row_a: base_row,
-        col_a: base_col,
-        row_b: base_row.saturating_add(field.rows()),
-        col_b: base_col.saturating_add(field.cols()),
-    };
+    let area = Area::new_for_placement(base_row, base_col, &field);
 
     if area.row_b <= rows && area.col_b <= cols {
         tokio::runtime::Runtime::new()?.block_on(async {
@@ -308,20 +274,11 @@ fn play_field_next(
     colour_a: crate::util::Colour,
     colour_b: crate::util::Colour,
 ) -> std::io::Result<TestResult> {
-    use area::Entity;
-
     let rows: u16 = rows.into();
     let cols: u16 = cols.into();
-    let base_row: u16 = base_row.into();
-    let base_col: u16 = base_col.into();
 
     let field = field::PlayField::new();
-    let area = Area {
-        row_a: base_row,
-        col_a: base_col,
-        row_b: base_row.saturating_add(field.rows()),
-        col_b: base_col.saturating_add(field.cols()),
-    };
+    let area = Area::new_for_placement(base_row, base_col, &field);
 
     if area.row_b <= rows && area.col_b <= cols {
         tokio::runtime::Runtime::new()?.block_on(async {
@@ -356,20 +313,11 @@ fn play_field_update(
 ) -> std::io::Result<TestResult> {
     use std::convert::TryInto;
 
-    use area::Entity;
-
     let rows: u16 = rows.into();
     let cols: u16 = cols.into();
-    let base_row: u16 = base_row.into();
-    let base_col: u16 = base_col.into();
 
     let field = field::PlayField::new();
-    let area = Area {
-        row_a: base_row,
-        col_a: base_col,
-        row_b: base_row.saturating_add(field.rows()),
-        col_b: base_col.saturating_add(field.cols()),
-    };
+    let area = Area::new_for_placement(base_row, base_col, &field);
 
     if area.row_b <= rows && area.col_b <= cols {
         tokio::runtime::Runtime::new()?.block_on(async {
@@ -418,20 +366,11 @@ fn line_input_update(
     input_len: NonZeroU8,
     inputs: Vec<u8>,
 ) -> std::io::Result<TestResult> {
-    use area::Entity;
-
     let rows: u16 = rows.into();
     let cols: u16 = cols.into();
-    let base_row: u16 = base_row.into();
-    let base_col: u16 = base_col.into();
 
     let line_input = input::LineInput::new(input_len.into());
-    let area = Area {
-        row_a: base_row,
-        col_a: base_col,
-        row_b: base_row.saturating_add(line_input.rows()),
-        col_b: base_col.saturating_add(line_input.cols()),
-    };
+    let area = Area::new_for_placement(base_row, base_col, &line_input);
 
     if area.row_b <= rows && area.col_b <= cols {
         tokio::runtime::Runtime::new()?.block_on(async {
@@ -816,6 +755,22 @@ struct Area {
 }
 
 impl Area {
+    pub fn new_for_placement(
+        base_row: impl Into<u16>,
+        base_col: impl Into<u16>,
+        entity: &impl area::Entity,
+    ) -> Self {
+        let base_row: u16 = base_row.into();
+        let base_col: u16 = base_col.into();
+
+        Self {
+            row_a: base_row,
+            col_a: base_col,
+            row_b: base_row.saturating_add(entity.rows()),
+            col_b: base_col.saturating_add(entity.cols()),
+        }
+    }
+
     pub fn instantiate<H: std::borrow::BorrowMut<DrawHandle<'static, W>>, W: tokio::io::AsyncWrite + Send + Unpin>(
         self,
         handle: H,

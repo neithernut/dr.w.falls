@@ -95,10 +95,15 @@ impl From<Name> for String {
 
 impl Arbitrary for Name {
     fn arbitrary(g: &mut Gen) -> Self {
-        let len = usize::arbitrary(g) % (MAX_PLAYER_NAME_LEN - 1) + 1;
-        let res = (0..len)
-            .filter_map(|_| char::from_u32(u32::arbitrary(g) % (0x7F - 0x20) + 0x20))
+        use std::iter::{from_fn, once};
+
+        let trail_len = usize::arbitrary(g) % (MAX_PLAYER_NAME_LEN - 1);
+        let mut res: String = once(char::from_u32(u32::arbitrary(g) % (0x7F - 0x21) + 0x21).unwrap())
+            .chain(from_fn(|| char::from_u32(u32::arbitrary(g) % (0x7F - 0x20) + 0x20)).take(trail_len))
             .collect();
+        while res.ends_with(" ") {
+            res.pop();
+        }
         Self(res)
     }
 
@@ -106,7 +111,7 @@ impl Arbitrary for Name {
         let res = self
             .0
             .shrink()
-            .filter(|n| n.len() > 0 && n.chars().all(|c| c.is_ascii() && !c.is_ascii_control()))
+            .filter(|n| name_is_valid(&n))
             .map(Self);
         Box::new(res)
     }
@@ -115,8 +120,17 @@ impl Arbitrary for Name {
 
 #[quickcheck]
 fn name_gen(name: Name) -> bool {
-    name.0.chars().all(|c| c.is_ascii() && !c.is_ascii_control()) &&
-        name.0.len() > 0 &&
-        name.0.len() <= MAX_PLAYER_NAME_LEN
+    name_is_valid(&name.0)
+}
+
+
+/// Check whether a given player name is valid
+///
+pub fn name_is_valid(name: &str) -> bool {
+    name.chars().all(|c| c.is_ascii() && !c.is_ascii_control()) &&
+        !name.starts_with(" ") &&
+        !name.ends_with(" ") &&
+        name.len() > 0 &&
+        name.len() <= MAX_PLAYER_NAME_LEN
 }
 

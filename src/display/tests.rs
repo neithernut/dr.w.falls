@@ -57,7 +57,7 @@ fn score_board_initial_content(
                     } else {
                         (None, None)
                     };
-                    (n + 1, e.tag().name().trim().to_owned(), total_score, round_score)
+                    (n + 1, e.tag().name().to_owned(), total_score, round_score)
                 })
                 .eq(state);
             Ok(TestResult::from_bool(res))
@@ -116,7 +116,7 @@ fn score_board_updated_content(
                     } else {
                         (None, None)
                     };
-                    (n + 1, e.tag().name().trim().to_owned(), total_score, round_score)
+                    (n + 1, e.tag().name().to_owned(), total_score, round_score)
                 })
                 .eq(state);
             Ok(TestResult::from_bool(res))

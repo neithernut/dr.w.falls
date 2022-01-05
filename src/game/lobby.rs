@@ -66,7 +66,11 @@ pub async fn serve<P>(
                 Some(Ok(c)) => {
                     let mut display_handle = display.handle().await?;
 
-                    let name = name_input.update(&mut display_handle, c).await?.map(ToString::to_string);
+                    let name = name_input
+                        .update(&mut display_handle, c)
+                        .await?
+                        .map(str::trim)
+                        .map(ToString::to_string);
                     if let Some(name) = name {
                         let (reply_sender, reply) = oneshot::channel();
                         registration

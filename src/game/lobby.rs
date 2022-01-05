@@ -70,6 +70,7 @@ pub async fn serve<P>(
                         .update(&mut display_handle, c)
                         .await?
                         .map(str::trim)
+                        .filter(|s| s.is_empty())
                         .map(ToString::to_string);
                     if let Some(name) = name {
                         let (reply_sender, reply) = oneshot::channel();

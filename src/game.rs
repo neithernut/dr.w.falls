@@ -49,7 +49,7 @@ where R: rand::Rng + rand::SeedableRng + Clone + Send + Sync + fmt::Debug + 'sta
         listener,
         serve_connection,
         roster.clone(),
-    ).await.unwrap();
+    ).await.map_err(|e| E::new("Failure during lobby phase", e))?;
 
     let mut num = 1;
 

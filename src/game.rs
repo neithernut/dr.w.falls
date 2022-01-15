@@ -4,6 +4,9 @@ mod lobby;
 mod waiting;
 mod round;
 
+#[cfg(test)]
+mod tests;
+
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;

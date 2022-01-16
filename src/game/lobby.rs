@@ -46,7 +46,7 @@ pub async fn serve<P>(
         display::LineInput::new((player::MAX_PLAYER_NAME_LEN as u16).try_into().unwrap())
     ).await?;
     let reply_text = reg.place_center(
-        display::DynamicText::new((super::COLUMN_SPLIT - 2).try_into().unwrap(), 4u16.try_into().unwrap())
+        display::DynamicText::new(4u16.try_into().unwrap(), (super::COLUMN_SPLIT - 2).try_into().unwrap())
     ).await?;
 
     left.place_center(display::StaticText::from(&super::INSTRUCTIONS as &[_])).await?;

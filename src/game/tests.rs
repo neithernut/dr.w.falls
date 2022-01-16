@@ -23,6 +23,32 @@ fn lobby_serve_instant_transition(
 
 
 #[quickcheck]
+fn lobby_serve_input_eof(
+    input: crate::tests::ASCIIString,
+    addr: std::net::SocketAddr,
+) -> Result<bool, ConnTaskError> {
+    tokio::runtime::Runtime::new()?.block_on(async {
+        let (ports, _) = lobby::ports();
+        let mut display = sink_display();
+        let (phase_sender, phase) = tokio::sync::watch::channel(());
+        let res = lobby::serve(
+            ports,
+            &mut display,
+            ascii_stream(input.as_ref()),
+            TransitionWatcher::new(phase, |_| false),
+            addr.into(),
+        ).await;
+        drop(phase_sender);
+        match res {
+            Ok(_)                           => Ok(false),
+            Err(ConnTaskError::Terminated)  => Ok(true),
+            Err(e)                          => Err(e),
+        }
+    })
+}
+
+
+#[quickcheck]
 fn ascii_stream_smoke(orig: crate::tests::ASCIIString) -> Result<bool, ConnTaskError> {
     use futures::TryStreamExt;
 

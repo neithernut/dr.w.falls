@@ -21,3 +21,10 @@ fn sink_display() -> crate::display::Display<impl tokio::io::AsyncWrite + Send +
     crate::display::Display::new(tokio::io::sink(), DISPLAY_HEIGHT, DISPLAY_WIDTH)
 }
 
+
+/// Create an [ASCIIStream] from the given input
+///
+fn ascii_stream(input: &str) -> impl futures::stream::Stream<Item = Result<char, super::ConnTaskError>> + '_ {
+    ASCIIStream::new(input.as_ref(), Default::default())
+}
+

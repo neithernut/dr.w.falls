@@ -4,6 +4,25 @@ use super::*;
 
 
 #[quickcheck]
+fn lobby_serve_instant_transition(
+    input: crate::tests::ASCIIString,
+    addr: std::net::SocketAddr,
+) -> Result<bool, ConnTaskError> {
+    use futures::StreamExt;
+
+    tokio::runtime::Runtime::new()?.block_on(async {
+        let (ports, _) = lobby::ports();
+        let mut display = sink_display();
+        let input = ascii_stream(input.as_ref()).chain(futures::stream::pending());
+        let (_, phase) = tokio::sync::watch::channel(());
+        lobby::serve(ports, &mut display, input, TransitionWatcher::new(phase, |_| true), addr.into())
+            .await
+            .map(|h| h.is_none())
+    })
+}
+
+
+#[quickcheck]
 fn ascii_stream_smoke(orig: crate::tests::ASCIIString) -> Result<bool, ConnTaskError> {
     use futures::TryStreamExt;
 

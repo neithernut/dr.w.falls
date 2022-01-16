@@ -22,6 +22,12 @@ impl From<ASCIIString> for String {
     }
 }
 
+impl AsRef<str> for ASCIIString {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}
+
 impl fmt::Display for ASCIIString {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.0, f)

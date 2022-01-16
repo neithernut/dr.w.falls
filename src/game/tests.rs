@@ -14,3 +14,10 @@ fn ascii_stream_smoke(orig: crate::tests::ASCIIString) -> Result<bool, ConnTaskE
     })
 }
 
+
+/// Create a dumb [crate::display::Display] from a sink
+///
+fn sink_display() -> crate::display::Display<impl tokio::io::AsyncWrite + Send + Unpin + 'static> {
+    crate::display::Display::new(tokio::io::sink(), DISPLAY_HEIGHT, DISPLAY_WIDTH)
+}
+

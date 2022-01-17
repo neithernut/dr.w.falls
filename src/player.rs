@@ -10,7 +10,7 @@ use tokio::sync::mpsc;
 
 
 #[cfg(test)]
-mod tests;
+pub mod tests;
 
 
 /// Convenience type for player roster

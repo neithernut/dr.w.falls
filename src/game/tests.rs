@@ -49,6 +49,60 @@ fn lobby_serve_input_eof(
 
 
 #[quickcheck]
+fn lobby_serve_registration(
+    orig: crate::player::tests::Name,
+    addr: std::net::SocketAddr,
+    registrtion_success: bool,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    use futures::StreamExt;
+
+    use crate::player::{Data, Handle};
+
+    let mut input: String = orig.clone().into();
+    input.push('\n');
+
+    tokio::runtime::Runtime::new()?.block_on(async {
+        let (ports, mut control) = lobby::ports();
+        let (phase_sender, phase) = tokio::sync::watch::channel(false);
+        let orig_token: lobby::ConnectionToken = addr.into();
+
+        let lobby = {
+            let orig_token = orig_token.clone();
+            tokio::spawn(async move {
+                let mut display = sink_display();
+                lobby::serve(
+                    ports,
+                    &mut display,
+                    ascii_stream(input.as_ref()).chain(futures::stream::pending()),
+                    TransitionWatcher::new(phase, |t| *t),
+                    orig_token.clone(),
+                ).await
+            })
+        };
+
+        let handle = if registrtion_success {
+            let (notifier, _) = tokio::sync::mpsc::unbounded_channel();
+            let handle = tokio::spawn(futures::future::pending());
+            Some(Handle::new(Arc::new(Data::new(orig.clone().into(), addr, handle)), notifier))
+        } else {
+            None
+        };
+        let tag = handle.as_ref().map(Handle::tag);
+
+        let (name, token) = control
+            .receive_registration(handle)
+            .await
+            .ok_or(crate::error::NoneError)?;
+        phase_sender.send(true)?;
+        let res = lobby.await??.map(|h| h.tag()) == tag &&
+            name == orig.as_ref() &&
+            token == orig_token;
+        Ok(res)
+    })
+}
+
+
+#[quickcheck]
 fn ascii_stream_smoke(orig: crate::tests::ASCIIString) -> Result<bool, ConnTaskError> {
     use futures::TryStreamExt;
 

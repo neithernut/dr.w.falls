@@ -250,6 +250,30 @@ pub struct ControlPorts {
 }
 
 
+#[cfg(test)]
+impl ControlPorts {
+    /// Receive and process a registration
+    ///
+    /// This function awaits the receival of one registration and reply using
+    /// either the given handle or `DenialReason::PermanentFailure` if `None`
+    /// was supplied. The function returns the name and connection token sent
+    /// with the registration.
+    ///
+    pub async fn receive_registration(
+        &mut self,
+        reply: Option<player::Handle>,
+    ) -> Option<(String, ConnectionToken)> {
+        let reg = self.registration.recv().await?;
+        let reply = match reply {
+            Some(handle) => handle.into(),
+            _ => DenialReason::PermanentFailure.into(),
+        };
+        reg.response.send(reply).ok()?;
+        Some((reg.name, reg.token))
+    }
+}
+
+
 /// Control message specific to the lobby phase
 ///
 #[derive(Clone, Debug)]

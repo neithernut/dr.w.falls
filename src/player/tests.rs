@@ -93,6 +93,12 @@ impl From<Name> for String {
     }
 }
 
+impl AsRef<str> for Name {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}
+
 impl Arbitrary for Name {
     fn arbitrary(g: &mut Gen) -> Self {
         use std::iter::{from_fn, once};

@@ -56,8 +56,6 @@ fn lobby_serve_registration(
 ) -> Result<bool, Box<dyn std::error::Error>> {
     use futures::StreamExt;
 
-    use crate::player::{Data, Handle};
-
     let mut input: String = orig.clone().into();
     input.push('\n');
 
@@ -81,13 +79,11 @@ fn lobby_serve_registration(
         };
 
         let handle = if registrtion_success {
-            let (notifier, _) = tokio::sync::mpsc::unbounded_channel();
-            let handle = tokio::spawn(futures::future::pending());
-            Some(Handle::new(Arc::new(Data::new(orig.clone().into(), addr, handle)), notifier))
+            Some(player_handle(orig.clone().into(), addr))
         } else {
             None
         };
-        let tag = handle.as_ref().map(Handle::tag);
+        let tag = handle.as_ref().map(crate::player::Handle::tag);
 
         let (name, token) = control
             .receive_registration(handle)
@@ -125,5 +121,16 @@ fn sink_display() -> crate::display::Display<impl tokio::io::AsyncWrite + Send +
 ///
 fn ascii_stream(input: &str) -> impl futures::stream::Stream<Item = Result<char, super::ConnTaskError>> + '_ {
     ASCIIStream::new(input.as_ref(), Default::default())
+}
+
+
+/// Construct a pseudo [crate::player::Handle] from a name and an addr
+///
+fn player_handle(name: String, addr: std::net::SocketAddr) -> crate::player::Handle {
+    use crate::player::{Data, Handle};
+
+    let (notifier, _) = tokio::sync::mpsc::unbounded_channel();
+    let handle = tokio::spawn(futures::future::pending());
+    Handle::new(Arc::new(Data::new(name, addr, handle)), notifier)
 }
 

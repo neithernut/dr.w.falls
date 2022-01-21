@@ -112,6 +112,23 @@ async fn waiting_serve_instant_transition() {
 }
 
 
+#[tokio::test]
+async fn waiting_serve_input_eof() {
+    let me = player_handle(Default::default(), dummy_addr());
+
+    let (ports, _) = waiting::ports(std::iter::once(me.tag()));
+    let mut display = sink_display();
+    let input = futures::stream::empty();
+    let (phase_sender, phase) = tokio::sync::watch::channel(());
+    let res = waiting::serve(ports, &mut display, input, TransitionWatcher::new(phase, |_| false), &me).await;
+    drop(phase_sender);
+    match res.unwrap_err() {
+        ConnTaskError::Terminated => (),
+        e => Err(e).expect("Expected ConnTaskError::Terminated"),
+    }
+}
+
+
 #[quickcheck]
 fn ascii_stream_smoke(orig: crate::tests::ASCIIString) -> Result<bool, ConnTaskError> {
     use futures::TryStreamExt;

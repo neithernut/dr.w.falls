@@ -134,3 +134,10 @@ fn player_handle(name: String, addr: std::net::SocketAddr) -> crate::player::Han
     Handle::new(Arc::new(Data::new(name, addr, handle)), notifier)
 }
 
+
+/// Create some arbitrary (but constant) [std::net::SocketAddr]
+///
+fn dummy_addr() -> std::net::SocketAddr {
+    std::net::SocketAddrV6::new(std::net::Ipv6Addr::UNSPECIFIED, 0, 0, 0).into()
+}
+

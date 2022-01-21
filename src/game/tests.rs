@@ -98,6 +98,20 @@ fn lobby_serve_registration(
 }
 
 
+#[tokio::test]
+async fn waiting_serve_instant_transition() {
+    let me = player_handle(Default::default(), dummy_addr());
+
+    let (ports, _) = waiting::ports(std::iter::once(me.tag()));
+    let mut display = sink_display();
+    let input = futures::stream::pending();
+    let (_, phase) = tokio::sync::watch::channel(());
+    waiting::serve(ports, &mut display, input, TransitionWatcher::new(phase, |_| true), &me)
+        .await
+        .expect("Waiting returned an error")
+}
+
+
 #[quickcheck]
 fn ascii_stream_smoke(orig: crate::tests::ASCIIString) -> Result<bool, ConnTaskError> {
     use futures::TryStreamExt;

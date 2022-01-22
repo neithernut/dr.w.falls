@@ -68,7 +68,7 @@ pub async fn serve<P>(
     inst.update_single(&mut display.handle().await?, "Press any key when ready.").await?;
 
     // Actual waiting display logic
-    loop {
+    while !phase.transitioned() {
         tokio::select! {
             res = input.next() => match res {
                 Some(Ok(_)) => {
@@ -87,9 +87,11 @@ pub async fn serve<P>(
                 let countdown = *countdown.borrow();
                 num_display.update_single(&mut display.handle().await?, countdown).await?
             },
-            t = phase.transition() => break t,
+            t = phase.transition() => return t,
         }
     }
+
+    Ok(())
 }
 
 

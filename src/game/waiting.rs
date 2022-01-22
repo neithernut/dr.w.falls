@@ -184,6 +184,15 @@ pub struct ControlPorts {
     ready: mpsc::Receiver<player::Tag>,
 }
 
+#[cfg(test)]
+impl ControlPorts {
+    /// Retrieve the receiver of ready players
+    ///
+    pub fn ready(&mut self) -> &mut mpsc::Receiver<player::Tag> {
+        &mut self.ready
+    }
+}
+
 
 /// Score board entry for the waiting phase
 ///

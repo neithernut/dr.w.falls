@@ -130,6 +130,41 @@ async fn waiting_serve_input_eof() {
 
 
 #[quickcheck]
+fn waiting_serve_ready(
+    input: crate::tests::ASCIIString,
+    addr: std::net::SocketAddr,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    use futures::StreamExt;
+
+    tokio::runtime::Runtime::new()?.block_on(async {
+        let me = player_handle(Default::default(), addr);
+        let tag = me.tag();
+
+        let (ports, mut control) = waiting::ports(std::iter::once(tag.clone()));
+        let (phase_sender, phase) = tokio::sync::watch::channel(false);
+
+        let waiting = {
+            tokio::spawn(async move {
+                let mut display = sink_display();
+                waiting::serve(
+                    ports,
+                    &mut display,
+                    ascii_stream(input.as_ref()).chain(futures::stream::pending()),
+                    TransitionWatcher::new(phase, |t| *t),
+                    &me,
+                ).await
+            })
+        };
+
+        let res = control.ready().recv().await.ok_or(crate::error::NoneError)? == tag;
+        phase_sender.send(true)?;
+        waiting.await??;
+        Ok(res)
+    })
+}
+
+
+#[quickcheck]
 fn ascii_stream_smoke(orig: crate::tests::ASCIIString) -> Result<bool, ConnTaskError> {
     use futures::TryStreamExt;
 

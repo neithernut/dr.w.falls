@@ -73,7 +73,7 @@ pub async fn serve<P>(
             res = input.next() => match res {
                 Some(Ok(_)) => {
                     ready.send(me.tag()).await.map_err(ConnTaskError::other)?;
-                    inst.update_single(&mut display.handle().await?, "Wait to the round to start.").await?;
+                    inst.update_single(&mut display.handle().await?, "Wait for the round to start.").await?;
                 },
                 Some(Err(e)) if !e.is_would_block() => return Err(e.into()),
                 None => return Err(ConnTaskError::Terminated),

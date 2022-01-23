@@ -50,19 +50,17 @@ fn lobby_serve_input_eof(
 
 #[quickcheck]
 fn lobby_serve_registration(
-    orig: crate::player::tests::Name,
-    addr: std::net::SocketAddr,
+    orig: crate::player::tests::TestHandle,
     registrtion_success: bool,
 ) -> Result<bool, Box<dyn std::error::Error>> {
     use futures::StreamExt;
 
-    let mut input: String = orig.clone().into();
-    input.push('\n');
+    let input = format!("{}\n", orig.name());
 
     tokio::runtime::Runtime::new()?.block_on(async {
         let (ports, mut control) = lobby::ports();
         let (phase_sender, phase) = tokio::sync::watch::channel(false);
-        let orig_token: lobby::ConnectionToken = addr.into();
+        let orig_token: lobby::ConnectionToken = orig.addr().into();
 
         let lobby = {
             let orig_token = orig_token.clone();
@@ -79,7 +77,7 @@ fn lobby_serve_registration(
         };
 
         let handle = if registrtion_success {
-            Some(player_handle(orig.clone().into(), addr))
+            Some(orig.clone().into())
         } else {
             None
         };
@@ -91,7 +89,7 @@ fn lobby_serve_registration(
             .ok_or(crate::error::NoneError)?;
         phase_sender.send(true)?;
         let res = lobby.await??.map(|h| h.tag()) == tag &&
-            name == orig.as_ref() &&
+            name == orig.name() &&
             token == orig_token;
         Ok(res)
     })

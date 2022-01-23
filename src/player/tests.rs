@@ -82,6 +82,51 @@ fn data_init(name: Name, addr: std::net::SocketAddr) -> std::io::Result<bool> {
 }
 
 
+/// Utility for generating player handles for tests
+///
+#[derive(Clone, Debug)]
+pub struct TestHandle {
+    name: Name,
+    addr: std::net::SocketAddr,
+}
+
+impl TestHandle {
+    /// Retrieve the player's name
+    ///
+    pub fn name(&self) -> &str {
+        self.name.as_ref()
+    }
+
+    /// Retrieve the address assoviated with the player
+    ///
+    pub fn addr(&self) -> std::net::SocketAddr {
+        self.addr
+    }
+}
+
+impl From<TestHandle> for Handle {
+    fn from(handle: TestHandle) -> Self {
+        let (notifier, _) = tokio::sync::mpsc::unbounded_channel();
+        let task = tokio::spawn(futures::future::pending());
+        Handle::new(Arc::new(Data::new(handle.name.into(), handle.addr, task)), notifier)
+    }
+}
+
+impl Arbitrary for TestHandle {
+    fn arbitrary(g: &mut Gen) -> Self {
+        Self {
+            name: Arbitrary::arbitrary(g),
+            addr: Arbitrary::arbitrary(g),
+        }
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        Box::new((self.name.clone(), self.addr).shrink().map(|(name, addr)| Self {name, addr}))
+    }
+}
+
+
+
 /// Utility for generting a valid player name
 ///
 #[derive(Clone, Debug)]

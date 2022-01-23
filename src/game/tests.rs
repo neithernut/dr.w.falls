@@ -98,7 +98,7 @@ fn lobby_serve_registration(
 
 #[tokio::test]
 async fn waiting_serve_instant_transition() {
-    let me = player_handle(Default::default(), dummy_addr());
+    let me = dummy_handle();
 
     let (ports, _) = waiting::ports(std::iter::once(me.tag()));
     let mut display = sink_display();
@@ -112,7 +112,7 @@ async fn waiting_serve_instant_transition() {
 
 #[tokio::test]
 async fn waiting_serve_input_eof() {
-    let me = player_handle(Default::default(), dummy_addr());
+    let me = dummy_handle();
 
     let (ports, _) = waiting::ports(std::iter::once(me.tag()));
     let mut display = sink_display();
@@ -188,20 +188,14 @@ fn ascii_stream(input: &str) -> impl futures::stream::Stream<Item = Result<char,
 }
 
 
-/// Construct a pseudo [crate::player::Handle] from a name and an addr
+/// Construct a pseudo [crate::player::Handle]
 ///
-fn player_handle(name: String, addr: std::net::SocketAddr) -> crate::player::Handle {
+fn dummy_handle() -> crate::player::Handle {
     use crate::player::{Data, Handle};
 
     let (notifier, _) = tokio::sync::mpsc::unbounded_channel();
+    let addr = std::net::SocketAddrV6::new(std::net::Ipv6Addr::UNSPECIFIED, 0, 0, 0).into();
     let handle = tokio::spawn(futures::future::pending());
-    Handle::new(Arc::new(Data::new(name, addr, handle)), notifier)
-}
-
-
-/// Create some arbitrary (but constant) [std::net::SocketAddr]
-///
-fn dummy_addr() -> std::net::SocketAddr {
-    std::net::SocketAddrV6::new(std::net::Ipv6Addr::UNSPECIFIED, 0, 0, 0).into()
+    Handle::new(Arc::new(Data::new(Default::default(), addr, handle)), notifier)
 }
 

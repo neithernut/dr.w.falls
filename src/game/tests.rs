@@ -130,12 +130,12 @@ async fn waiting_serve_input_eof() {
 #[quickcheck]
 fn waiting_serve_ready(
     input: crate::tests::ASCIIString,
-    addr: std::net::SocketAddr,
+    me: crate::player::tests::TestHandle,
 ) -> Result<bool, Box<dyn std::error::Error>> {
     use futures::StreamExt;
 
     tokio::runtime::Runtime::new()?.block_on(async {
-        let me = player_handle(Default::default(), addr);
+        let me: crate::player::Handle = me.into();
         let tag = me.tag();
 
         let (ports, mut control) = waiting::ports(std::iter::once(tag.clone()));

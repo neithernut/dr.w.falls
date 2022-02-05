@@ -174,6 +174,15 @@ pub struct Ports {
     ready: mpsc::Sender<player::Tag>,
 }
 
+#[cfg(test)]
+impl Ports {
+    /// Retrieve the sender for ready players
+    ///
+    pub fn ready(&mut self) -> &mut mpsc::Sender<player::Tag> {
+        &mut self.ready
+    }
+}
+
 
 /// Control task side of communication ports for the lobby phase
 ///

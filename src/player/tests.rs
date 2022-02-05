@@ -102,13 +102,19 @@ impl TestHandle {
     pub fn addr(&self) -> std::net::SocketAddr {
         self.addr
     }
+
+    /// Transform into an actual [Handle] with a given notifier
+    ///
+    pub fn with_notifier(self, notifier: mpsc::UnboundedSender<Tag>) -> Handle {
+        let task = tokio::spawn(futures::future::pending());
+        Handle::new(Arc::new(Data::new(self.name.into(), self.addr, task)), notifier)
+    }
 }
 
 impl From<TestHandle> for Handle {
     fn from(handle: TestHandle) -> Self {
         let (notifier, _) = tokio::sync::mpsc::unbounded_channel();
-        let task = tokio::spawn(futures::future::pending());
-        Handle::new(Arc::new(Data::new(handle.name.into(), handle.addr, task)), notifier)
+        handle.with_notifier(notifier)
     }
 }
 

@@ -192,6 +192,47 @@ fn waiting_control_end_of_game(
 
 
 #[quickcheck]
+fn waiting_control_players(
+    players: Vec<(crate::player::tests::TestHandle, bool)>,
+    viruses: u8,
+    tick: std::time::Duration,
+) -> Result<TestResult, Box<dyn std::error::Error>> {
+    if players.is_empty() {
+        return Ok(TestResult::discard())
+    }
+
+    tokio::runtime::Runtime::new()?.block_on(async {
+        let (notifier, disconnects) = tokio::sync::mpsc::unbounded_channel();
+
+        let mut handles: Vec<_> = players
+            .into_iter()
+            .map(|(h, k)| (h.with_notifier(notifier.clone()), k))
+            .collect();
+        let tags: Vec<_> = handles.iter().map(|(h, _)| h.tag()).collect();
+
+        let (mut ports, control_ports) = waiting::ports(tags.clone());
+        let (_, game_control) = tokio::sync::watch::channel(super::GameControl::Settings{viruses, tick});
+
+        let waiting = tokio::spawn(async move {
+            let mut disconnects = disconnects;
+            waiting::control(control_ports, game_control, Arc::new(tags.into()), &mut disconnects).await
+        });
+
+        handles.retain(|(_, k)| *k);
+        for (h, _) in handles.iter() {
+            ports.ready().send(h.tag()).await?
+        }
+
+        waiting.await?;
+
+        // Let's be ultry paranoid and make sure handles lives until now
+        drop(handles);
+        Ok(TestResult::passed())
+    })
+}
+
+
+#[quickcheck]
 fn ascii_stream_smoke(orig: crate::tests::ASCIIString) -> Result<bool, ConnTaskError> {
     use futures::TryStreamExt;
 

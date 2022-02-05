@@ -1,5 +1,7 @@
 //! Game tests
 
+use quickcheck::TestResult;
+
 use super::*;
 
 
@@ -159,6 +161,33 @@ fn waiting_serve_ready(
         waiting.await??;
         Ok(res)
     })
+}
+
+
+#[quickcheck]
+fn waiting_control_end_of_game(
+    players: Vec<crate::player::tests::TestHandle>,
+) -> std::io::Result<TestResult> {
+    if players.is_empty() {
+        return Ok(TestResult::discard())
+    }
+
+    tokio::runtime::Runtime::new()?.block_on(async {
+        let (notifier, mut disconnects) = tokio::sync::mpsc::unbounded_channel();
+
+        let handles: Vec<_> = players
+            .into_iter()
+            .map(|h| h.with_notifier(notifier.clone()))
+            .collect();
+        let tags: Vec<_> = handles.iter().map(crate::player::Handle::tag).collect();
+
+        let (_, ports) = waiting::ports(tags.clone());
+        let (_, game_control) = tokio::sync::watch::channel(super::GameControl::EndOfGame);
+
+        waiting::control(ports, game_control, Arc::new(tags.into()), &mut disconnects).await
+    });
+
+    Ok(TestResult::passed())
 }
 
 

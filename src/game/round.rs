@@ -320,16 +320,12 @@ impl Actor {
         field: &display::FieldUpdater,
         movement: field::Movement,
     ) -> Result<(), super::ConnTaskError> {
-        match &mut self.active {
-            ActiveElements::Controlled(c) => {
-                let updates = c
-                    .apply_move(&mut self.moving, &mut self.r#static, movement)
-                    .map(|u| u.to_vec())
-                    .unwrap_or_default();
-                field.update(display_handle, updates).await.map_err(Into::into)
+        if let ActiveElements::Controlled(c) = &mut self.active {
+            if let Some(u) = c.apply_move(&mut self.moving, &mut self.r#static, movement) {
+                field.update(display_handle, u).await?
             }
-            ActiveElements::Uncontrolled(_) => Ok(()),
         }
+        Ok(())
     }
 
     /// Perform a tick

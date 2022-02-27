@@ -320,7 +320,7 @@ impl<I> Arbitrary for RangeInclusive<I>
 
 /// Create an iterator over all positions in the given row
 ///
-pub fn complete_row(row: RowIndex) -> impl Iterator<Item = Position> {
+pub fn complete_row(row: RowIndex) -> impl Iterator<Item = Position> + Clone {
     COLUMNS.map(move |c| (row, c))
 }
 

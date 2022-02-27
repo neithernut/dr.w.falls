@@ -244,6 +244,124 @@ fn ascii_stream_smoke(orig: crate::tests::ASCIIString) -> Result<bool, ConnTaskE
 }
 
 
+/// Populate a field's display from given static and moving fields
+///
+async fn populate_field_display(
+    handle: &mut crate::display::DrawHandle<'_, impl tokio::io::AsyncWrite + Send + Unpin>,
+    field: &crate::display::FieldUpdater,
+    static_field: &crate::field::StaticField,
+    moving_field: &crate::field::MovingField,
+) -> std::io::Result<()> {
+    let whole_field = crate::util::ROWS.flat_map(crate::util::complete_row);
+
+    field.place_viruses(
+        handle,
+        whole_field.clone().filter_map(|p| static_field[p].as_virus().map(|v| (p, v.colour()))),
+        Default::default(),
+    ).await?;
+    field.update(
+        handle,
+        whole_field.clone().filter_map(|p| static_field[p].as_element().map(|v| (p, Some(v.colour())))),
+    ).await?;
+    field.update(
+        handle,
+        whole_field.filter_map(|p| moving_field[p].as_ref().map(|v| (p, Some(v.colour())))),
+    ).await?;
+    Ok(())
+}
+
+
+/// Check whether the display conveys the contents of the given fields
+///
+fn check_field_display(
+    vt: &crate::display::tests::VT,
+    area: crate::display::tests::Area,
+    static_field: &crate::field::StaticField,
+    moving_field: &crate::field::MovingField,
+) -> Result<(), FieldDiscrepancy> {
+    use std::convert::TryInto;
+
+    type STC = <crate::field::StaticField as std::ops::Index<util::Position>>::Output;
+    use crate::util::PotentiallyColoured;
+
+    use TileContents as TC;
+
+    let v: Vec<_> = crate::display::tests::tile_contents(vt, area).map(|(p, [a, _])| {
+        let colour = a.format.fg_colour.map(|(c, _)| c).and_then(|c| c.try_into().ok());
+        let displayed = match a.data {
+            0x2D | 0x3E => colour.map(TC::Virus).unwrap_or(TC::Invalid),
+            0x28        => colour.map(TC::Element).unwrap_or(TC::Invalid),
+            0x20        => TC::None,
+            _           => TC::Invalid,
+        };
+        let r#static = match &static_field[p] {
+            STC::None               => TC::None,
+            STC::CapsuleElement(e)  => TC::Element(e.colour()),
+            STC::Virus(v)           => TC::Virus(v.colour()),
+        };
+        let moving = moving_field[p].colour().map(TC::Element).unwrap_or(TC::None);
+        (p, displayed, r#static, moving)
+    }).filter(|(_, d, r, s)| !((d == r && *s == TC::None) || (d == s && *r == TC::None))).collect();
+
+    if v.is_empty() {
+        Ok(())
+    } else {
+        Err(FieldDiscrepancy(v))
+    }
+}
+
+
+/// Representation of discrepancies found between fields and display
+///
+#[derive(Debug)]
+struct FieldDiscrepancy(Vec<(crate::util::Position, TileContents, TileContents, TileContents)>);
+
+impl std::error::Error for FieldDiscrepancy {}
+
+impl std::fmt::Display for FieldDiscrepancy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Discrepancy: ")?;
+        self.0.iter().try_for_each(|((row, col), d, r, s)| write!(
+            f,
+            " {},{}{}{}{}",
+            usize::from(*row),
+            usize::from(*col),
+            d,
+            r,
+            s,
+        ))
+    }
+}
+
+
+/// Representation of a tile contents in a field
+///
+#[derive(Debug, PartialEq)]
+enum TileContents {
+    None,
+    Element(crate::util::Colour),
+    Virus(crate::util::Colour),
+    Invalid,
+}
+
+impl std::fmt::Display for TileContents {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use crate::util::Colour as C;
+
+        f.write_str(match self {
+            Self::None                  => "N",
+            Self::Element(C::Red)       => "ER",
+            Self::Element(C::Yellow)    => "EY",
+            Self::Element(C::Blue)      => "EB",
+            Self::Virus(C::Red)         => "VR",
+            Self::Virus(C::Yellow)      => "VY",
+            Self::Virus(C::Blue)        => "VB",
+            Self::Invalid               => "I",
+        })
+    }
+}
+
+
 /// Create a dumb [crate::display::Display] from a sink
 ///
 fn sink_display() -> crate::display::Display<impl tokio::io::AsyncWrite + Send + Unpin + 'static> {

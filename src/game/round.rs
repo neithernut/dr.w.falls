@@ -278,7 +278,7 @@ pub async fn control(
 /// This data type provides the core logic for a round, exposed as functions.
 /// These include functions for performing both controlled moves and ticks.
 ///
-struct Actor {
+pub(super) struct Actor {
     event_sender: mpsc::Sender<(player::Tag, Event)>,
     capsule_receiver: CapsulesQueue,
     player_tag: player::Tag,
@@ -608,7 +608,7 @@ pub struct ControlPorts {
 /// Message type for events associated with a particular player
 ///
 #[derive(Clone, Debug)]
-enum Event {
+pub(super) enum Event {
     /// Capsules to be sent to ther players
     Capsules(Vec<util::Colour>),
     /// The player's score has changed

@@ -247,6 +247,7 @@ fn play_field_virs(
 
             // Read back viruses into a map of positions
             let tiles: std::collections::HashMap<_, _> = tile_contents(&vt_state.borrow(), area)
+                .filter(|(_, [a, b])| a.data != 0x20 || b.data != 0x20)
                 .collect();
 
             let correct_syms = tiles
@@ -342,6 +343,7 @@ fn play_field_update(
                 });
 
             let tiles: std::collections::HashMap<_, _> = tile_contents(&vt_state.borrow(), area)
+                .filter(|(_, [a, b])| a.data != 0x20 || b.data != 0x20)
                 .collect();
 
             let correct_syms = tiles
@@ -686,7 +688,6 @@ fn tile_contents(
         .chunks_exact(2)
         .enumerate()
         .filter_map(|(c, v)| if let [a, b] = v { Some((c, [*a, *b])) } else { None })
-        .filter(|(_, [a, b])| a.data != 0x20 || b.data != 0x20)
         .filter_map(move |(c, s)| Some(((
             util::RowIndex::try_from((r - base_row) as usize).ok()?,
             util::ColumnIndex::try_from(c as usize).ok()?,

@@ -246,7 +246,8 @@ fn play_field_virs(
                 .await?;
 
             // Read back viruses into a map of positions
-            let tiles = tile_contents(&vt_state.borrow(), area);
+            let tiles: std::collections::HashMap<_, _> = tile_contents(&vt_state.borrow(), area)
+                .collect();
 
             let correct_syms = tiles
                 .values()
@@ -340,7 +341,8 @@ fn play_field_update(
                     a
                 });
 
-            let tiles = tile_contents(&vt_state.borrow(), area);
+            let tiles: std::collections::HashMap<_, _> = tile_contents(&vt_state.borrow(), area)
+                .collect();
 
             let correct_syms = tiles
                 .values()
@@ -663,7 +665,7 @@ fn ansi_encode_decode(orig: Vec<commands::DrawCommand<'static>>) -> std::io::Res
 }
 
 
-/// Utility function for retrieving all non-empty tiles in a field from a VT
+/// Utility function for retrieving all tiles in a field from a VT
 ///
 /// This function retrieves the tile contents of a play field given via its
 /// placement `area` on the given `vt`
@@ -671,13 +673,13 @@ fn ansi_encode_decode(orig: Vec<commands::DrawCommand<'static>>) -> std::io::Res
 fn tile_contents(
     vt: &VT,
     area: Area,
-) -> std::collections::HashMap<crate::util::Position, [FormattedChar; 2]> {
+) -> impl Iterator<Item = (crate::util::Position, [FormattedChar; 2])> + '_ {
     use std::convert::TryFrom;
 
     use crate::util;
 
     let base_row = area.row_a + 2;
-    (base_row..(area.row_b - 1)).flat_map(|r| vt
+    (base_row..(area.row_b - 1)).flat_map(move |r| vt
         .data[r as usize]
         .split_at((area.col_a + 1).into())
         .1
@@ -689,7 +691,7 @@ fn tile_contents(
             util::RowIndex::try_from((r - base_row) as usize).ok()?,
             util::ColumnIndex::try_from(c as usize).ok()?,
         ), s)))
-    ).collect()
+    )
 }
 
 

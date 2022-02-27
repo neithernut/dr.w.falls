@@ -233,6 +233,45 @@ fn waiting_control_players(
 
 
 #[quickcheck]
+fn actor_move_output(
+    static_field: crate::field::tests::StaticField,
+    moves: Vec<crate::field::Movement>,
+    row: util::RowIndex,
+    a: util::Colour,
+    b: util::Colour,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::display::tests::{Area, VT, VTWriter, handle_from_bare};
+
+    let field = crate::display::PlayField::new();
+    let area = Area::new_for_placement(0u16, 0u16, &field);
+
+    tokio::runtime::Runtime::new()?.block_on(async {
+        let (writer, vt_state) = tokio::sync::watch::channel(VT::new(area.rows(), area.cols()));
+        let mut handle = handle_from_bare(VTWriter::from(writer), &[]).await;
+        let field = area.instantiate(&mut handle).place_center(field).await?;
+        let (event_sender, _) = tokio::sync::mpsc::channel(1);
+
+        let mut actor = round::Actor::new_with_capsule(
+            event_sender,
+            Default::default(),
+            dummy_handle().tag(),
+            static_field.into(),
+            row,
+            [a, b],
+        );
+
+        populate_field_display(&mut handle, &field, actor.static_field(), actor.moving_field()).await?;
+
+        for movement in moves {
+            actor.r#move(&mut handle, &field, movement).await?;
+            check_field_display(&vt_state.borrow(), area, actor.static_field(), actor.moving_field())?;
+        }
+        Ok(())
+    })
+}
+
+
+#[quickcheck]
 fn ascii_stream_smoke(orig: crate::tests::ASCIIString) -> Result<bool, ConnTaskError> {
     use futures::TryStreamExt;
 

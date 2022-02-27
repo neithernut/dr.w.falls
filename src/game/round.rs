@@ -443,6 +443,77 @@ impl Actor {
     }
 }
 
+#[cfg(test)]
+impl Actor {
+    /// Construct an Actor with given, potentially populated fields
+    ///
+    pub fn new_with_fields(
+        event_sender: mpsc::Sender<(player::Tag, Event)>,
+        capsule_receiver: CapsulesQueue,
+        player_tag: player::Tag,
+        r#static: field::StaticField,
+        moving: field::MovingField,
+        next_colours: [util::Colour; 2],
+    ) -> Self {
+        let viruses = util::ROWS
+            .flat_map(util::complete_row)
+            .filter_map(|p| r#static[p].as_virus().map(|v| (p, v.colour())))
+            .collect();
+        let lowest = util::ROWS
+            .rev()
+            .find(|r| util::complete_row(*r).any(|p| moving[p].is_some()))
+            .unwrap_or(util::RowIndex::TOP_ROW);
+        let active = moving.moving_row_index(lowest).into();
+        Self {event_sender, capsule_receiver, player_tag, moving, r#static, viruses, active, next_colours}
+    }
+
+    /// Construct an Actor with given static field and capsule position
+    ///
+    pub fn new_with_capsule(
+        event_sender: mpsc::Sender<(player::Tag, Event)>,
+        capsule_receiver: CapsulesQueue,
+        player_tag: player::Tag,
+        r#static: field::StaticField,
+        row: util::RowIndex,
+        colours: [util::Colour; 2],
+    ) -> Self {
+        let mut moving: field::MovingField = Default::default();
+        let (capsule, _) = field::ControlledCapsule::spawn_capsule(&mut moving, &colours);
+        (0..util::Step::steps_between(&util::RowIndex::TOP_ROW, &row).expect("Invalid row"))
+            .for_each(|_| moving.tick().fold((), |_, _| ()));
+        let overlap = util::ROWS
+            .flat_map(util::complete_row)
+            .any(|p| r#static[p].is_occupied() && moving[p].is_some());
+        let active = if overlap {
+            moving = Default::default();
+            moving.moving_row_index(util::RowIndex::TOP_ROW).into()
+        } else {
+            capsule.into()
+        };
+
+        let viruses = util::ROWS
+            .flat_map(util::complete_row)
+            .filter_map(|p| r#static[p].as_virus().map(|v| (p, v.colour())))
+            .collect();
+
+        let next_colours = colours;
+
+        Self {event_sender, capsule_receiver, player_tag, moving, r#static, viruses, active, next_colours}
+    }
+
+    /// Retrieve a reference to the static field
+    ///
+    pub fn static_field(&self) -> &field::StaticField {
+        &self.r#static
+    }
+
+    /// Retrieve a reference to the moving field
+    ///
+    pub fn moving_field(&self) -> &field::MovingField {
+        &self.moving
+    }
+}
+
 
 /// Categorization of currently active capsule elements
 ///

@@ -389,7 +389,7 @@ impl Arbitrary for TwoColouredField {
 /// Static field construction helper
 ///
 #[derive(Clone, Debug)]
-struct StaticField {
+pub struct StaticField {
     viruses: std::collections::HashMap<util::Position, util::Colour>,
     capsules: Vec<RandomCapsule>,
 }
@@ -425,7 +425,7 @@ fn random_capsule_placement(field: StaticField) -> bool {
 /// Moving field construction helper
 ///
 #[derive(Clone, Debug)]
-struct MovingField {
+pub struct MovingField {
     capsules: Vec<RandomCapsule>,
 }
 

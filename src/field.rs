@@ -9,7 +9,7 @@ mod static_field;
 mod tick;
 
 #[cfg(test)]
-mod tests;
+pub mod tests;
 
 
 pub use items::Update;

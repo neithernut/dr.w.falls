@@ -10,7 +10,7 @@ mod scores;
 mod static_text;
 
 #[cfg(test)]
-mod tests;
+pub mod tests;
 
 
 pub use area::Area;

@@ -672,7 +672,7 @@ fn ansi_encode_decode(orig: Vec<commands::DrawCommand<'static>>) -> std::io::Res
 /// This function retrieves the tile contents of a play field given via its
 /// placement `area` on the given `vt`
 ///
-fn tile_contents(
+pub fn tile_contents(
     vt: &VT,
     area: Area,
 ) -> impl Iterator<Item = (crate::util::Position, [FormattedChar; 2])> + '_ {
@@ -750,7 +750,7 @@ impl Arbitrary for ScoreBoardEntry {
 /// Utility for generating random [area::Area]s
 ///
 #[derive(Copy, Clone, Debug)]
-struct Area {
+pub struct Area {
     row_a: u16,
     col_a: u16,
     row_b: u16,
@@ -1075,7 +1075,7 @@ impl Default for GraphicRendition {
 
 /// Create a DrawHandle from some bare parts
 ///
-async fn handle_from_bare<'a, W: tokio::io::AsyncWrite + Send + Unpin + 'static>(
+pub async fn handle_from_bare<'a, W: tokio::io::AsyncWrite + Send + Unpin + 'static>(
     write: W,
     termination_seq: &'a [commands::DrawCommand<'static>],
 ) -> DrawHandle<'a, W> {

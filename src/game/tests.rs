@@ -272,6 +272,58 @@ fn actor_move_output(
 
 
 #[quickcheck]
+fn actor_tick_output(
+    static_field: crate::field::tests::SettledField,
+    moving_field: crate::field::tests::MovingField,
+    ticks: std::num::NonZeroU8,
+    a: util::Colour,
+    b: util::Colour,
+    seed: u64,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use rand::SeedableRng;
+
+    use crate::display::tests::{Area, VT, VTWriter, handle_from_bare};
+
+    let field = crate::display::PlayField::new();
+    let area = Area::new_for_placement(0u16, 0u16, &field);
+
+    let static_field: crate::field::StaticField = static_field.into();
+    let moving_field = moving_field.instantiate_for(&static_field);
+
+    tokio::runtime::Runtime::new()?.block_on(async {
+        let (writer, vt_state) = tokio::sync::watch::channel(VT::new(area.rows(), area.cols()));
+        let mut handle = handle_from_bare(VTWriter::from(writer), &[]).await;
+        let field = area.instantiate(&mut handle).place_center(field).await?;
+        let (event_sender, mut events) = tokio::sync::mpsc::channel(1);
+        tokio::spawn(async move {
+            while events.recv().await.is_some() {}
+        });
+
+        let mut actor = round::Actor::new_with_fields(
+            event_sender,
+            Default::default(),
+            dummy_handle().tag(),
+            static_field,
+            moving_field,
+            [a, b],
+        );
+
+        populate_field_display(&mut handle, &field, actor.static_field(), actor.moving_field()).await?;
+        let mut rng = rand_pcg::Pcg64Mcg::seed_from_u64(seed);
+        for _ in 0..ticks.get() {
+            if actor.is_defeated() {
+                break;
+            }
+
+            actor.tick(&mut handle, &field, &mut rng).await?;
+            check_field_display(&vt_state.borrow(), area, actor.static_field(), actor.moving_field())?;
+        }
+        Ok(())
+    })
+}
+
+
+#[quickcheck]
 fn ascii_stream_smoke(orig: crate::tests::ASCIIString) -> Result<bool, ConnTaskError> {
     use futures::TryStreamExt;
 

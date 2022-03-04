@@ -445,6 +445,15 @@ pub struct MovingField {
 }
 
 impl MovingField {
+    /// Construct a new moving field from the given viruses and capsules
+    ///
+    /// This function purges capsules leading to inconsistencies before
+    /// construction.
+    ///
+    fn new(capsules: Vec<RandomCapsule>) -> Self {
+        Self {capsules: RandomCapsule::consistent_capsules(capsules, std::iter::empty()).collect()}
+    }
+
     /// Fill a moving field with capsules honouring occupied positions in a moving field
     ///
     pub fn instantiate_for(&self, field: &static_field::StaticField) -> moving_field::MovingField {
@@ -461,11 +470,11 @@ impl MovingField {
 
 impl Arbitrary for MovingField {
     fn arbitrary(g: &mut Gen) -> Self {
-        Self {capsules: Arbitrary::arbitrary(g)}
+        Self::new(Arbitrary::arbitrary(g))
     }
 
     fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
-        Box::new(self.capsules.shrink().map(|capsules| Self{capsules}))
+        Box::new(self.capsules.shrink().map(Self::new))
     }
 }
 

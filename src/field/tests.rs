@@ -511,6 +511,24 @@ impl RandomCapsule {
             field[p] = items::CapsuleElement::new(c, Some(d.rotated_cw().rotated_cw())).into();
         }
     }
+
+    /// Transform a set of capsules so that they are consistent
+    ///
+    pub fn consistent_capsules(
+        capsules: impl IntoIterator<Item = Self>,
+        occupied: impl IntoIterator<Item = util::Position>,
+    ) -> impl Iterator<Item = Self> {
+        let mut occupied: std::collections::HashSet<_> = std::iter::FromIterator::from_iter(occupied);
+
+        capsules.into_iter().filter_map(move |mut c| if occupied.insert(c.pos) {
+            if c.partner.and_then(|(d, _)| c.pos + d).map(|p| !occupied.insert(p)).unwrap_or(true) {
+                c.partner = None;
+            }
+            Some(c)
+        } else {
+            None
+        })
+    }
 }
 
 impl Arbitrary for RandomCapsule {

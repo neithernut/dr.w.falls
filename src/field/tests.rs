@@ -457,13 +457,11 @@ impl MovingField {
     /// Fill a moving field with capsules honouring occupied positions in a moving field
     ///
     pub fn instantiate_for(&self, field: &static_field::StaticField) -> moving_field::MovingField {
-        use util::PotentiallyColoured;
-
         let mut res: moving_field::MovingField = Default::default();
-        self.capsules
-            .iter()
-            .cloned()
-            .for_each(|c| c.try_place_on_masked(&mut res, |p| field[p].colour().is_none()));
+        RandomCapsule::consistent_capsules(
+            self.capsules.iter().cloned(),
+            util::ROWS.flat_map(util::complete_row).filter(|p| field[*p].is_occupied()),
+        ).for_each(|c| c.place_on(&mut res));
         res
     }
 }
@@ -502,36 +500,12 @@ impl RandomCapsule {
     /// Capsule lements will only be placed if the respective positions are not
     /// already occupied (i.e. coloured).
     ///
-    pub fn try_place_on<F>(&self, field: &mut F)
+    pub fn place_on<F>(&self, field: &mut F)
         where F: std::ops::IndexMut<util::Position>,
               F::Output: From<items::CapsuleElement> + util::PotentiallyColoured,
     {
-        self.try_place_on_masked(field, |_| true)
-    }
-
-    /// Try to place this capsule on the given field
-    ///
-    /// Capsule lements will only be placed if the supplied `mask` returns
-    /// `false` for the respective positions and they are not already occupied
-    /// (i.e. coloured).
-    ///
-    pub fn try_place_on_masked<F>(&self, field: &mut F, mask: impl Fn(util::Position) -> bool)
-        where F: std::ops::IndexMut<util::Position>,
-              F::Output: From<items::CapsuleElement> + util::PotentiallyColoured,
-    {
-        use util::PotentiallyColoured;
-
-        if field[self.pos].colour().is_some() || !mask(self.pos) {
-            return
-        }
-
-        let partner = self
-            .partner
-            .and_then(|(d, c)| (self.pos + d).map(|p| (d, c, p)))
-            .filter(|(.., p)| field[*p].colour().is_none() && mask(*p));
-
-        field[self.pos] = items::CapsuleElement::new(self.colour, partner.map(|(d, ..)| d)).into();
-        if let Some((d, c, p)) = partner {
+        field[self.pos] = items::CapsuleElement::new(self.colour, self.partner.map(|(d, _)| d)).into();
+        if let Some((d, c, p)) = self.partner.and_then(|(d, c)| (self.pos + d).map(|p| (d, c, p))) {
             field[p] = items::CapsuleElement::new(c, Some(d.rotated_cw().rotated_cw())).into();
         }
     }

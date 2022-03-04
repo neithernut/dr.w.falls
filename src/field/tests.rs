@@ -386,6 +386,65 @@ impl Arbitrary for TwoColouredField {
 }
 
 
+/// Construction helper for [static_field::StaticField] with supported capsules
+///
+#[derive(Clone, Debug)]
+pub struct SettledField {
+    viruses: std::collections::HashMap<util::Position, util::Colour>,
+    capsules: Vec<RandomCapsule>,
+}
+
+impl SettledField {
+    /// Construct a new field from the given viruses and capsules
+    ///
+    /// This function purges capsules leading to inconsistencies as well as
+    /// unsupported capsules before construction.
+    ///
+    fn new(
+        viruses: std::collections::HashMap<util::Position, util::Colour>,
+        capsules: Vec<RandomCapsule>,
+    ) -> Self {
+        use util::Direction::Below;
+
+        let virpos = viruses.keys().cloned();
+        let mut capsules: Vec<_> = RandomCapsule::consistent_capsules(capsules, virpos.clone()).collect();
+        loop {
+            let occupied: std::collections::HashSet<_> = virpos
+                .clone()
+                .chain(capsules.iter().map(|c| c.pos))
+                .collect();
+
+            let oldlen = capsules.len();
+            capsules.retain(|c| c.positions().filter_map(|p| p + Below).all(|p| occupied.contains(&p)));
+            if oldlen == capsules.len() {
+                break Self {viruses, capsules}
+            }
+        }
+    }
+}
+
+impl From<SettledField> for static_field::StaticField {
+    fn from(field: SettledField) -> Self {
+        let mut res: Self = std::iter::FromIterator::from_iter(field.viruses);
+        field.capsules.into_iter().for_each(|c| c.place_on(&mut res));
+        res
+    }
+}
+
+impl Arbitrary for SettledField {
+    fn arbitrary(g: &mut Gen) -> Self {
+        Self::new(Arbitrary::arbitrary(g), Arbitrary::arbitrary(g))
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        let res = (self.viruses.clone(), self.capsules.clone())
+            .shrink()
+            .map(|(viruses, capsules)| SettledField::new(viruses, capsules));
+        Box::new(res)
+    }
+}
+
+
 /// Static field construction helper
 ///
 #[derive(Clone, Debug)]
@@ -526,6 +585,12 @@ impl RandomCapsule {
         } else {
             None
         })
+    }
+
+    /// Positions occupied by the capsule
+    ///
+    pub fn positions(&self) -> impl Iterator<Item = util::Position> + Clone {
+        std::iter::once(self.pos).chain(self.partner.and_then(|(d, _)| self.pos + d))
     }
 }
 

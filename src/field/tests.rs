@@ -394,23 +394,38 @@ pub struct StaticField {
     capsules: Vec<RandomCapsule>,
 }
 
+impl StaticField {
+    /// Construct a new static field from the given viruses and capsules
+    ///
+    /// This function purges capsules leading to inconsistencies before
+    /// construction.
+    ///
+    fn new(
+        viruses: std::collections::HashMap<util::Position, util::Colour>,
+        capsules: Vec<RandomCapsule>,
+    ) -> Self {
+        let capsules = RandomCapsule::consistent_capsules(capsules, viruses.keys().cloned()).collect();
+        Self {viruses, capsules}
+    }
+}
+
 impl From<StaticField> for static_field::StaticField {
     fn from(field: StaticField) -> Self {
         let mut res: Self = std::iter::FromIterator::from_iter(field.viruses);
-        field.capsules.into_iter().for_each(|c| c.try_place_on(&mut res));
+        field.capsules.into_iter().for_each(|c| c.place_on(&mut res));
         res
     }
 }
 
 impl Arbitrary for StaticField {
     fn arbitrary(g: &mut Gen) -> Self {
-        Self {viruses: Arbitrary::arbitrary(g), capsules: Arbitrary::arbitrary(g)}
+        Self::new(Arbitrary::arbitrary(g), Arbitrary::arbitrary(g))
     }
 
     fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
         let res = (self.viruses.clone(), self.capsules.clone())
             .shrink()
-            .map(|(viruses, capsules)| StaticField{viruses, capsules});
+            .map(|(viruses, capsules)| StaticField::new(viruses, capsules));
         Box::new(res)
     }
 }

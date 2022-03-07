@@ -387,8 +387,8 @@ impl Actor {
 
         if lowest.is_some() {
             // We still have moving elements.
-            field.update(display_handle, self.moving.tick()).await.map_err(Into::into)
-        } else {
+            field.update(display_handle, self.moving.tick()).await?;
+        } else if !self.is_defeated() {
             // There are no moving element left. We need to respawn something.
             use util::RowIndex;
             if let Some(capsules) = self.capsule_receiver.lock().await.pop_front() {
@@ -408,8 +408,9 @@ impl Actor {
 
             self.active = capsule.into();
             field.update(display_handle, updates.iter().cloned()).await?;
-            field.place_next_elements(display_handle, &self.next_colours).await.map_err(Into::into)
+            field.place_next_elements(display_handle, &self.next_colours).await?;
         }
+        Ok(())
     }
 
     /// Check whether there is a controlled capsule

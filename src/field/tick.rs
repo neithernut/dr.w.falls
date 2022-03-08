@@ -104,17 +104,16 @@ pub fn eliminate_elements(
 ) -> Eliminated {
     use super::items::row_of_four;
 
-    let rows = Eliminated {rows: settled.iter().filter_map(|p| row_of_four(field, *p)).collect()};
-    rows.positions().for_each(|p| field[p]
-        .take()
-        .into_element()
-        .and_then(|e| e.partner)
-        .and_then(|d| p + d)
-        .and_then(|p| field[p].as_element_mut())
-        .map(|e| e.partner = None)
-        .unwrap_or_default()
-    );
-    rows
+    let rows: HashSet<_> = settled.iter().filter_map(|p| row_of_four(field, *p)).collect();
+    let exes: HashSet<_> = rows
+        .iter()
+        .flat_map(|(_, p)| p.clone())
+        .filter_map(|p| field[p].take().into_element().and_then(|e| e.partner).and_then(|d| p + d))
+        .collect();
+    exes.iter().for_each(|p| if let Some(e) = field[*p].as_element_mut() {
+        e.partner = None
+    });
+    Eliminated {rows, exes}
 }
 
 
@@ -123,6 +122,7 @@ pub fn eliminate_elements(
 pub struct Eliminated {
     // We use a hashset in order to prevent registering the same row twice.
     rows: HashSet<(util::Colour, RowOfFour)>,
+    exes: HashSet<util::Position>,
 }
 
 impl Eliminated {
@@ -146,9 +146,12 @@ impl Eliminated {
 }
 
 #[cfg(test)]
-impl From<HashSet<(util::Colour, RowOfFour)>> for Eliminated {
-    fn from(rows: HashSet<(util::Colour, RowOfFour)>) -> Self {
-        Self {rows}
+impl Eliminated {
+    pub fn new(
+        rows: HashSet<(util::Colour, RowOfFour)>,
+        exes: HashSet<util::Position>,
+    ) -> Self {
+        Self {rows, exes}
     }
 }
 

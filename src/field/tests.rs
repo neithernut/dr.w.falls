@@ -110,7 +110,11 @@ fn unsettlement_consistency(
 ) -> bool {
     let mut static_field: static_field::StaticField = static_field.into();
     let mut moving_field = moving_field.instantiate_for(&static_field);
-    tick::unsettle_elements(&mut moving_field, &mut static_field, &rows.into());
+    tick::unsettle_elements(
+        &mut moving_field,
+        &mut static_field,
+        &tick::Eliminated::new(rows, Default::default())
+    );
     check_overlaps(&static_field, &moving_field) &&
         check_element_partnership(&static_field) &&
         check_element_partnership(&moving_field)
@@ -129,7 +133,11 @@ fn unsettlement_occupation(
         .flat_map(util::complete_row)
         .filter(|p| static_field[*p].is_occupied() || moving_field[*p].is_some())
         .collect();
-    tick::unsettle_elements(&mut moving_field, &mut static_field, &rows.into());
+    tick::unsettle_elements(
+        &mut moving_field,
+        &mut static_field,
+        &tick::Eliminated::new(rows, Default::default())
+    );
     util::ROWS
         .flat_map(util::complete_row)
         .filter(|p| static_field[*p].is_occupied() || moving_field[*p].is_some())
@@ -145,19 +153,17 @@ fn unsettlement_tick(
     let mut static_field: static_field::StaticField = static_field.into();
     let mut moving_field = Default::default();
 
-    let eliminated: tick::Eliminated = rows.into();
     // Taken from `eliminate_elements`
-    eliminated.positions().for_each(|p| static_field[p]
-        .take()
-        .into_element()
-        .and_then(|e| e.partner)
-        .and_then(|d| p + d)
-        .and_then(|p| static_field[p].as_element_mut())
-        .map(|e| e.partner = None)
-        .unwrap_or_default()
-    );
+    let exes: std::collections::HashSet<_> = rows
+        .iter()
+        .flat_map(|(_, p)| p.clone())
+        .filter_map(|p| static_field[p].take().into_element().and_then(|e| e.partner).and_then(|d| p + d))
+        .collect();
+    exes.iter().for_each(|p| if let Some(e) = static_field[*p].as_element_mut() {
+        e.partner = None
+    });
 
-    tick::unsettle_elements(&mut moving_field, &mut static_field, &eliminated);
+    tick::unsettle_elements(&mut moving_field, &mut static_field, &tick::Eliminated::new(rows, exes));
     moving_field.tick().fold((), |_, _| ());
     check_overlaps(&static_field, &moving_field) && check_element_partnership(&moving_field)
 }

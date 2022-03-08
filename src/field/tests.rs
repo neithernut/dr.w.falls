@@ -105,10 +105,11 @@ fn elimination_element_partnership(field: StaticField, settled: Vec<util::Positi
 #[quickcheck]
 fn unsettlement_consistency(
     static_field: StaticField,
+    moving_field: MovingField,
     rows: std::collections::HashSet<(util::Colour, items::RowOfFour)>,
 ) -> bool {
     let mut static_field: static_field::StaticField = static_field.into();
-    let mut moving_field = Default::default();
+    let mut moving_field = moving_field.instantiate_for(&static_field);
     tick::unsettle_elements(&mut moving_field, &mut static_field, &rows.into());
     check_overlaps(&static_field, &moving_field) &&
         check_element_partnership(&static_field) &&

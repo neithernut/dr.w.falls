@@ -118,6 +118,26 @@ fn unsettlement_consistency(
 
 
 #[quickcheck]
+fn unsettlement_occupation(
+    static_field: StaticField,
+    moving_field: MovingField,
+    rows: std::collections::HashSet<(util::Colour, items::RowOfFour)>,
+) -> bool {
+    let mut static_field: static_field::StaticField = static_field.into();
+    let mut moving_field = moving_field.instantiate_for(&static_field);
+    let occupied: Vec<_> = util::ROWS
+        .flat_map(util::complete_row)
+        .filter(|p| static_field[*p].is_occupied() || moving_field[*p].is_some())
+        .collect();
+    tick::unsettle_elements(&mut moving_field, &mut static_field, &rows.into());
+    util::ROWS
+        .flat_map(util::complete_row)
+        .filter(|p| static_field[*p].is_occupied() || moving_field[*p].is_some())
+        .eq(occupied)
+}
+
+
+#[quickcheck]
 fn unsettlement_tick(
     static_field: StaticField,
     rows: std::collections::HashSet<(util::Colour, items::RowOfFour)>,

@@ -175,7 +175,14 @@ pub fn unsettle_elements(
 
     let mut lowest_unsettled = None;
 
-    let mut worklist: Vec<_> = eliminated.positions().filter_map(|p| p + Dir::Above).collect();
+    let mut worklist: std::collections::BinaryHeap<_> = eliminated
+        .exes
+        .iter()
+        .cloned()
+        .filter(|p| !(*p + Dir::Below).map(|p| static_field[p].is_occupied()).unwrap_or(true))
+        .chain(eliminated.positions().filter_map(|p| p + Dir::Above))
+        .collect();
+
     while let Some(pos) = worklist.pop() {
         if let Some(element) = static_field[pos].as_element() {
             let partner = element.partner.and_then(|d| pos + d);

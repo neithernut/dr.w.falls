@@ -81,7 +81,10 @@ fn settlement_tick(static_field: StaticField, moving_field: MovingField) -> bool
     let mut moving_field = moving_field.instantiate_for(&static_field);
     tick::settle_elements(&mut moving_field, &mut static_field, util::RowIndex::BOTTOM_ROW);
     moving_field.tick().fold((), |_, _| ());
-    check_overlaps(&static_field, &moving_field) && check_element_partnership(&moving_field)
+    util::complete_row(util::RowIndex::TOP_ROW).all(|p| moving_field[p].is_none()) &&
+        check_overlaps(&static_field, &moving_field) &&
+        check_element_partnership(&static_field) &&
+        check_element_partnership(&moving_field)
 }
 
 
@@ -165,7 +168,10 @@ fn unsettlement_tick(
 
     tick::unsettle_elements(&mut moving_field, &mut static_field, &tick::Eliminated::new(rows, exes));
     moving_field.tick().fold((), |_, _| ());
-    check_overlaps(&static_field, &moving_field) && check_element_partnership(&moving_field)
+    util::complete_row(util::RowIndex::TOP_ROW).all(|p| moving_field[p].is_none()) &&
+        check_overlaps(&static_field, &moving_field) &&
+        check_element_partnership(&static_field) &&
+        check_element_partnership(&moving_field)
 }
 
 

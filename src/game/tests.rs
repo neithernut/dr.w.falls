@@ -232,6 +232,29 @@ fn waiting_control_players(
 }
 
 
+#[tokio::test]
+async fn round_serve_instant_transition() {
+    use rand::SeedableRng;
+
+    let me = dummy_handle();
+
+    let (ports, _) = round::ports(std::iter::once(me.tag()), 0);
+    let mut display = sink_display();
+    let input = futures::stream::pending();
+    let (_, phase) = tokio::sync::watch::channel(());
+    round::serve(
+        ports,
+        &mut display,
+        input,
+        TransitionWatcher::new(phase, |_| true),
+        &me,
+        Default::default(),
+        std::time::Duration::from_millis(100),
+        rand_pcg::Pcg64Mcg::seed_from_u64(0),
+    ).await.expect("Round returned an error")
+}
+
+
 #[quickcheck]
 fn actor_move_output(
     static_field: crate::field::tests::StaticField,

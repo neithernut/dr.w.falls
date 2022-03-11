@@ -195,9 +195,7 @@ pub fn unsettle_elements(
                 let to_move = std::iter::once(pos)
                     .chain(partner)
                     .inspect(|p| moving_field[*p] = static_field[*p].take().into_element())
-                    .inspect(|p| if lowest_unsettled.map(|r| r < p.0).unwrap_or(true) {
-                        lowest_unsettled = Some(p.0)
-                    });
+                    .inspect(|p| { lowest_unsettled.get_or_insert(p.0); });
                 worklist.extend(to_move.filter_map(|p| p + Dir::Above));
             }
         }

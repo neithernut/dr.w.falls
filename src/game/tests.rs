@@ -255,6 +255,34 @@ async fn round_serve_instant_transition() {
 }
 
 
+#[tokio::test]
+async fn round_serve_input_eof() {
+    use rand::SeedableRng;
+
+    let me = dummy_handle();
+
+    let (ports, _) = round::ports(std::iter::once(me.tag()), 0);
+    let mut display = sink_display();
+    let input = futures::stream::empty();
+    let (phase_sender, phase) = tokio::sync::watch::channel(());
+    let res = round::serve(
+        ports,
+        &mut display,
+        input,
+        TransitionWatcher::new(phase, |_| false),
+        &me,
+        Default::default(),
+        std::time::Duration::from_millis(100),
+        rand_pcg::Pcg64Mcg::seed_from_u64(0),
+    ).await;
+    drop(phase_sender);
+    match res.unwrap_err() {
+        ConnTaskError::Terminated => (),
+        e => Err(e).expect("Expected ConnTaskError::Terminated"),
+    }
+}
+
+
 #[quickcheck]
 fn actor_move_output(
     static_field: crate::field::tests::StaticField,

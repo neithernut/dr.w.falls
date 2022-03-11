@@ -48,9 +48,8 @@ pub async fn serve<P>(
     let mut left = area.split_left(super::COLUMN_SPLIT);
 
     let field = left.place_top(display::PlayField::default()).await?;
-    left = left.pad_top(1);
     let indicator = left.place_center(
-        display::DynamicText::new((super::COLUMN_SPLIT - 2).try_into().unwrap(), 4u16.try_into().unwrap())
+        display::DynamicText::new(2u16.try_into().unwrap(), (super::COLUMN_SPLIT - 2).try_into().unwrap())
     ).await?;
 
     let max_scores = area.rows().saturating_sub(2);

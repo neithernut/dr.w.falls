@@ -327,6 +327,7 @@ fn actor_tick_output(
     static_field: crate::field::tests::SettledField,
     moving_field: crate::field::tests::MovingField,
     ticks: std::num::NonZeroU8,
+    capsules: std::collections::VecDeque<Vec<(util::ColumnIndex, util::Colour)>>,
     a: util::Colour,
     b: util::Colour,
     seed: u64,
@@ -352,7 +353,7 @@ fn actor_tick_output(
 
         let mut actor = round::Actor::new_with_fields(
             event_sender,
-            Default::default(),
+            std::sync::Arc::new(capsules.into()),
             dummy_handle().tag(),
             static_field,
             moving_field,
